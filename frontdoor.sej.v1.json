@@ -6,236 +6,351 @@
    "expression": {
     "op": "let",
     "bindings": {
-     "operation": {
-      "op": "find",
-      "from": {
-       "op": "path",
-       "path": "interface.operations"
-      },
-      "as": "candidate",
-      "where": {
-       "op": "if",
-       "when": {
-        "op": "equals",
-        "left": {
-         "op": "path",
-         "from": "candidate",
-         "path": "method"
-        },
-        "right": {
-         "op": "path",
-         "path": "request.method"
-        }
-       },
-       "then": {
-        "op": "if",
-        "when": {
-         "op": "equals",
-         "left": {
-          "op": "length",
-          "value": {
-           "op": "object-entries",
+     "segments": {
+      "op": "path",
+      "path": "request.segments"
+     }
+    },
+    "value": {
+     "op": "let",
+     "bindings": {
+      "position": {
+       "op": "object",
+       "fields": {
+        "0": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
            "value": {
             "op": "path",
-            "from": "candidate",
-            "path": "segments"
+            "from": "segments",
+            "path": ""
            }
+          },
+          "right": {
+           "op": "literal",
+           "value": 0
           }
          },
-         "right": {
-          "op": "length",
-          "value": {
-           "op": "path",
-           "path": "request.segments"
-          }
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "0"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
          }
         },
-        "then": {
-         "op": "every",
-         "from": {
-          "op": "object-entries",
-          "value": {
-           "op": "path",
-           "from": "candidate",
-           "path": "segments"
+        "1": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 1
           }
          },
-         "as": "segment",
-         "where": {
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "1"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "2": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 2
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "2"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "3": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 3
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "3"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "4": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 4
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "4"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "5": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 5
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "5"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "6": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 6
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "6"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "7": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 7
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "7"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "8": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 8
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "8"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        },
+        "9": {
+         "op": "if",
+         "when": {
+          "op": "greater-than",
+          "left": {
+           "op": "length",
+           "value": {
+            "op": "path",
+            "from": "segments",
+            "path": ""
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": 9
+          }
+         },
+         "then": {
+          "op": "path",
+          "from": "segments",
+          "path": "9"
+         },
+         "else": {
+          "op": "literal",
+          "value": null
+         }
+        }
+       }
+      }
+     },
+     "value": {
+      "op": "let",
+      "bindings": {
+       "operation": {
+        "op": "find",
+        "from": {
+         "op": "path",
+         "path": "interface.operations"
+        },
+        "as": "candidate",
+        "where": {
+         "op": "if",
+         "when": {
+          "op": "equals",
+          "left": {
+           "op": "path",
+           "from": "candidate",
+           "path": "method"
+          },
+          "right": {
+           "op": "path",
+           "path": "request.method"
+          }
+         },
+         "then": {
           "op": "if",
           "when": {
            "op": "equals",
            "left": {
-            "op": "type",
+            "op": "length",
             "value": {
-             "op": "path",
-             "from": "segment",
-             "path": "value"
-            }
-           },
-           "right": {
-            "op": "literal",
-            "value": "object"
-           }
-          },
-          "then": {
-           "op": "literal",
-           "value": true
-          },
-          "else": {
-           "op": "equals",
-           "left": {
-            "op": "path",
-            "from": "segment",
-            "path": "value"
-           },
-           "right": {
-            "op": "lookup",
-            "value": {
-             "op": "path",
-             "path": "request.segments"
-            },
-            "path": {
-             "op": "path",
-             "from": "segment",
-             "path": "key"
-            }
-           }
-          }
-         }
-        },
-        "else": {
-         "op": "literal",
-         "value": false
-        }
-       },
-       "else": {
-        "op": "literal",
-        "value": false
-       }
-      }
-     }
-    },
-    "value": {
-     "op": "if",
-     "when": {
-      "op": "equals",
-      "left": {
-       "op": "type",
-       "value": {
-        "op": "path",
-        "from": "operation",
-        "path": ""
-       }
-      },
-      "right": {
-       "op": "literal",
-       "value": "null"
-      }
-     },
-     "then": {
-      "op": "object",
-      "fields": {
-       "contractId": {
-        "op": "literal",
-        "value": "api-response.v1"
-       },
-       "disposition": {
-        "op": "literal",
-        "value": "RESPONDED"
-       },
-       "status": {
-        "op": "literal",
-        "value": 404
-       },
-       "headers": {
-        "op": "literal",
-        "value": {
-         "content-type": "application/json; charset=utf-8"
-        }
-       },
-       "body": {
-        "op": "object",
-        "fields": {
-         "error": {
-          "op": "object",
-          "fields": {
-           "code": {
-            "op": "literal",
-            "value": "OPERATION_NOT_DECLARED"
-           }
-          }
-         }
-        }
-       }
-      }
-     },
-     "else": {
-      "op": "if",
-      "when": {
-       "op": "if",
-       "when": {
-        "op": "equals",
-        "left": {
-         "op": "type",
-         "value": {
-          "op": "path",
-          "path": "caller"
-         }
-        },
-        "right": {
-         "op": "literal",
-         "value": "null"
-        }
-       },
-       "then": {
-        "op": "literal",
-        "value": false
-       },
-       "else": {
-        "op": "includes",
-        "in": {
-         "op": "path",
-         "from": "operation",
-         "path": "callers"
-        },
-        "value": {
-         "op": "path",
-         "path": "caller.kind"
-        }
-       }
-      },
-      "then": {
-       "op": "let",
-       "bindings": {
-        "parsed": {
-         "op": "try-parse-json",
-         "value": {
-          "op": "path",
-          "path": "request.body"
-         },
-         "stripBom": true
-        }
-       },
-       "value": {
-        "op": "let",
-        "bindings": {
-         "params": {
-          "op": "object-from-entries",
-          "value": {
-           "op": "map",
-           "from": {
-            "op": "filter",
-            "from": {
              "op": "object-entries",
              "value": {
               "op": "path",
-              "from": "operation",
+              "from": "candidate",
               "path": "segments"
              }
-            },
-            "as": "segment",
-            "where": {
+            }
+           },
+           "right": {
+            "op": "length",
+            "value": {
+             "op": "path",
+             "path": "request.segments"
+            }
+           }
+          },
+          "then": {
+           "op": "every",
+           "from": {
+            "op": "object-entries",
+            "value": {
+             "op": "path",
+             "from": "candidate",
+             "path": "segments"
+            }
+           },
+           "as": "segment",
+           "where": {
+            "op": "if",
+            "when": {
              "op": "equals",
              "left": {
               "op": "type",
@@ -249,22 +364,24 @@
               "op": "literal",
               "value": "object"
              }
-            }
-           },
-           "as": "segment",
-           "value": {
-            "op": "object",
-            "fields": {
-             "key": {
+            },
+            "then": {
+             "op": "literal",
+             "value": true
+            },
+            "else": {
+             "op": "equals",
+             "left": {
               "op": "path",
               "from": "segment",
-              "path": "value.param"
+              "path": "value"
              },
-             "value": {
+             "right": {
               "op": "lookup",
               "value": {
                "op": "path",
-               "path": "request.segments"
+               "from": "position",
+               "path": ""
               },
               "path": {
                "op": "path",
@@ -274,383 +391,20 @@
              }
             }
            }
-          }
-         }
-        },
-        "value": {
-         "op": "let",
-         "bindings": {
-          "context": {
-           "op": "object",
-           "fields": {
-            "$path": {
-             "op": "path",
-             "from": "params",
-             "path": ""
-            },
-            "$query": {
-             "op": "path",
-             "path": "request.query"
-            },
-            "$caller": {
-             "op": "path",
-             "path": "caller"
-            },
-            "$body": {
-             "op": "path",
-             "from": "parsed",
-             "path": "value"
-            }
-           }
+          },
+          "else": {
+           "op": "literal",
+           "value": false
           }
          },
-         "value": {
-          "op": "object",
-          "fields": {
-           "contractId": {
-            "op": "literal",
-            "value": "api-resolution.v1"
-           },
-           "disposition": {
-            "op": "literal",
-            "value": "RESOLVED"
-           },
-           "operationId": {
-            "op": "path",
-            "from": "operation",
-            "path": "operationId"
-           },
-           "kind": {
-            "op": "path",
-            "from": "operation",
-            "path": "resolves.kind"
-           },
-           "executionTarget": {
-            "op": "path",
-            "from": "operation",
-            "path": "resolves.capabilityId"
-           },
-           "executionNamespace": {
-            "op": "literal",
-            "value": "sidefx:capabilities"
-           },
-           "executionScenario": {
-            "op": "path",
-            "from": "operation",
-            "path": "resolves.capabilityId"
-           },
-           "inputType": {
-            "op": "literal",
-            "value": "json"
-           },
-           "dispatchRequest": {
-            "op": "if",
-            "when": {
-             "op": "equals",
-             "left": {
-              "op": "type",
-              "value": {
-               "op": "path",
-               "from": "operation",
-               "path": "input"
-              }
-             },
-             "right": {
-              "op": "literal",
-              "value": "object"
-             }
-            },
-            "then": {
-             "op": "object-from-entries",
-             "value": {
-              "op": "filter",
-              "from": {
-               "op": "map",
-               "from": {
-                "op": "object-entries",
-                "value": {
-                 "op": "path",
-                 "from": "operation",
-                 "path": "input"
-                }
-               },
-               "as": "member",
-               "value": {
-                "op": "object",
-                "fields": {
-                 "key": {
-                  "op": "path",
-                  "from": "member",
-                  "path": "key"
-                 },
-                 "value": {
-                  "op": "if",
-                  "when": {
-                   "op": "equals",
-                   "left": {
-                    "op": "type",
-                    "value": {
-                     "op": "path",
-                     "from": "member",
-                     "path": "value"
-                    }
-                   },
-                   "right": {
-                    "op": "literal",
-                    "value": "object"
-                   }
-                  },
-                  "then": {
-                   "op": "object-from-entries",
-                   "value": {
-                    "op": "filter",
-                    "from": {
-                     "op": "map",
-                     "from": {
-                      "op": "object-entries",
-                      "value": {
-                       "op": "path",
-                       "from": "member",
-                       "path": "value"
-                      }
-                     },
-                     "as": "field",
-                     "value": {
-                      "op": "object",
-                      "fields": {
-                       "key": {
-                        "op": "path",
-                        "from": "field",
-                        "path": "key"
-                       },
-                       "value": {
-                        "op": "if",
-                        "when": {
-                         "op": "if",
-                         "when": {
-                          "op": "equals",
-                          "left": {
-                           "op": "type",
-                           "value": {
-                            "op": "path",
-                            "from": "field",
-                            "path": "value"
-                           }
-                          },
-                          "right": {
-                           "op": "literal",
-                           "value": "string"
-                          }
-                         },
-                         "then": {
-                          "op": "matches",
-                          "value": {
-                           "op": "path",
-                           "from": "field",
-                           "path": "value"
-                          },
-                          "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
-                         },
-                         "else": {
-                          "op": "literal",
-                          "value": false
-                         }
-                        },
-                        "then": {
-                         "op": "lookup",
-                         "value": {
-                          "op": "path",
-                          "from": "context",
-                          "path": ""
-                         },
-                         "path": {
-                          "op": "path",
-                          "from": "field",
-                          "path": "value"
-                         }
-                        },
-                        "else": {
-                         "op": "path",
-                         "from": "field",
-                         "path": "value"
-                        }
-                       }
-                      }
-                     }
-                    },
-                    "as": "field",
-                    "where": {
-                     "op": "if",
-                     "when": {
-                      "op": "equals",
-                      "left": {
-                       "op": "type",
-                       "value": {
-                        "op": "path",
-                        "from": "field",
-                        "path": "value"
-                       }
-                      },
-                      "right": {
-                       "op": "literal",
-                       "value": "null"
-                      }
-                     },
-                     "then": {
-                      "op": "literal",
-                      "value": false
-                     },
-                     "else": {
-                      "op": "literal",
-                      "value": true
-                     }
-                    }
-                   }
-                  },
-                  "else": {
-                   "op": "if",
-                   "when": {
-                    "op": "if",
-                    "when": {
-                     "op": "equals",
-                     "left": {
-                      "op": "type",
-                      "value": {
-                       "op": "path",
-                       "from": "member",
-                       "path": "value"
-                      }
-                     },
-                     "right": {
-                      "op": "literal",
-                      "value": "string"
-                     }
-                    },
-                    "then": {
-                     "op": "matches",
-                     "value": {
-                      "op": "path",
-                      "from": "member",
-                      "path": "value"
-                     },
-                     "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
-                    },
-                    "else": {
-                     "op": "literal",
-                     "value": false
-                    }
-                   },
-                   "then": {
-                    "op": "lookup",
-                    "value": {
-                     "op": "path",
-                     "from": "context",
-                     "path": ""
-                    },
-                    "path": {
-                     "op": "path",
-                     "from": "member",
-                     "path": "value"
-                    }
-                   },
-                   "else": {
-                    "op": "path",
-                    "from": "member",
-                    "path": "value"
-                   }
-                  }
-                 }
-                }
-               }
-              },
-              "as": "member",
-              "where": {
-               "op": "if",
-               "when": {
-                "op": "equals",
-                "left": {
-                 "op": "type",
-                 "value": {
-                  "op": "path",
-                  "from": "member",
-                  "path": "value"
-                 }
-                },
-                "right": {
-                 "op": "literal",
-                 "value": "null"
-                }
-               },
-               "then": {
-                "op": "literal",
-                "value": false
-               },
-               "else": {
-                "op": "literal",
-                "value": true
-               }
-              }
-             }
-            },
-            "else": {
-             "op": "if",
-             "when": {
-              "op": "if",
-              "when": {
-               "op": "equals",
-               "left": {
-                "op": "type",
-                "value": {
-                 "op": "path",
-                 "from": "operation",
-                 "path": "input"
-                }
-               },
-               "right": {
-                "op": "literal",
-                "value": "string"
-               }
-              },
-              "then": {
-               "op": "matches",
-               "value": {
-                "op": "path",
-                "from": "operation",
-                "path": "input"
-               },
-               "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
-              },
-              "else": {
-               "op": "literal",
-               "value": false
-              }
-             },
-             "then": {
-              "op": "lookup",
-              "value": {
-               "op": "path",
-               "from": "context",
-               "path": ""
-              },
-              "path": {
-               "op": "path",
-               "from": "operation",
-               "path": "input"
-              }
-             },
-             "else": {
-              "op": "path",
-              "from": "operation",
-              "path": "input"
-             }
-            }
-           }
-          }
+         "else": {
+          "op": "literal",
+          "value": false
          }
         }
        }
       },
-      "else": {
+      "value": {
        "op": "if",
        "when": {
         "op": "equals",
@@ -658,7 +412,8 @@
          "op": "type",
          "value": {
           "op": "path",
-          "path": "caller"
+          "from": "operation",
+          "path": ""
          }
         },
         "right": {
@@ -679,7 +434,7 @@
          },
          "status": {
           "op": "literal",
-          "value": 401
+          "value": 404
          },
          "headers": {
           "op": "literal",
@@ -695,7 +450,7 @@
             "fields": {
              "code": {
               "op": "literal",
-              "value": "CALLER_REQUIRED"
+              "value": "OPERATION_NOT_DECLARED"
              }
             }
            }
@@ -704,35 +459,571 @@
         }
        },
        "else": {
-        "op": "object",
-        "fields": {
-         "contractId": {
-          "op": "literal",
-          "value": "api-response.v1"
-         },
-         "disposition": {
-          "op": "literal",
-          "value": "RESPONDED"
-         },
-         "status": {
-          "op": "literal",
-          "value": 403
-         },
-         "headers": {
-          "op": "literal",
-          "value": {
-           "content-type": "application/json; charset=utf-8"
+        "op": "if",
+        "when": {
+         "op": "if",
+         "when": {
+          "op": "equals",
+          "left": {
+           "op": "type",
+           "value": {
+            "op": "path",
+            "path": "caller"
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": "null"
           }
          },
-         "body": {
-          "op": "object",
-          "fields": {
-           "error": {
+         "then": {
+          "op": "literal",
+          "value": false
+         },
+         "else": {
+          "op": "includes",
+          "in": {
+           "op": "path",
+           "from": "operation",
+           "path": "callers"
+          },
+          "value": {
+           "op": "path",
+           "path": "caller.kind"
+          }
+         }
+        },
+        "then": {
+         "op": "let",
+         "bindings": {
+          "parsed": {
+           "op": "try-parse-json",
+           "value": {
+            "op": "path",
+            "path": "request.body"
+           },
+           "stripBom": true
+          }
+         },
+         "value": {
+          "op": "let",
+          "bindings": {
+           "params": {
+            "op": "object-from-entries",
+            "value": {
+             "op": "map",
+             "from": {
+              "op": "filter",
+              "from": {
+               "op": "object-entries",
+               "value": {
+                "op": "path",
+                "from": "operation",
+                "path": "segments"
+               }
+              },
+              "as": "segment",
+              "where": {
+               "op": "equals",
+               "left": {
+                "op": "type",
+                "value": {
+                 "op": "path",
+                 "from": "segment",
+                 "path": "value"
+                }
+               },
+               "right": {
+                "op": "literal",
+                "value": "object"
+               }
+              }
+             },
+             "as": "segment",
+             "value": {
+              "op": "object",
+              "fields": {
+               "key": {
+                "op": "path",
+                "from": "segment",
+                "path": "value.param"
+               },
+               "value": {
+                "op": "lookup",
+                "value": {
+                 "op": "path",
+                 "from": "position",
+                 "path": ""
+                },
+                "path": {
+                 "op": "path",
+                 "from": "segment",
+                 "path": "key"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "value": {
+           "op": "let",
+           "bindings": {
+            "context": {
+             "op": "object",
+             "fields": {
+              "$path": {
+               "op": "path",
+               "from": "params",
+               "path": ""
+              },
+              "$query": {
+               "op": "path",
+               "path": "request.query"
+              },
+              "$caller": {
+               "op": "path",
+               "path": "caller"
+              },
+              "$body": {
+               "op": "path",
+               "from": "parsed",
+               "path": "value"
+              }
+             }
+            }
+           },
+           "value": {
             "op": "object",
             "fields": {
-             "code": {
+             "contractId": {
               "op": "literal",
-              "value": "CALLER_NOT_ADMITTED"
+              "value": "api-resolution.v1"
+             },
+             "disposition": {
+              "op": "literal",
+              "value": "RESOLVED"
+             },
+             "operationId": {
+              "op": "path",
+              "from": "operation",
+              "path": "operationId"
+             },
+             "kind": {
+              "op": "path",
+              "from": "operation",
+              "path": "resolves.kind"
+             },
+             "executionTarget": {
+              "op": "path",
+              "from": "operation",
+              "path": "resolves.capabilityId"
+             },
+             "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+             },
+             "executionScenario": {
+              "op": "path",
+              "from": "operation",
+              "path": "resolves.capabilityId"
+             },
+             "inputType": {
+              "op": "literal",
+              "value": "json"
+             },
+             "dispatchRequest": {
+              "op": "if",
+              "when": {
+               "op": "equals",
+               "left": {
+                "op": "type",
+                "value": {
+                 "op": "path",
+                 "from": "operation",
+                 "path": "input"
+                }
+               },
+               "right": {
+                "op": "literal",
+                "value": "object"
+               }
+              },
+              "then": {
+               "op": "object-from-entries",
+               "value": {
+                "op": "filter",
+                "from": {
+                 "op": "map",
+                 "from": {
+                  "op": "object-entries",
+                  "value": {
+                   "op": "path",
+                   "from": "operation",
+                   "path": "input"
+                  }
+                 },
+                 "as": "member",
+                 "value": {
+                  "op": "object",
+                  "fields": {
+                   "key": {
+                    "op": "path",
+                    "from": "member",
+                    "path": "key"
+                   },
+                   "value": {
+                    "op": "if",
+                    "when": {
+                     "op": "equals",
+                     "left": {
+                      "op": "type",
+                      "value": {
+                       "op": "path",
+                       "from": "member",
+                       "path": "value"
+                      }
+                     },
+                     "right": {
+                      "op": "literal",
+                      "value": "object"
+                     }
+                    },
+                    "then": {
+                     "op": "object-from-entries",
+                     "value": {
+                      "op": "filter",
+                      "from": {
+                       "op": "map",
+                       "from": {
+                        "op": "object-entries",
+                        "value": {
+                         "op": "path",
+                         "from": "member",
+                         "path": "value"
+                        }
+                       },
+                       "as": "field",
+                       "value": {
+                        "op": "object",
+                        "fields": {
+                         "key": {
+                          "op": "path",
+                          "from": "field",
+                          "path": "key"
+                         },
+                         "value": {
+                          "op": "if",
+                          "when": {
+                           "op": "if",
+                           "when": {
+                            "op": "equals",
+                            "left": {
+                             "op": "type",
+                             "value": {
+                              "op": "path",
+                              "from": "field",
+                              "path": "value"
+                             }
+                            },
+                            "right": {
+                             "op": "literal",
+                             "value": "string"
+                            }
+                           },
+                           "then": {
+                            "op": "matches",
+                            "value": {
+                             "op": "path",
+                             "from": "field",
+                             "path": "value"
+                            },
+                            "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                           },
+                           "else": {
+                            "op": "literal",
+                            "value": false
+                           }
+                          },
+                          "then": {
+                           "op": "lookup",
+                           "value": {
+                            "op": "path",
+                            "from": "context",
+                            "path": ""
+                           },
+                           "path": {
+                            "op": "path",
+                            "from": "field",
+                            "path": "value"
+                           }
+                          },
+                          "else": {
+                           "op": "path",
+                           "from": "field",
+                           "path": "value"
+                          }
+                         }
+                        }
+                       }
+                      },
+                      "as": "field",
+                      "where": {
+                       "op": "if",
+                       "when": {
+                        "op": "equals",
+                        "left": {
+                         "op": "type",
+                         "value": {
+                          "op": "path",
+                          "from": "field",
+                          "path": "value"
+                         }
+                        },
+                        "right": {
+                         "op": "literal",
+                         "value": "null"
+                        }
+                       },
+                       "then": {
+                        "op": "literal",
+                        "value": false
+                       },
+                       "else": {
+                        "op": "literal",
+                        "value": true
+                       }
+                      }
+                     }
+                    },
+                    "else": {
+                     "op": "if",
+                     "when": {
+                      "op": "if",
+                      "when": {
+                       "op": "equals",
+                       "left": {
+                        "op": "type",
+                        "value": {
+                         "op": "path",
+                         "from": "member",
+                         "path": "value"
+                        }
+                       },
+                       "right": {
+                        "op": "literal",
+                        "value": "string"
+                       }
+                      },
+                      "then": {
+                       "op": "matches",
+                       "value": {
+                        "op": "path",
+                        "from": "member",
+                        "path": "value"
+                       },
+                       "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                      },
+                      "else": {
+                       "op": "literal",
+                       "value": false
+                      }
+                     },
+                     "then": {
+                      "op": "lookup",
+                      "value": {
+                       "op": "path",
+                       "from": "context",
+                       "path": ""
+                      },
+                      "path": {
+                       "op": "path",
+                       "from": "member",
+                       "path": "value"
+                      }
+                     },
+                     "else": {
+                      "op": "path",
+                      "from": "member",
+                      "path": "value"
+                     }
+                    }
+                   }
+                  }
+                 }
+                },
+                "as": "member",
+                "where": {
+                 "op": "if",
+                 "when": {
+                  "op": "equals",
+                  "left": {
+                   "op": "type",
+                   "value": {
+                    "op": "path",
+                    "from": "member",
+                    "path": "value"
+                   }
+                  },
+                  "right": {
+                   "op": "literal",
+                   "value": "null"
+                  }
+                 },
+                 "then": {
+                  "op": "literal",
+                  "value": false
+                 },
+                 "else": {
+                  "op": "literal",
+                  "value": true
+                 }
+                }
+               }
+              },
+              "else": {
+               "op": "if",
+               "when": {
+                "op": "if",
+                "when": {
+                 "op": "equals",
+                 "left": {
+                  "op": "type",
+                  "value": {
+                   "op": "path",
+                   "from": "operation",
+                   "path": "input"
+                  }
+                 },
+                 "right": {
+                  "op": "literal",
+                  "value": "string"
+                 }
+                },
+                "then": {
+                 "op": "matches",
+                 "value": {
+                  "op": "path",
+                  "from": "operation",
+                  "path": "input"
+                 },
+                 "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                },
+                "else": {
+                 "op": "literal",
+                 "value": false
+                }
+               },
+               "then": {
+                "op": "lookup",
+                "value": {
+                 "op": "path",
+                 "from": "context",
+                 "path": ""
+                },
+                "path": {
+                 "op": "path",
+                 "from": "operation",
+                 "path": "input"
+                }
+               },
+               "else": {
+                "op": "path",
+                "from": "operation",
+                "path": "input"
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "else": {
+         "op": "if",
+         "when": {
+          "op": "equals",
+          "left": {
+           "op": "type",
+           "value": {
+            "op": "path",
+            "path": "caller"
+           }
+          },
+          "right": {
+           "op": "literal",
+           "value": "null"
+          }
+         },
+         "then": {
+          "op": "object",
+          "fields": {
+           "contractId": {
+            "op": "literal",
+            "value": "api-response.v1"
+           },
+           "disposition": {
+            "op": "literal",
+            "value": "RESPONDED"
+           },
+           "status": {
+            "op": "literal",
+            "value": 401
+           },
+           "headers": {
+            "op": "literal",
+            "value": {
+             "content-type": "application/json; charset=utf-8"
+            }
+           },
+           "body": {
+            "op": "object",
+            "fields": {
+             "error": {
+              "op": "object",
+              "fields": {
+               "code": {
+                "op": "literal",
+                "value": "CALLER_REQUIRED"
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "else": {
+          "op": "object",
+          "fields": {
+           "contractId": {
+            "op": "literal",
+            "value": "api-response.v1"
+           },
+           "disposition": {
+            "op": "literal",
+            "value": "RESPONDED"
+           },
+           "status": {
+            "op": "literal",
+            "value": 403
+           },
+           "headers": {
+            "op": "literal",
+            "value": {
+             "content-type": "application/json; charset=utf-8"
+            }
+           },
+           "body": {
+            "op": "object",
+            "fields": {
+             "error": {
+              "op": "object",
+              "fields": {
+               "code": {
+                "op": "literal",
+                "value": "CALLER_NOT_ADMITTED"
+               }
+              }
              }
             }
            }
