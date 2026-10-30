@@ -48,12 +48,40 @@ What the kernel's SEJ taught the declaration (each found by a run):
 
 ## What the rows still need
 
-- Each operation in `sidefx-api-interface.v1` declares `segments`: its full path by position,
-  a parameter as `{"param": "<name>"}`. For `GET /sfx/v1/runs/{runId}`:
-  `{"0": "", "1": "sfx", "2": "v1", "3": "runs", "4": {"param": "runId"}}`. The verification
-  supplied them in its input.
+- Each operation in `sidefx-api-interface.v1` declares `segments` (declared 2026-10-30): its full
+  path by position, a parameter as `{"param": "<name>"}`.
 - `run`, `admission` and `command` operations resolve here; their dispatch (the run window and
   event streams) is not declared yet.
+
+## The served frontdoor (verified end to end)
+
+`serve-api-request` is the frontdoor as one declared capability, five stages in a sequence:
+
+1. **prepare** (SEJ `serve-prepare-interface-read`): the read request for `sql-database-reader`.
+2. **interface** (`generic-capability-invocation.v1`): `sql-database-reader` returns the interface
+   authority together with the request and caller (a dispatch answers only its own envelope, so the
+   read carries them).
+3. **resolve** (SEJ `serve-resolve-request`): the verified resolution; a refusal, or an operation
+   kind with no declared dispatch (501 `OPERATION_DISPATCH_NOT_DECLARED`), is dispatched to
+   `answer-api-response`, which returns it.
+4. **dispatch** (`generic-capability-invocation.v1`): the operation's capability.
+5. **respond** (SEJ `serve-compose-response`): `api-response.v1`.
+
+Verified 2026-10-30 on the WSL kernel `9f78e78d`, each a real run against the estate:
+
+| Request | Answer |
+| --- | --- |
+| `GET /sfx/v1/providers/sfx-vault-file-host/inspection` (machine) | 200, `provider-inspection.v1` READ, 11 result sets (18.5 s) |
+| `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` (4.6 s) |
+| `GET /sfx/v1/providers/x/inspection` (no caller) | 401 `CALLER_REQUIRED` (4.5 s) |
+| `GET /sfx/v1/retained-runs/r1` (machine) | 403 `CALLER_NOT_ADMITTED` (5.0 s) |
+| `GET /sfx/v1/runs/abc` (machine) | 501 `OPERATION_DISPATCH_NOT_DECLARED` (4.7 s) |
+
+Each run starts a kernel process; the times include its start.
+
+Still to declare: the HTTP-serving provider (receive and send), the identity provider (the caller
+from the bearer or session carrier), the dispatch of `run`, `admission` and `command` operations,
+and the deployment.
 
 ## Local testing
 
