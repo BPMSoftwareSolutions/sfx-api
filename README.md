@@ -1,28 +1,35 @@
 # sfx-api
 
-The declared API, deployed by itself. `frontdoor.mjs` is HTTP transport only: Node built-ins,
-no mechanics.
+The declared API, deployed by itself. There is no frontdoor code: every mechanic up to the
+profile schema boundary is SEJ (`sej-pure.v2`), and the kernel resolves it.
 
-- **Every request goes to one declared resolver.** The frontdoor hands `{method, path, query, body}`
-  to the capability named `resolver` in `sfx-api.config.json` (`resolve-api-request`), run by the
-  installed kernel over `sfx-command-delivery.v1`. The resolver's outcome (`api-response.v1`:
-  `status`, `headers`, `body`) is the response.
-- **Routing is rows.** Which operation a request means, its input and the capability it runs are
-  declared in `sidefx:authorities/sidefx-api-interface.v1` and resolved by the resolver
-  capability, never by code here.
-- **The kernel is admitted by digest.** `kernel.digest` selects the installed `KernelEntry`; the
-  envelope template is configuration.
+## The frontdoor graph
 
-## Run
+| Stage | Mechanic | Declared as |
+| --- | --- | --- |
+| receive | listen, read the request | HTTP-serving provider port, past the boundary: native calls only |
+| identify | verify the bearer or session carrier | identity provider port: the caller `{kind, principalId}` or null |
+| interface | read `sidefx:authorities/sidefx-api-interface.v1` | declared read |
+| resolve | match the operation, admit the caller, bind the input | SEJ `resolve-request` in [frontdoor.sej.v1.json](frontdoor.sej.v1.json) |
+| dispatch | run the operation's capability | `generic-capability-invocation.v1` |
+| respond | compose `api-response.v1` (status, headers, body) | SEJ `compose-response`, then the HTTP-serving port writes it |
 
-```
-node frontdoor.mjs
-```
+`resolve-request` takes `{request, interface, caller}`. The request is the HTTP-serving
+provider's native output: `method`, `segments` (the path split on `/`), `query`, `headers` and
+`body` text. It answers either `api-response.v1` for a refusal (404 `OPERATION_NOT_DECLARED`,
+401 `CALLER_REQUIRED`, 403 `CALLER_NOT_ADMITTED`) or `api-resolution.v1` with the operation's
+kind, its capability and its bound input (`dispatchRequest`), following the interface's
+`inputTemplate` (`$path.`, `$query.`, `$caller.`, `$body`; an absent value omits its member).
 
-| Setting | Default |
-| --- | --- |
-| `PORT` | `8796` |
-| `SFX_API_TOKEN` | unset: no bearer check (set it everywhere but a developer machine) |
-| `SFX_KERNEL_DIR` | `%LOCALAPPDATA%\sfx\kernel\<digest>` |
-| `SFX_KERNEL_ENTRY` | `KernelEntry.exe` |
-| `SFX_API_CONFIG` | `./sfx-api.config.json` |
+## What the rows need
+
+- Each operation in `sidefx-api-interface.v1` declares `segments`: its full path by position,
+  with a parameter as `{"param": "<name>"}`. For `GET /sfx/v1/runs/{runId}`:
+  `{"0": "", "1": "sfx", "2": "v1", "3": "runs", "4": {"param": "runId"}}`.
+- Operations whose kind is `run`, `admission` or `command` resolve here, but their dispatch
+  (the run window and event streams) is not declared yet.
+
+## Kernel
+
+`sfx-api.config.json` selects the installed kernel by digest. The kernel runs the frontdoor
+capability; nothing else runs in this deployment.
