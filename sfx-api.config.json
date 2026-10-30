@@ -1,0 +1,22 @@
+{
+  "contractId": "sfx-api-config.v1",
+  "port": 8796,
+  "maximumRequestBytes": 16777216,
+  "kernel": {
+    "digest": "41a58fdfac32849ba894115bb32f6cfee2589b4468bcc124d45bf9b7f98133c5",
+    "entryPoint": "KernelEntry.exe",
+    "args": ["--stdin-envelope", "--config", "kernel-host.json"],
+    "timeoutMilliseconds": 60000,
+    "envelope": {
+      "deliveryType": "sfx-command-delivery.v1",
+      "operation": "invoke",
+      "request": { "object": "capability", "verb": "invoke", "capabilityId": "{{capabilityId}}", "namespace": "{{namespace}}", "input": "{{input}}", "inputType": "json" }
+    }
+  },
+  "authority": {
+    "namespace": "sidefx:authorities",
+    "id": "sidefx-api-interface.v1",
+    "loader": "analysis-read-selected-definition",
+    "refreshMilliseconds": 300000
+  }
+}
