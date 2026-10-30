@@ -1,7 +1,7 @@
 {
   "contractId": "sfx-api-config.v1",
   "kernel": {
-    "digest": "41a58fdfac32849ba894115bb32f6cfee2589b4468bcc124d45bf9b7f98133c5",
+    "digest": "b551c9ec6b5895df95b40c0dca6131e8db52781438d168587116e319d81a181e",
     "entryPoint": "KernelEntry.exe",
     "args": [
       "--stdin-envelope",

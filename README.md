@@ -27,7 +27,7 @@ a refusal `{code, message}` answers 404 for `*_NOT_FOUND`, 409 for `*_SNAPSHOT_C
 
 ## Verified on the kernel
 
-15 of 15 cases on the installed C# kernel (`41a58fdf`), each a real run of the declared
+15 of 15 cases on the installed C# kernel (`41a58fdf`; dispatch and SEJ rechecked on `b551c9ec`, SDA `a978472`), each a real run of the declared
 capability: a provider inspection, a scenario read with query and nested payload binding, a
 details read as a user, a page read, a user-only retained run as a user (resolved) and as a
 machine (403), run events with an omitted query member, an admission with `$body`, no caller
