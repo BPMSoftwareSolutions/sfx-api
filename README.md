@@ -55,6 +55,32 @@ What the kernel's SEJ taught the declaration (each found by a run):
 - `run`, `admission` and `command` operations resolve here; their dispatch (the run window and
   event streams) is not declared yet.
 
+## Local testing
+
+The local runtime is WSL Ubuntu, the staging host's twin: user `sjones`, `HOME=/home/sjones`,
+`secret-tool` and the vault at `~/.local/share/sfx/vault/vault.json`. Our declared vault
+providers run there unchanged, so every capability runs locally as it does on staging.
+
+- **Kernel:** built and installed from `C:\lab\repos\scenario-driven-architecture`
+  (`ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody`), then placed at
+  `~/.local/share/sfx/kernel/<digest>/` with its entry executable. The digest is in
+  `sfx-api.config.json`.
+- **Vault:** the vault file holds the estate's credentials, `SFX_ESTATE_DATABASE` among them, and
+  the key record under `~/.local/share/sfx/credential-vault-keys/0f2fb3b5....json` names its
+  `vaultId`.
+- **Key:** the vault key is the Secret Service item `service sfx-credential-vault key
+  0f2fb3b502843c274efcadf4856f631a` in the login keyring. The keyring locks when WSL restarts;
+  unlock it before a run.
+- **Run:** pipe an `sfx-command-delivery.v1` envelope into
+  `./KernelEntry --stdin-envelope --config kernel-host.json` in the install root.
+
+Verified 2026-10-30: `read-provider-inspection` answers `READ` with 11 result sets through the
+declared vault providers and dispatch, as on staging.
+
+The Windows kernel is not a local runtime for these providers: it denies child processes (job
+object, every isolation profile), runs at low integrity (no vault writes), and the providers'
+key release is a `secret-tool` process.
+
 ## Files
 
 | File | What it is |
