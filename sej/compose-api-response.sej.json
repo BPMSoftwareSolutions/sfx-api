@@ -95,8 +95,26 @@
         }
        },
        "else": {
-        "op": "literal",
-        "value": 200
+        "op": "if",
+        "when": {
+         "op": "equals",
+         "left": {
+          "op": "path",
+          "path": "result.status"
+         },
+         "right": {
+          "op": "literal",
+          "value": "NOT_FOUND"
+         }
+        },
+        "then": {
+         "op": "literal",
+         "value": 404
+        },
+        "else": {
+         "op": "literal",
+         "value": 200
+        }
        }
       },
       "headers": {

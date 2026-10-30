@@ -1,0 +1,34 @@
+{
+  "authorityType": "semantic-transformation-authority.v1",
+  "transformations": [
+    {
+      "id": "read-run-state-prepare",
+      "expression": {
+        "op": "object",
+        "fields": {
+          "executionTarget": { "op": "literal", "value": "read-run-evidence" },
+          "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
+          "executionScenario": { "op": "literal", "value": "read-run-evidence" },
+          "inputType": { "op": "literal", "value": "json" },
+          "dispatchRequest": { "op": "path", "path": "" }
+        }
+      }
+    },
+    {
+      "id": "read-run-state-select",
+      "expression": {
+        "op": "if",
+        "when": { "op": "equals", "left": { "op": "path", "path": "result.status" }, "right": { "op": "literal", "value": "READ" } },
+        "then": {
+          "op": "object",
+          "fields": {
+            "status": { "op": "path", "path": "result.status" },
+            "runId": { "op": "path", "path": "result.runId" },
+            "run": { "op": "path", "path": "result.run" }
+          }
+        },
+        "else": { "op": "path", "path": "result" }
+      }
+    }
+  ]
+}
