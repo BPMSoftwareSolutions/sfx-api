@@ -1,0 +1,143 @@
+{
+ "authorityType": "semantic-transformation-authority.v1",
+ "transformations": [
+  {
+   "id": "compose-response",
+   "expression": {
+    "op": "let",
+    "bindings": {
+     "failed": {
+      "op": "if",
+      "when": {
+       "op": "equals",
+       "left": {
+        "op": "type",
+        "value": {
+         "op": "path",
+         "path": "result.contractId"
+        }
+       },
+       "right": {
+        "op": "literal",
+        "value": "null"
+       }
+      },
+      "then": {
+       "op": "equals",
+       "left": {
+        "op": "type",
+        "value": {
+         "op": "path",
+         "path": "result.code"
+        }
+       },
+       "right": {
+        "op": "literal",
+        "value": "string"
+       }
+      },
+      "else": {
+       "op": "literal",
+       "value": false
+      }
+     }
+    },
+    "value": {
+     "op": "object",
+     "fields": {
+      "contractId": {
+       "op": "literal",
+       "value": "api-response.v1"
+      },
+      "disposition": {
+       "op": "literal",
+       "value": "RESPONDED"
+      },
+      "status": {
+       "op": "if",
+       "when": {
+        "op": "path",
+        "from": "failed",
+        "path": ""
+       },
+       "then": {
+        "op": "if",
+        "when": {
+         "op": "matches",
+         "value": {
+          "op": "path",
+          "path": "result.message"
+         },
+         "pattern": "^.*_NOT_FOUND$"
+        },
+        "then": {
+         "op": "literal",
+         "value": 404
+        },
+        "else": {
+         "op": "if",
+         "when": {
+          "op": "matches",
+          "value": {
+           "op": "path",
+           "path": "result.message"
+          },
+          "pattern": "^.*_(SNAPSHOT_CHANGED|NAMESPACE_REQUIRED)$"
+         },
+         "then": {
+          "op": "literal",
+          "value": 409
+         },
+         "else": {
+          "op": "literal",
+          "value": 422
+         }
+        }
+       },
+       "else": {
+        "op": "literal",
+        "value": 200
+       }
+      },
+      "headers": {
+       "op": "literal",
+       "value": {
+        "content-type": "application/json; charset=utf-8"
+       }
+      },
+      "body": {
+       "op": "if",
+       "when": {
+        "op": "path",
+        "from": "failed",
+        "path": ""
+       },
+       "then": {
+        "op": "object",
+        "fields": {
+         "error": {
+          "op": "object",
+          "fields": {
+           "code": {
+            "op": "path",
+            "path": "result.code"
+           },
+           "message": {
+            "op": "path",
+            "path": "result.message"
+           }
+          }
+         }
+        }
+       },
+       "else": {
+        "op": "path",
+        "path": "result"
+       }
+      }
+     }
+    }
+   }
+  }
+ ]
+}

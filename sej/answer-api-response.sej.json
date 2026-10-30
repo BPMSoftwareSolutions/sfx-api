@@ -1,0 +1,12 @@
+{
+ "authorityType": "semantic-transformation-authority.v1",
+ "transformations": [
+  {
+   "id": "answer-api-response",
+   "expression": {
+    "op": "path",
+    "path": ""
+   }
+  }
+ ]
+}
