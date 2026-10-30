@@ -1,14 +1,17 @@
 # sfx-api
 
-The declared API, deployed by itself. One file, `frontdoor.mjs`, Node built-ins only.
+The declared API, deployed by itself. `frontdoor.mjs` is HTTP transport only: Node built-ins,
+no mechanics.
 
-- **Operations are rows.** At boot, and every five minutes after, the frontdoor reads the
-  interface authority `sidefx:authorities/sidefx-api-interface.v1` through the kernel. Each
-  declared operation maps a method and path to the capability it runs.
-- **Execution is the installed kernel.** Every request runs its capability through
-  `KernelEntry` (admitted by digest in `sfx-api.config.json`) over `sfx-command-delivery.v1`.
-  The envelope template is configuration, not code.
-- **Nothing else.** No frontend, no circuit host, no desktop, no browser suites.
+- **Every request goes to one declared resolver.** The frontdoor hands `{method, path, query, body}`
+  to the capability named `resolver` in `sfx-api.config.json` (`resolve-api-request`), run by the
+  installed kernel over `sfx-command-delivery.v1`. The resolver's outcome (`api-response.v1`:
+  `status`, `headers`, `body`) is the response.
+- **Routing is rows.** Which operation a request means, its input and the capability it runs are
+  declared in `sidefx:authorities/sidefx-api-interface.v1` and resolved by the resolver
+  capability, never by code here.
+- **The kernel is admitted by digest.** `kernel.digest` selects the installed `KernelEntry`; the
+  envelope template is configuration.
 
 ## Run
 
@@ -23,6 +26,3 @@ node frontdoor.mjs
 | `SFX_KERNEL_DIR` | `%LOCALAPPDATA%\sfx\kernel\<digest>` |
 | `SFX_KERNEL_ENTRY` | `KernelEntry.exe` |
 | `SFX_API_CONFIG` | `./sfx-api.config.json` |
-
-`GET /healthz` reports readiness, the number of declared operations and the authority digest.
-Any other path is a declared operation or `404 OPERATION_NOT_DECLARED`.
