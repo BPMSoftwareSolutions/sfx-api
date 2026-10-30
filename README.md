@@ -12,9 +12,11 @@ resolves it.
 | [sej/answer-api-response.sej.json](sej/answer-api-response.sej.json) | Returns the refusal it is given, so refusals take the answer path |
 | [sej/resolve-api-request.sej.json](sej/resolve-api-request.sej.json) | The resolve stage as a standalone capability, for verification |
 | [sej/compose-api-response.sej.json](sej/compose-api-response.sej.json) | The respond stage as a standalone capability, for verification |
+| [sej/read-run-state.sej.json](sej/read-run-state.sej.json), [sej/read-run-output.sej.json](sej/read-run-output.sej.json), [sej/read-run-graphs.sej.json](sej/read-run-graphs.sej.json) | The run views: each reads the run's evidence (`read-run-evidence`) and selects its slice |
 | [declarations/01-sej-pure-overlay-bindings.sql](declarations/01-sej-pure-overlay-bindings.sql) | Binds the 14 `sej-pure.v2` operators the graph runner (`run-declared-graph-execute`) lacked |
 | [declarations/02-resolve-and-compose.sql](declarations/02-resolve-and-compose.sql) | Declares `resolve-api-request` and `compose-api-response` |
 | [declarations/03-serve-api-request.sql](declarations/03-serve-api-request.sql) | Declares `segments` on the interface operations, the frontdoor's SEJ, `answer-api-response` and `serve-api-request` |
+| [declarations/04-run-views.sql](declarations/04-run-views.sql) | Resolves the run operations to the run store (`read-run-state`, `read-run-output`, `read-run-graphs`, `read-run-trace-chunks`) and answers 404 for a `NOT_FOUND` outcome |
 | [sfx-api.config.json](sfx-api.config.json) | The selected kernel (the local runtime) |
 
 Each SEJ file is the authority of one capability namespace (`sidefx:capability:<file name>`).
@@ -34,8 +36,16 @@ Each SEJ file is the authority of one capability namespace (`sidefx:capability:<
    with no declared dispatch (501 `OPERATION_DISPATCH_NOT_DECLARED`), goes to `answer-api-response`.
 4. **dispatch** (`generic-capability-invocation.v1`): runs the operation's capability.
 5. **respond** (SEJ `serve-compose-response`): `api-response.v1`. A declared outcome is 200 with the
-   outcome as the body; a refusal `{code, message}` is 404 for `*_NOT_FOUND`, 409 for
-   `*_SNAPSHOT_CHANGED` and `*_NAMESPACE_REQUIRED`, and 422 otherwise.
+   outcome as the body, or 404 when its `status` is `NOT_FOUND`; a refusal `{code, message}` is 404
+   for `*_NOT_FOUND`, 409 for `*_SNAPSHOT_CHANGED` and `*_NAMESPACE_REQUIRED`, and 422 otherwise.
+
+The run operations read the run store in sfx-identity. `read-run`, `read-run-output` and
+`read-run-graph` are views that read the run's evidence and select one slice (`{status, runId,
+run|output|graphs}`); `read-run-events` reads its trace chunks. A dispatch answers only its own
+envelope, so each view names its slice itself and the request's filters stop at the dispatch: the
+graph view returns every execution root, the events view every chunk. A caller without a principal
+(machine) reads `NOT_FOUND` until machine runs are captured. `read-run-delivery` (the store holds no
+delivery) and `stream-run-events` (the HTTP-serving provider streams) answer 501.
 
 The request is the HTTP-serving provider's native output: `method`, `segments` (the path split on
 `/`), `query`, `headers` and `body` text.
@@ -47,7 +57,8 @@ transaction through installed writers (`model.declare_port_provider_binding`,
 `model.declare_transformation`, `model.declare_semantic_object`,
 `model.apply_capability_from_dsl`); nothing commits unless every statement succeeds. A declaration
 embeds the SEJ files as they were when it was written; a changed SEJ file needs its declaration
-rewritten. All three were applied to the estate on 2026-10-30.
+rewritten. A declaration that revises an existing transformation passes its current definition
+digest (`@expected_digest`). All four were applied to the estate on 2026-10-30.
 
 ## Verified
 
@@ -60,6 +71,21 @@ rewritten. All three were applied to the estate on 2026-10-30.
 | `GET /sfx/v1/providers/x/inspection` (no caller) | 401 `CALLER_REQUIRED` (4.5 s) |
 | `GET /sfx/v1/retained-runs/r1` (machine) | 403 `CALLER_NOT_ADMITTED` (5.0 s) |
 | `GET /sfx/v1/runs/abc` (machine) | 501 `OPERATION_DISPATCH_NOT_DECLARED` (4.7 s) |
+
+The run operations, for a completed run of a user (10 of 10, run concurrently in 25.8 s):
+
+| Request | Answer |
+| --- | --- |
+| `GET /sfx/v1/runs/{run}` (user) | 200, run state `completed`, exit code 0 |
+| `GET /sfx/v1/runs/{run}/output` (user) | 200, the run's `project-tracker-result.v1` |
+| `GET /sfx/v1/runs/{run}/graph` (user) | 200, one graph, root `execution:graph:read-project-tracker` |
+| `GET /sfx/v1/runs/{run}/events` (user) | 200, one trace chunk, last cursor 19 |
+| `GET /sfx/v1/runs/{missing}` (user) | 404, `NOT_FOUND` |
+| `GET /sfx/v1/runs/{run}` (machine) | 404, `NOT_FOUND` (no principal) |
+| `GET /sfx/v1/retained-runs/{run}` (user) | 200, `read-run-evidence` READ, capture complete |
+| `GET /sfx/v1/runs/{run}/delivery` (user) | 501 `OPERATION_DISPATCH_NOT_DECLARED` |
+| `GET /sfx/v1/providers/sfx-vault-file-host/inspection` (machine) | 200, 11 result sets |
+| `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` |
 
 Each run starts a kernel process; the times include its start. The resolve and respond stages also
 passed 15 of 15 cases as standalone capabilities: matching, nested payload binding, user-only
@@ -86,10 +112,16 @@ providers run there unchanged, so every capability runs locally as it does on st
   (`ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody`) and placed at
   `~/.local/share/sfx/kernel/<digest>/` with its entry executable. The digest is in
   [sfx-api.config.json](sfx-api.config.json).
-- **Vault:** the vault file holds the estate's credentials, `SFX_ESTATE_DATABASE` among them; the key
-  record `~/.local/share/sfx/credential-vault-keys/0f2fb3b5….json` names its `vaultId`.
+- **Vault:** the vault file holds the estate's credentials, `SFX_ESTATE_DATABASE` and
+  `SFX_IDENTITY_DATABASE` among them; the key record
+  `~/.local/share/sfx/credential-vault-keys/0f2fb3b5….json` names its `vaultId`. A credential is
+  provisioned into this machine's vault (`KernelEntry.exe provision --reference-name <name>`) and the
+  vault copied into WSL (`wsl -d Ubuntu --exec cp "/mnt/c/Users/<user>/AppData/Local/sfx/vault/vault.json"
+  /home/sjones/.local/share/sfx/vault/vault.json`); both vaults share one `vaultId`.
 - **Key:** the Secret Service item `service sfx-credential-vault key 0f2fb3b502843c274efcadf4856f631a`
-  in the login keyring. The keyring locks when WSL restarts and a run waits until it is unlocked.
+  in `Default_keyring`. The keyring has a blank password, so gnome-keyring stores it unencrypted and it
+  never locks: runs need no unlock after WSL restarts. The key is then protected by the Windows account
+  and disk encryption only.
 - **Run:** pipe an `sfx-command-delivery.v1` envelope into
   `./KernelEntry --stdin-envelope --config kernel-host.json` in the install root, for example
   `{"deliveryType":"sfx-command-delivery.v1","operation":"invoke","request":{"object":"capability","verb":"invoke","subject":"serve-api-request","input":"<request JSON>","inputType":"json"}}`.
@@ -103,6 +135,7 @@ object, in every isolation profile) and runs at low integrity, and the providers
 1. **HTTP-serving provider:** receive the request and send the response, native calls only, feeding a
    kernel that stays running instead of one process per request.
 2. **Identity provider:** the caller from the bearer or session carrier.
-3. **Keyring unlock at start** in WSL, as staging unlocks its own.
-4. **Deployment:** the kernel and the HTTP-serving provider on their own App Service.
-5. **Dispatch of `run`, `admission` and `command` operations.**
+3. **Deployment:** the kernel and the HTTP-serving provider on their own App Service.
+4. **Admission** (`admit-run`): register the run, run the capability, complete it; then the trace from
+   the kernel's observation channel and the event stream.
+5. **Dispatch of `command` operations** (the circuit catalog and the capability graph).
