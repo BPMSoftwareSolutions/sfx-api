@@ -22,9 +22,10 @@ comparison and unauthenticated probes of both hosts on the same day.
 - **The browser can't sign in safely yet.** `POST /sfx/v1/session` returns the bearer in the
   JSON body and sets no cookie. The legacy browser flow never exposes the bearer to script. The
   declared API also declares a same-origin rule for cookie writes but does not enforce it.
-- **Query values are decoded incorrectly.** The ingress leaves reserved characters percent-encoded, so
-  `namespaceId=sidefx%3Acapabilities` fails. Clients that build queries with `URLSearchParams`
-  encode the colon that way. See [the query-decoding defect](#the-query-decoding-defect).
+- **Query values were decoded incorrectly (fixed 2026-10-31).** The ingress left reserved characters
+  percent-encoded, so `namespaceId=sidefx%3Acapabilities` failed. Clients that build queries with
+  `URLSearchParams` encode the colon that way. The fix is declared; the signed-in acceptance requests
+  are still to run. See [the query-decoding defect](#the-query-decoding-defect).
 - **Machine callers have no carrier** (EV-014). Nothing that authenticates with `SDA_API_TOKEN`
   today can reach the declared API.
 - **Three hosts are called "the new API".** See the next section.
@@ -214,7 +215,7 @@ The declared API returns the reader's document unchanged:
 | Status of a declared outcome | Mapped to 404, 409 or 422 by the circuit host | 200 unless `status` is `NOT_FOUND` |
 | Frontdoor refusals | — | 401 `CALLER_REQUIRED`, 403 `CALLER_NOT_ADMITTED`, 404 `OPERATION_NOT_DECLARED`, 501 `OPERATION_DISPATCH_NOT_DECLARED`, 502 `FRONTDOOR_RESPONSE_INVALID` |
 | Unknown route | The gateway's HTML 404 page | JSON 404 `OPERATION_NOT_DECLARED` |
-| Query decoding | `URLSearchParams` | Reserved characters stay encoded (next section) |
+| Query decoding | `URLSearchParams` | Each key and value decoded once, `+` as a space, since 2026-10-31 (next section) |
 | Read cache | 30 s server cache, shared in-flight reads, `ETag` and 304, `refresh=1` | `cache` and `refresh` are declared on six reads but nothing serves them: every response is `Cache-Control: no-store` without an `ETag`, and every request starts a kernel |
 | Latency, 2026-10-31 | `/healthz` 0.18 s; session check 74 ms; region and execution reads 57 to 110 ms (none of these runs the kernel). Kernel-backed reads are fast on a 30 s cache hit; uncached reads were not measured. Sign-in about 5 s | 4.6 to 5.6 s for a refusal; catalog 6.6 s; provider inspection 18.5 s; admission takes as long as the run (11 s for a 46 KB output) |
 | Time bounds | Reads 30 s, details and inspection 90 s, client run wait 630 s | 225 s per request, everything included |
@@ -256,8 +257,16 @@ that:
 
 Each step needs a kernel run on WSL before the DEPENDENCY is declared again.
 
-**Acceptance.** The four requests above must return identical rows and slides for both spellings. Read
-each of these through `resolve-http-request` as well: a `path` written `%2Fcircuit%2Fhome` and
+**Fixed 2026-10-31.** `resolve-request` now follows those steps, with members without a key and
+empty members dropped (`&&`, a trailing `&` and `=x` used to make the query invalid JSON, losing all
+of it). Before declaring, the program ran through the kernel's own resolver (`DeclaredProviderResolver`,
+SDA `3296bc1`) on 25 targets against a reference decoder: the old program failed 16, six of them as
+invalid JSON, and the new one none. It was then declared (README, Declaring), and the same 25 read
+through `resolve-http-request` against the estate all match the reference.
+
+**Acceptance.** The four requests above must return identical rows and slides for both spellings.
+They need a signed-in session and have not been run since the fix. Read each of these through
+`resolve-http-request` as well (done, all match): a `path` written `%2Fcircuit%2Fhome` and
 written `/circuit/home`, and values containing `%26`, `%3D`, `%2B`, `+`, `%22`, `%5C` and `%C3%A9`.
 
 ## What the migration branch already does
@@ -289,8 +298,8 @@ The branch doesn't yet cover these:
 
 **Declared API work** (this repository, all declarations), in the order the clients need it:
 
-1. **Query decoding**, above. Every circuit read with a namespace, page path or detail pointer
-   depends on it.
+1. **Query decoding**, above: fixed and declared; the signed-in acceptance requests remain. Every
+   circuit read with a namespace, page path or detail pointer depends on it.
 2. **Run observation**: a trace for runs the declared API admits, and a run-scoped event stream or
    at least paged events with `after` (README "Next" item 2). Without it, Observe has no events in the
    desktop or browser, and the CLI's `--trace` gets nothing.

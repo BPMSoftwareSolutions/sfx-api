@@ -85,9 +85,9 @@ received it (`{contractId: serve-http-request-request.v1, raw}`; the kernel bind
    `Connection: close` and the body.
 
 The ingress mechanics are ours, declared up to the profile schema boundary in the estate's provider
-chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `39ffb87e`), the mechanics
+chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `e8813515`), the mechanics
 `sfx-api-ingress-resolve-port.v1` and `sfx-api-ingress-compose-port.v1`, the PROVIDERs
-`sfx-api-ingress-resolve` (`d06badff`) and `sfx-api-ingress-compose` (`f07ed911`), and their entries
+`sfx-api-ingress-resolve` (`8051eab0`) and `sfx-api-ingress-compose` (`f07ed911`), and their entries
 and overlay bindings on the graph runner `run-declared-graph-execute`. The kernel's resolver runs the
 programs; no SDA provider, contract or engine beyond the transformation port is named.
 
@@ -244,6 +244,25 @@ The ingress (2026-10-30) was declared the same way, each row read back before th
    (`change-kind-registration`, the adapter on `model.declare_capability_interface`'s own
    `@input_path`).
 
+A change to an ingress program is a revision of that chain, because the kernel runs the copy of the
+program in the runner's provider entry, and the PROVIDER and the runner each pin a digest. The query
+decoding fix (2026-10-31) went in this order, through the legacy CLI:
+
+1. `model-declare-semantic-object`: the DEPENDENCY, now definition `e8813515` (run `dcd49b97`).
+2. `model-declare-provider-identity` with `expected_digest` set to the current definition: the PROVIDER
+   `sfx-api-ingress-resolve` with the new program, `dependency.definitionDigest` and
+   `profile.sourceAuthorityDigest` set to the new DEPENDENCY, and `profile.profileDigest` recomputed
+   (`sha256:` and the SHA-256 of the compact JSON of the profile without `profileDigest`, members in
+   their order). Now `8051eab0` (run `f4d8d411`).
+3. `model-set-definition-label`: the new definition labelled with the PROVIDER's name (run `e833fd52`).
+4. `model-declare-port-provider-binding` on `sidefx:capability:run-declared-graph/run-declared-graph-execute`:
+   the provider entry (the new program, `sourceProviderDefinitionDigest` the new PROVIDER) and the overlay
+   binding (`providerProfileDigest` the new profile). It upserts only those two elements (run
+   `4b9349de`); a read of the runner before and after showed nothing else changed.
+
+`sfx-api-ingress-compose` was left as it is: its program did not change, and it still cites the
+DEPENDENCY definition `39ffb87e`, which remains in the estate.
+
 ## Verified
 
 The facade over real HTTP on WSL, each request one kernel run of `serve-http-request` (6 of 6, run
@@ -301,7 +320,10 @@ depend on), the kernel holds the 15 definitions per generation. On WSL against t
 
 Cached and uncached envelopes answered identically (response, graph digests, every cell's outcome).
 A rolled-back write left the generation and the next envelope stayed warm; a committed write moved it,
-and the next envelope read its definitions once and was warm again. Each kernel's first two requests
+and the next envelope read its definitions once and was warm again. On `sfx-api-test` (one resident
+kernel, image `f32450fa`), 30 sequential requests took a median 0.88 s of server time (4.74 s with a
+kernel per request) and a refused sign-in 0.47 s (2.18 s); see
+[docs/azure-test-2026-10-31.md](docs/azure-test-2026-10-31.md). Each kernel's first two requests
 still read: the first starts the kernel (5 to 6 s) and the second refreshes once more (about 3 s),
 because the kernel's first envelope reports a different generation for the same estate.
 
@@ -415,9 +437,10 @@ object, in every isolation profile) and runs at low integrity, and the providers
    sfx-identity migration 011 are declared; the capability and its ingress route are not), session
    runs. Session read and sign-out are served.
 5. **Performance:** resident kernels removed the kernel start (a warm request is about 3.9 s on WSL;
-   `sfx-api-test` still runs the per-request facade and kernel `9f78e78d` until it is redeployed).
-   With the declaration cache (SDA `3296bc1`) and the estate's `declaration_generation`, a warm
-   request is about 1.1 s on WSL. What remains: the frontdoor's two SQL reads each open the vault and
-   a connection; session setup is 0.27 to 0.34 s, including the generation read; each kernel's second
-   request refreshes once more than it needs to; the declared read cache is not served; and a client
-   that gives up still holds a kernel until it answers.
+   `sfx-api-test` runs one resident kernel). With the declaration cache (SDA `3296bc1`) and the
+   estate's `declaration_generation`, a warm request is about 1.1 s on WSL and a median 0.88 s of
+   server time on `sfx-api-test`, with one request in six taking 1.2 to 4.0 s for a reason not yet
+   recorded (the facade keeps no kernel evidence). What remains: the frontdoor's two SQL reads each
+   open the vault and a connection; session setup is 0.27 to 0.34 s, including the generation read;
+   each kernel's second request refreshes once more than it needs to; the declared read cache is not
+   served; and a client that gives up still holds a kernel until it answers.

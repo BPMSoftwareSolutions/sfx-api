@@ -11,7 +11,7 @@
   "operations": [
     {
       "operationId": "resolve-request",
-      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the decoded query as JSON text), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) and source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty). A request that does not parse reads as empty members.",
+      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the query as JSON text: each key and value percent-decoded once as UTF-8, + read as a space, members without a key dropped), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) and source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty). A request that does not parse reads as empty members.",
       "parameters": [
         {
           "name": "raw",
@@ -180,35 +180,146 @@
               },
               {
                 "op": "literal",
-                "value": 3
+                "value": 1
               }
             ]
           },
           {
-            "bind": "queryEscaped",
+            "bind": "querySpaced",
             "invocation": "query.Replace",
             "arguments": [
               {
                 "op": "literal",
-                "value": "\\"
+                "value": "+"
               },
               {
                 "op": "literal",
-                "value": "\\\\"
+                "value": "%20"
+              }
+            ]
+          },
+          {
+            "bind": "quotePattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "%(22|5[Cc])"
               }
             ]
           },
           {
             "bind": "queryQuoted",
-            "invocation": "queryEscaped.Replace",
+            "invocation": "quotePattern.Replace",
             "arguments": [
               {
-                "op": "literal",
-                "value": "\""
+                "op": "path",
+                "from": "scope",
+                "path": "querySpaced"
               },
               {
                 "op": "literal",
-                "value": "\\\""
+                "value": "%5C%$1"
+              }
+            ]
+          },
+          {
+            "bind": "controlPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "%([01][0-9A-Fa-f])"
+              }
+            ]
+          },
+          {
+            "bind": "queryControlled",
+            "invocation": "controlPattern.Replace",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "queryQuoted"
+              },
+              {
+                "op": "literal",
+                "value": "%5Cu00$1"
+              }
+            ]
+          },
+          {
+            "bind": "keylessPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "(?:\\A|(?<=&))=[^&]*"
+              }
+            ]
+          },
+          {
+            "bind": "queryKeyed",
+            "invocation": "keylessPattern.Replace",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "queryControlled"
+              },
+              {
+                "op": "literal",
+                "value": ""
+              }
+            ]
+          },
+          {
+            "bind": "runPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "&+"
+              }
+            ]
+          },
+          {
+            "bind": "queryCollapsed",
+            "invocation": "runPattern.Replace",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "queryKeyed"
+              },
+              {
+                "op": "literal",
+                "value": "&"
+              }
+            ]
+          },
+          {
+            "bind": "edgePattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "\\A&|&\\z"
+              }
+            ]
+          },
+          {
+            "bind": "queryTrimmed",
+            "invocation": "edgePattern.Replace",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "queryCollapsed"
+              },
+              {
+                "op": "literal",
+                "value": ""
               }
             ]
           },
@@ -229,7 +340,7 @@
               {
                 "op": "path",
                 "from": "scope",
-                "path": "queryQuoted"
+                "path": "queryTrimmed"
               },
               {
                 "op": "literal",
@@ -248,6 +359,48 @@
               {
                 "op": "literal",
                 "value": ","
+              }
+            ]
+          },
+          {
+            "bind": "queryUri",
+            "invocation": "new System.Uri, System.Private.Uri",
+            "arguments": [
+              {
+                "op": "join",
+                "value": {
+                  "op": "array",
+                  "items": [
+                    {
+                      "op": "literal",
+                      "value": "http://sfx-api.local/?{"
+                    },
+                    {
+                      "op": "path",
+                      "from": "scope",
+                      "path": "queryJoined"
+                    },
+                    {
+                      "op": "literal",
+                      "value": "}"
+                    }
+                  ]
+                },
+                "separator": ""
+              }
+            ]
+          },
+          {
+            "bind": "queryJson",
+            "invocation": "queryUri.GetComponents",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 32
+              },
+              {
+                "op": "literal",
+                "value": 2
               }
             ]
           },
@@ -470,26 +623,9 @@
                 "value": "queryJson"
               },
               {
-                "op": "join",
-                "value": {
-                  "op": "array",
-                  "items": [
-                    {
-                      "op": "literal",
-                      "value": "{"
-                    },
-                    {
-                      "op": "path",
-                      "from": "scope",
-                      "path": "queryJoined"
-                    },
-                    {
-                      "op": "literal",
-                      "value": "}"
-                    }
-                  ]
-                },
-                "separator": ""
+                "op": "path",
+                "from": "scope",
+                "path": "queryJson"
               }
             ]
           },
