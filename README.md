@@ -31,14 +31,14 @@ The words used below:
 
 Every mechanic up to the profile schema boundary, the HTTP ingress included, is declared into the
 estate (SEJ `sej-pure.v2` and our own dependency programs), and the kernel resolves it. The host is a
-facade for hosting ([host/serve.py](host/serve.py)): it hands the raw request to one kernel invocation
+facade for hosting ([host/serve.py](host/serve.py)): it hands the raw request to a resident kernel
 and writes back the raw response the kernel resolves.
 
 ## Structure
 
 | Path | What it is |
 | --- | --- |
-| [host/serve.py](host/serve.py) | The hosting facade: the platform's HTTP server bound to one kernel invocation of `serve-http-request` per request (Python standard library) |
+| [host/serve.py](host/serve.py) | The hosting facade: the platform's HTTP server bound to a pool of resident kernels, each request one `serve-http-request` envelope (Python standard library) |
 | [providers/sfx-api-ingress.dependency.json](providers/sfx-api-ingress.dependency.json) | The DEPENDENCY `sfx-api-ingress`: the ingress mechanics as C# programs the kernel's resolver runs (`resolve-request`, `compose-response`) |
 | [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) | The interface as declared (`sidefx:authorities/sidefx-api-interface.v1`); a change is declared with `model-declare-semantic-object` |
 | [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) | The frontdoor's SEJ: identify the caller, prepare the interface read, resolve the request, compose the response |
@@ -152,25 +152,32 @@ operation on the target's own graph, not a capability the dispatch can run.
 
 [host/serve.py](host/serve.py) is a facade for hosting. The platform's HTTP server (Python's
 `ThreadingHTTPServer`: the accept loop, a thread per connection, the request head) receives a
-request; the facade's one method, bound to each HTTP method, runs the kernel
-command from [sfx-api.config.json](sfx-api.config.json) once with the request on stdin, as the
-platform read it (the request line, the header block, and the body by its declared length), and
-writes the kernel's resolved response to the connection. It has no branch, iteration, exception
-handling, throw, validation, fallback, retry or state of its own; what remains is the binding to the
-kernel's carrier (the command's JSON output, decoded once). It runs on the Python standard library:
-nothing is installed or built.
+request; the facade's one method, bound to each HTTP method, takes a kernel from a pool of resident
+kernels, sends it the request as the platform read it (the request line, the header block, and the
+body by its declared length) as one `sfx-command-delivery.v1` envelope invoking `serve-http-request`
+with text input, and writes the kernel's resolved response to the connection. The kernels keep
+running between requests (`--resident-envelopes`: one envelope per line on stdin, one delivery per
+line on stdout), so a request pays no kernel start. The facade's only state is that pool and its only
+handling is the kernels' lifecycle: a kernel starts on first use, and one that exits or does not
+answer within `answerTimeoutMs` is stopped and started again for its next request. Routes, callers,
+refusals and responses stay declared. It runs on the Python standard library: nothing is installed
+or built.
 
-    KernelEntry capability invoke serve-http-request --input - --input-type text --json --config kernel-host.json --timeout 225000
+    KernelEntry --resident-envelopes --config kernel-host.json --timeout 225000
 
-Each request is one kernel process, so the facade holds no pool and no session. A kernel that fails
-writes nothing to stdout: the platform closes the connection without a response (the front end
-answers 502), and the kernel's error reaches the host's stderr. The kernel bounds its standard input
-at 8 MiB and the delivery at 225 s (App Service stops a request at 230 s).
+The command, the pool size (`instances`, 2), the answer bound and the envelope's request are host
+data in [sfx-api.config.json](sfx-api.config.json). Each kernel holds about 260 to 350 MB. A request
+waits for a free kernel, and a client that gives up still holds its kernel until the kernel answers.
+A kernel that fails writes no delivery: the platform closes the connection without a response (the
+front end answers 502), and the kernel's error reaches the host's stderr. `--timeout` bounds each
+delivery at 225 s, not the kernel's life (App Service stops a request at 230 s). The 8 MiB
+standard-input bound of a per-request kernel is not established for a resident envelope.
 
 The bearer enters only the kernel's ingress provider, which digests it and never returns it: the
 frontdoor, sfx-identity and every run see `{sessionDigest}`, which `identity.validate_session` does
 not accept, so nothing past the ingress carries a verification handle. The bearer text appears neither
-in the kernel's observations (`SIDEFX_OBSERVE=1`) nor in the delivered envelope's testimony. Machine
+in the kernel's observations (`SIDEFX_OBSERVE=1`) nor in the delivered envelope's testimony; with
+resident kernels, a random bearer appeared in none of a request's 55 observation lines. Machine
 callers have no carrier yet (EV-014).
 
     wsl -d Ubuntu --exec sh -c 'cd /mnt/c/lab/repos/sfx-api && python3 host/serve.py sfx-api.config.json'
@@ -266,6 +273,14 @@ encoded slash (`%2F`) is split there: the ingress decodes the path before it spl
 
 One kernel start is about 1.6 s and the ingress read alone 2.4 s; a request through the frontdoor is
 6.7 to 7.3 s.
+
+With resident kernels (2026-10-31, WSL, kernel `9f78e78d`, over real HTTP): a kernel's first request
+6.4 to 7.0 s, then 3.8 to 4.1 s; four concurrent requests over two kernels 9.5 s; a refused sign-in
+1.5 s; 30 abandoned requests queued the next request 68 s and left the kernels healthy. A warm
+`GET /sfx/v1/nope` (4.6 s with observations on) spends about 1.0 s before its first delivery phase,
+1.8 s reading the definitions of its five capabilities (`serve-http-request`, `serve-api-request`,
+`sql-database-reader` twice, `answer-api-response`) from the estate, 0.7 s in the two SQL reads and
+1.1 s executing.
 
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 
@@ -376,5 +391,9 @@ object, in every isolation profile) and runs at low integrity, and the providers
 4. **Session operations:** sign-in (`open-api-session`, `POST /sfx/v1/session`: its providers and
    sfx-identity migration 011 are declared; the capability and its ingress route are not), session
    runs. Session read and sign-out are served.
-5. **Performance:** each request starts a kernel (about 1.6 s) and the frontdoor's reads each open
-   the vault and a connection (a request is about 6.8 s).
+5. **Performance:** resident kernels removed the kernel start (a warm request is about 3.9 s on WSL;
+   `sfx-api-test` still runs the per-request facade until it is redeployed). What remains: the kernel
+   reads every capability's definition from the estate on each invocation (five per request, about
+   1.8 s); the frontdoor's two SQL reads each open the vault and a connection (about 0.7 s); about
+   1.0 s before a request's first delivery phase is unexplained; the declared read cache is not
+   served; and a client that gives up still holds a kernel until it answers.

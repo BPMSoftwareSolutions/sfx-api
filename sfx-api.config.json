@@ -1,24 +1,25 @@
 {
-  "contractId": "sfx-api-config.v2",
+  "contractId": "sfx-api-config.v3",
   "kernel": {
     "digest": "9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
     "rid": "linux-x64",
     "root": "/home/sjones/.local/share/sfx/kernel/9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
     "command": [
       "./KernelEntry",
-      "capability",
-      "invoke",
-      "serve-http-request",
-      "--input",
-      "-",
-      "--input-type",
-      "text",
-      "--json",
+      "--resident-envelopes",
       "--config",
       "kernel-host.json",
       "--timeout",
       "225000"
-    ]
+    ],
+    "instances": 2,
+    "answerTimeoutMs": 228000
+  },
+  "request": {
+    "object": "capability",
+    "verb": "invoke",
+    "subject": "serve-http-request",
+    "inputType": "text"
   },
   "http": {
     "host": "0.0.0.0",
