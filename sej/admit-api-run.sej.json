@@ -6,17 +6,41 @@
       "expression": {
         "op": "object",
         "fields": {
-          "executionTarget": { "op": "literal", "value": "sql-database-reader" },
-          "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
-          "executionScenario": { "op": "literal", "value": "sql-database-reader" },
-          "inputType": { "op": "literal", "value": "json" },
+          "executionTarget": {
+            "op": "literal",
+            "value": "sql-database-reader"
+          },
+          "executionNamespace": {
+            "op": "literal",
+            "value": "sidefx:capabilities"
+          },
+          "executionScenario": {
+            "op": "literal",
+            "value": "sql-database-reader"
+          },
+          "inputType": {
+            "op": "literal",
+            "value": "json"
+          },
           "dispatchRequest": {
             "op": "object",
             "fields": {
-              "dataSource": { "op": "literal", "value": "sfx-identity-database" },
-              "statement": { "op": "literal", "value": "SET NOCOUNT ON; DECLARE @r TABLE(run_id varchar(128), admitted_at datetimeoffset(7)); DECLARE @run_id varchar(128) = LOWER(CONVERT(varchar(36), NEWID())); DECLARE @principal_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.principalId')); DECLARE @session_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.sessionId')); DECLARE @capability_id nvarchar(512) = JSON_VALUE(@input, '$.admission.subject'); DECLARE @namespace_id nvarchar(256) = COALESCE(JSON_VALUE(@input, '$.admission.namespace'), N'sidefx:capabilities'); DECLARE @writer_id varchar(64) = 'sfx-api'; INSERT @r EXEC evidence.register_run @run_id = @run_id, @principal_id = @principal_id, @session_id = @session_id, @capability_id = @capability_id, @namespace_id = @namespace_id, @writer_id = @writer_id; SELECT (SELECT r.run_id AS runId, r.admitted_at AS admittedAt, JSON_QUERY(@input, '$.admission') AS admission FROM @r r FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS value;" },
-              "resultColumn": { "op": "literal", "value": "value" },
-              "input": { "op": "path", "path": "" }
+              "dataSource": {
+                "op": "literal",
+                "value": "sfx-identity-database"
+              },
+              "statement": {
+                "op": "literal",
+                "value": "SET NOCOUNT ON; DECLARE @r TABLE(run_id varchar(128), admitted_at datetimeoffset(7)); DECLARE @run_id varchar(128) = LOWER(CONVERT(varchar(36), NEWID())); DECLARE @principal_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.principalId')); DECLARE @session_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.sessionId')); DECLARE @capability_id nvarchar(512) = JSON_VALUE(@input, '$.admission.subject'); DECLARE @namespace_id nvarchar(256) = COALESCE(JSON_VALUE(@input, '$.admission.namespace'), N'sidefx:capabilities'); DECLARE @writer_id varchar(64) = 'sfx-api'; INSERT @r EXEC evidence.register_run @run_id = @run_id, @principal_id = @principal_id, @session_id = @session_id, @capability_id = @capability_id, @namespace_id = @namespace_id, @writer_id = @writer_id; SELECT (SELECT r.run_id AS runId, r.admitted_at AS admittedAt, JSON_QUERY(@input, '$.admission') AS admission FROM @r r FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS value;"
+              },
+              "resultColumn": {
+                "op": "literal",
+                "value": "value"
+              },
+              "input": {
+                "op": "path",
+                "path": ""
+              }
             }
           }
         }
@@ -26,17 +50,62 @@
       "id": "admit-api-run-lift",
       "expression": {
         "op": "if",
-        "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "result.value" } }, "right": { "op": "literal", "value": "string" } },
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "type",
+            "value": {
+              "op": "path",
+              "path": "result.value"
+            }
+          },
+          "right": {
+            "op": "literal",
+            "value": "string"
+          }
+        },
         "then": {
           "op": "let",
-          "bindings": { "parsed": { "op": "try-parse-json", "value": { "op": "path", "path": "result.value" }, "stripBom": true } },
-          "value": { "op": "path", "from": "parsed", "path": "value" }
+          "bindings": {
+            "parsed": {
+              "op": "try-parse-json",
+              "value": {
+                "op": "path",
+                "path": "result.value"
+              },
+              "stripBom": true
+            }
+          },
+          "value": {
+            "op": "path",
+            "from": "parsed",
+            "path": "value"
+          }
         },
         "else": {
           "op": "if",
-          "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "result.value" } }, "right": { "op": "literal", "value": "object" } },
-          "then": { "op": "path", "path": "result.value" },
-          "else": { "op": "path", "path": "result" }
+          "when": {
+            "op": "equals",
+            "left": {
+              "op": "type",
+              "value": {
+                "op": "path",
+                "path": "result.value"
+              }
+            },
+            "right": {
+              "op": "literal",
+              "value": "object"
+            }
+          },
+          "then": {
+            "op": "path",
+            "path": "result.value"
+          },
+          "else": {
+            "op": "path",
+            "path": "result"
+          }
         }
       }
     },
@@ -44,53 +113,155 @@
       "id": "admit-api-run-execute-prepare",
       "expression": {
         "op": "if",
-        "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "runId" } }, "right": { "op": "literal", "value": "string" } },
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "type",
+            "value": {
+              "op": "path",
+              "path": "runId"
+            }
+          },
+          "right": {
+            "op": "literal",
+            "value": "string"
+          }
+        },
         "then": {
           "op": "object",
           "fields": {
-            "executionTarget": { "op": "path", "path": "admission.subject" },
+            "executionTarget": {
+              "op": "path",
+              "path": "admission.subject"
+            },
             "executionNamespace": {
               "op": "if",
-              "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "admission.namespace" } }, "right": { "op": "literal", "value": "string" } },
-              "then": { "op": "path", "path": "admission.namespace" },
-              "else": { "op": "literal", "value": "sidefx:capabilities" }
+              "when": {
+                "op": "equals",
+                "left": {
+                  "op": "type",
+                  "value": {
+                    "op": "path",
+                    "path": "admission.namespace"
+                  }
+                },
+                "right": {
+                  "op": "literal",
+                  "value": "string"
+                }
+              },
+              "then": {
+                "op": "path",
+                "path": "admission.namespace"
+              },
+              "else": {
+                "op": "literal",
+                "value": "sidefx:capabilities"
+              }
             },
-            "executionScenario": { "op": "path", "path": "admission.subject" },
-            "inputType": { "op": "literal", "value": "json" },
+            "executionScenario": {
+              "op": "path",
+              "path": "admission.subject"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
             "dispatchRequest": {
               "op": "if",
-              "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "admission.input" } }, "right": { "op": "literal", "value": "string" } },
+              "when": {
+                "op": "equals",
+                "left": {
+                  "op": "type",
+                  "value": {
+                    "op": "path",
+                    "path": "admission.input"
+                  }
+                },
+                "right": {
+                  "op": "literal",
+                  "value": "string"
+                }
+              },
               "then": {
                 "op": "let",
-                "bindings": { "parsedInput": { "op": "try-parse-json", "value": { "op": "path", "path": "admission.input" }, "stripBom": true } },
-                "value": { "op": "path", "from": "parsedInput", "path": "value" }
+                "bindings": {
+                  "parsedInput": {
+                    "op": "try-parse-json",
+                    "value": {
+                      "op": "path",
+                      "path": "admission.input"
+                    },
+                    "stripBom": true
+                  }
+                },
+                "value": {
+                  "op": "path",
+                  "from": "parsedInput",
+                  "path": "value"
+                }
               },
-              "else": { "op": "path", "path": "admission.input" }
+              "else": {
+                "op": "path",
+                "path": "admission.input"
+              }
             }
           }
         },
         "else": {
           "op": "object",
           "fields": {
-            "executionTarget": { "op": "literal", "value": "answer-api-response" },
-            "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
-            "executionScenario": { "op": "literal", "value": "answer-api-response" },
-            "inputType": { "op": "literal", "value": "json" },
+            "executionTarget": {
+              "op": "literal",
+              "value": "answer-api-response"
+            },
+            "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+            },
+            "executionScenario": {
+              "op": "literal",
+              "value": "answer-api-response"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
             "dispatchRequest": {
               "op": "object",
               "fields": {
-                "contractId": { "op": "literal", "value": "api-response.v1" },
-                "disposition": { "op": "literal", "value": "RESPONDED" },
-                "status": { "op": "literal", "value": 422 },
-                "headers": { "op": "literal", "value": { "content-type": "application/json; charset=utf-8" } },
+                "contractId": {
+                  "op": "literal",
+                  "value": "api-response.v1"
+                },
+                "disposition": {
+                  "op": "literal",
+                  "value": "RESPONDED"
+                },
+                "status": {
+                  "op": "literal",
+                  "value": 422
+                },
+                "headers": {
+                  "op": "literal",
+                  "value": {
+                    "content-type": "application/json; charset=utf-8"
+                  }
+                },
                 "body": {
                   "op": "object",
                   "fields": {
                     "error": {
                       "op": "object",
                       "fields": {
-                        "code": { "op": "path", "path": "code" },
-                        "message": { "op": "path", "path": "message" }
+                        "code": {
+                          "op": "path",
+                          "path": "code"
+                        },
+                        "message": {
+                          "op": "path",
+                          "path": "message"
+                        }
                       }
                     }
                   }
@@ -102,63 +273,422 @@
       }
     },
     {
+      "id": "admit-api-run-execute-stage",
+      "expression": {
+        "op": "if",
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "path",
+            "path": "result.contractId"
+          },
+          "right": {
+            "op": "literal",
+            "value": "api-response.v1"
+          }
+        },
+        "then": {
+          "op": "object",
+          "fields": {
+            "executionTarget": {
+              "op": "literal",
+              "value": "answer-api-response"
+            },
+            "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+            },
+            "executionScenario": {
+              "op": "literal",
+              "value": "answer-api-response"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
+            "dispatchRequest": {
+              "op": "path",
+              "path": "result"
+            }
+          }
+        },
+        "else": {
+          "op": "object",
+          "fields": {
+            "executionTarget": {
+              "op": "literal",
+              "value": "sql-database-reader"
+            },
+            "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+            },
+            "executionScenario": {
+              "op": "literal",
+              "value": "sql-database-reader"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
+            "dispatchRequest": {
+              "op": "object",
+              "fields": {
+                "dataSource": {
+                  "op": "literal",
+                  "value": "sfx-identity-database"
+                },
+                "statement": {
+                  "op": "literal",
+                  "value": "SET NOCOUNT ON; EXEC evidence.stage_run_output @input = @input;"
+                },
+                "resultColumn": {
+                  "op": "literal",
+                  "value": "value"
+                },
+                "input": {
+                  "op": "object",
+                  "fields": {
+                    "output": {
+                      "op": "path",
+                      "path": "result"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "admit-api-run-execute-lift",
+      "expression": {
+        "op": "if",
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "path",
+            "path": "result.contractId"
+          },
+          "right": {
+            "op": "literal",
+            "value": "api-response.v1"
+          }
+        },
+        "then": {
+          "op": "path",
+          "path": "result"
+        },
+        "else": {
+          "op": "if",
+          "when": {
+            "op": "equals",
+            "left": {
+              "op": "type",
+              "value": {
+                "op": "path",
+                "path": "result.value"
+              }
+            },
+            "right": {
+              "op": "literal",
+              "value": "string"
+            }
+          },
+          "then": {
+            "op": "let",
+            "bindings": {
+              "parsed": {
+                "op": "try-parse-json",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                },
+                "stripBom": true
+              }
+            },
+            "value": {
+              "op": "path",
+              "path": "value",
+              "from": "parsed"
+            }
+          },
+          "else": {
+            "op": "if",
+            "when": {
+              "op": "equals",
+              "left": {
+                "op": "type",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                }
+              },
+              "right": {
+                "op": "literal",
+                "value": "object"
+              }
+            },
+            "then": {
+              "op": "path",
+              "path": "result.value"
+            },
+            "else": {
+              "op": "path",
+              "path": "result"
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "admit-api-run-carry",
-      "expression": { "op": "path", "path": "" }
+      "expression": {
+        "op": "if",
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "type",
+            "value": {
+              "op": "path",
+              "path": "runId"
+            }
+          },
+          "right": {
+            "op": "literal",
+            "value": "string"
+          }
+        },
+        "then": {
+          "op": "object",
+          "fields": {
+            "runId": {
+              "op": "path",
+              "path": "runId"
+            },
+            "admittedAt": {
+              "op": "path",
+              "path": "admittedAt"
+            },
+            "subject": {
+              "op": "path",
+              "path": "admission.subject"
+            }
+          }
+        },
+        "else": {
+          "op": "object",
+          "fields": {
+            "code": {
+              "op": "path",
+              "path": "code"
+            },
+            "message": {
+              "op": "path",
+              "path": "message"
+            }
+          }
+        }
+      }
     },
     {
       "id": "admit-api-run-complete-prepare",
       "expression": {
         "op": "let",
         "bindings": {
-          "executeEntry": { "op": "find", "from": { "op": "path", "path": "" }, "as": "entry", "where": { "op": "equals", "left": { "op": "path", "from": "entry", "path": "slotId" }, "right": { "op": "literal", "value": "execute" } } },
-          "carryEntry": { "op": "find", "from": { "op": "path", "path": "" }, "as": "entry", "where": { "op": "equals", "left": { "op": "path", "from": "entry", "path": "slotId" }, "right": { "op": "literal", "value": "carry" } } }
+          "executeEntry": {
+            "op": "find",
+            "from": {
+              "op": "path",
+              "path": ""
+            },
+            "as": "entry",
+            "where": {
+              "op": "equals",
+              "left": {
+                "op": "path",
+                "path": "slotId",
+                "from": "entry"
+              },
+              "right": {
+                "op": "literal",
+                "value": "execute"
+              }
+            }
+          },
+          "carryEntry": {
+            "op": "find",
+            "from": {
+              "op": "path",
+              "path": ""
+            },
+            "as": "entry",
+            "where": {
+              "op": "equals",
+              "left": {
+                "op": "path",
+                "path": "slotId",
+                "from": "entry"
+              },
+              "right": {
+                "op": "literal",
+                "value": "carry"
+              }
+            }
+          }
         },
         "value": {
           "op": "let",
           "bindings": {
-            "executed": { "op": "path", "from": "executeEntry", "path": "settlement.outcomeEnvelope.payload" },
-            "carried": { "op": "path", "from": "carryEntry", "path": "settlement.outcomeEnvelope.payload" }
+            "executed": {
+              "op": "path",
+              "path": "settlement.outcomeEnvelope.payload",
+              "from": "executeEntry"
+            },
+            "carried": {
+              "op": "path",
+              "path": "settlement.outcomeEnvelope.payload",
+              "from": "carryEntry"
+            }
           },
           "value": {
             "op": "if",
-            "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "from": "carried", "path": "runId" } }, "right": { "op": "literal", "value": "string" } },
+            "when": {
+              "op": "equals",
+              "left": {
+                "op": "type",
+                "value": {
+                  "op": "path",
+                  "path": "runId",
+                  "from": "carried"
+                }
+              },
+              "right": {
+                "op": "literal",
+                "value": "string"
+              }
+            },
             "then": {
               "op": "object",
               "fields": {
-                "executionTarget": { "op": "literal", "value": "sql-database-reader" },
-                "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
-                "executionScenario": { "op": "literal", "value": "sql-database-reader" },
-                "inputType": { "op": "literal", "value": "json" },
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
                 "dispatchRequest": {
                   "op": "object",
                   "fields": {
-                    "dataSource": { "op": "literal", "value": "sfx-identity-database" },
-                    "statement": { "op": "literal", "value": "SET NOCOUNT ON; DECLARE @r TABLE(trace_complete bit, material_digest binary(32)); DECLARE @run_id varchar(128) = JSON_VALUE(@input, '$.runId'); DECLARE @writer_id varchar(64) = 'sfx-api'; DECLARE @run_json nvarchar(max) = JSON_QUERY(@input, '$.run'); DECLARE @output_json nvarchar(max) = JSON_QUERY(@input, '$.output'); DECLARE @latest_cursor bigint = 0; INSERT @r EXEC evidence.complete_run @run_id = @run_id, @writer_id = @writer_id, @run_json = @run_json, @graph_json = NULL, @output_json = @output_json, @latest_cursor = @latest_cursor; SELECT (SELECT N'COMPLETED' AS status, @run_id AS runId, JSON_VALUE(@run_json, '$.state') AS state, JSON_VALUE(@input, '$.admittedAt') AS admittedAt, r.trace_complete AS traceComplete FROM @r r FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS value;" },
-                    "resultColumn": { "op": "literal", "value": "value" },
+                    "dataSource": {
+                      "op": "literal",
+                      "value": "sfx-identity-database"
+                    },
+                    "statement": {
+                      "op": "literal",
+                      "value": "SET NOCOUNT ON; EXEC evidence.complete_staged_run @input = @input;"
+                    },
+                    "resultColumn": {
+                      "op": "literal",
+                      "value": "value"
+                    },
                     "input": {
                       "op": "object",
                       "fields": {
-                        "runId": { "op": "path", "from": "carried", "path": "runId" },
-                        "admittedAt": { "op": "path", "from": "carried", "path": "admittedAt" },
+                        "runId": {
+                          "op": "path",
+                          "path": "runId",
+                          "from": "carried"
+                        },
+                        "writerId": {
+                          "op": "literal",
+                          "value": "sfx-api"
+                        },
+                        "admittedAt": {
+                          "op": "path",
+                          "path": "admittedAt",
+                          "from": "carried"
+                        },
+                        "outputDigest": {
+                          "op": "path",
+                          "path": "outputDigest",
+                          "from": "executed"
+                        },
+                        "latestCursor": {
+                          "op": "literal",
+                          "value": 0
+                        },
                         "run": {
                           "op": "object",
                           "fields": {
-                            "runId": { "op": "path", "from": "carried", "path": "runId" },
-                            "state": { "op": "literal", "value": "completed" },
+                            "runId": {
+                              "op": "path",
+                              "path": "runId",
+                              "from": "carried"
+                            },
+                            "state": {
+                              "op": "literal",
+                              "value": "completed"
+                            },
                             "capability": {
                               "op": "object",
                               "fields": {
-                                "object": { "op": "literal", "value": "capability" },
-                                "operation": { "op": "literal", "value": "invoke" },
-                                "subject": { "op": "path", "from": "carried", "path": "admission.subject" }
+                                "object": {
+                                  "op": "literal",
+                                  "value": "capability"
+                                },
+                                "operation": {
+                                  "op": "literal",
+                                  "value": "invoke"
+                                },
+                                "subject": {
+                                  "op": "path",
+                                  "path": "subject",
+                                  "from": "carried"
+                                }
                               }
                             },
-                            "exitCode": { "op": "literal", "value": 0 },
-                            "partial": { "op": "literal", "value": false },
-                            "output": { "op": "object", "fields": { "available": { "op": "literal", "value": true } } }
+                            "exitCode": {
+                              "op": "literal",
+                              "value": 0
+                            },
+                            "partial": {
+                              "op": "literal",
+                              "value": false
+                            },
+                            "output": {
+                              "op": "object",
+                              "fields": {
+                                "available": {
+                                  "op": "equals",
+                                  "left": {
+                                    "op": "type",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "outputDigest",
+                                      "from": "executed"
+                                    }
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "string"
+                                  }
+                                }
+                              }
+                            }
                           }
-                        },
-                        "output": { "op": "path", "from": "executed", "path": "result" }
+                        }
                       }
                     }
                   }
@@ -168,11 +698,27 @@
             "else": {
               "op": "object",
               "fields": {
-                "executionTarget": { "op": "literal", "value": "answer-api-response" },
-                "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
-                "executionScenario": { "op": "literal", "value": "answer-api-response" },
-                "inputType": { "op": "literal", "value": "json" },
-                "dispatchRequest": { "op": "path", "from": "executed", "path": "result" }
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "answer-api-response"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "answer-api-response"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
+                "dispatchRequest": {
+                  "op": "path",
+                  "path": "",
+                  "from": "executed"
+                }
               }
             }
           }
@@ -183,17 +729,80 @@
       "id": "admit-api-run-answer",
       "expression": {
         "op": "if",
-        "when": { "op": "equals", "left": { "op": "path", "path": "result.contractId" }, "right": { "op": "literal", "value": "api-response.v1" } },
-        "then": { "op": "path", "path": "result" },
+        "when": {
+          "op": "equals",
+          "left": {
+            "op": "path",
+            "path": "result.contractId"
+          },
+          "right": {
+            "op": "literal",
+            "value": "api-response.v1"
+          }
+        },
+        "then": {
+          "op": "path",
+          "path": "result"
+        },
         "else": {
           "op": "if",
-          "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "result.value" } }, "right": { "op": "literal", "value": "string" } },
+          "when": {
+            "op": "equals",
+            "left": {
+              "op": "type",
+              "value": {
+                "op": "path",
+                "path": "result.value"
+              }
+            },
+            "right": {
+              "op": "literal",
+              "value": "string"
+            }
+          },
           "then": {
             "op": "let",
-            "bindings": { "parsed": { "op": "try-parse-json", "value": { "op": "path", "path": "result.value" }, "stripBom": true } },
-            "value": { "op": "path", "from": "parsed", "path": "value" }
+            "bindings": {
+              "parsed": {
+                "op": "try-parse-json",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                },
+                "stripBom": true
+              }
+            },
+            "value": {
+              "op": "path",
+              "path": "value",
+              "from": "parsed"
+            }
           },
-          "else": { "op": "path", "path": "result" }
+          "else": {
+            "op": "if",
+            "when": {
+              "op": "equals",
+              "left": {
+                "op": "type",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                }
+              },
+              "right": {
+                "op": "literal",
+                "value": "object"
+              }
+            },
+            "then": {
+              "op": "path",
+              "path": "result.value"
+            },
+            "else": {
+              "op": "path",
+              "path": "result"
+            }
+          }
         }
       }
     }
