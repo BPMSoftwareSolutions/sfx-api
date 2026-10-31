@@ -1,0 +1,522 @@
+{
+  "interfaceId": "sidefx-api",
+  "interfaceVersion": "1.0.0",
+  "meaning": "The SideFX API as declared authority. Every operation resolves to a declared capability, a kernel command operation or a view of a run the frontdoor admitted, and returns its declared output unchanged; the frontdoor that hosts the API reads this authority and carries no meaning of its own.",
+  "prefix": "/sfx/v1",
+  "admissionAuthority": "sidefx:authorities/sidefx-api-admission.v1",
+  "callers": {
+    "machine": {
+      "scheme": "bearer",
+      "credential": "host-machine-credential",
+      "runVisibility": "all-runs"
+    },
+    "user": {
+      "scheme": "session",
+      "provider": "identity-host",
+      "carriers": [
+        "cookie:__Host-sfx-session",
+        "bearer"
+      ],
+      "runVisibility": "own-runs",
+      "cookieWrites": "same-origin-json",
+      "cookieWritesMeaning": "A browser carries its session cookie to any request, so a cookie-carried write is admitted only when its Origin host is the workspace host, the request is not cross-site and its body is JSON. Bearer callers are not affected.",
+      "sessionRecheckMilliseconds": 5000,
+      "sessionRecheckMeaning": "An open event stream of a session caller ends at the session expiry the identity host reports, and at the first recheck, this often, that cannot confirm the session."
+    }
+  },
+  "limits": {
+    "requestByteCap": 16777216,
+    "outputByteCap": 16777216,
+    "readTimeoutMilliseconds": 30000,
+    "readCache": {
+      "maximumEntries": 24,
+      "maximumBytes": 33554432,
+      "meaning": "A read operation that declares a cache is served from it for its time to live; concurrent reads of one request share one kernel call, and refresh=1 reads again. The bounds are the circuit host's read cache, which these reads replace."
+    },
+    "telemetryMeaning": "A read operation that names its telemetry reports one span and one sfx.reader.duration point under that name per read, with its outcome and never its input or output. The names are the circuit host's reader names, which these reads replace."
+  },
+  "inputTemplate": "An operation input is a template. A string that begins with $caller., $path. or $query. names that request value and $body names the request document; a named value the request does not carry omits its member. Every other value is literal.",
+  "operations": [
+    {
+      "operationId": "admit-run",
+      "method": "POST",
+      "path": "/runs",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "admit-api-run"
+      },
+      "input": {
+        "admission": "$body",
+        "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId"
+      },
+      "meaning": "Admit a run of a declared capability: object, operation, subject, namespace and input in the body. The run store registers the run under the caller session and mints its id, the capability runs, and the store completes the run with its outcome; returns the run id and its state. A caller without a live session is refused (EVIDENCE_SESSION_REQUIRED).",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs"
+      }
+    },
+    {
+      "operationId": "read-run",
+      "method": "GET",
+      "path": "/runs/{runId}",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-state"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the state of a run from the run store: state, exit code, timing, output availability and graphs.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        }
+      }
+    },
+    {
+      "operationId": "read-run-events",
+      "method": "GET",
+      "path": "/runs/{runId}/events",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-trace-chunks"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the retained trace chunks of a run.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "events"
+      }
+    },
+    {
+      "operationId": "stream-run-events",
+      "method": "GET",
+      "path": "/runs/{runId}/events/stream",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "run",
+        "view": "stream"
+      },
+      "input": {
+        "runId": "$path.runId",
+        "after": "$query.after"
+      },
+      "meaning": "Stream the observations of a run as server-sent events until it ends.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "events",
+        "6": "stream"
+      }
+    },
+    {
+      "operationId": "read-run-output",
+      "method": "GET",
+      "path": "/runs/{runId}/output",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-output"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the output of a run from the run store.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "output"
+      }
+    },
+    {
+      "operationId": "read-run-delivery",
+      "method": "GET",
+      "path": "/runs/{runId}/delivery",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "run",
+        "view": "delivery"
+      },
+      "input": {
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the delivery a run was admitted on: language, delivery, mode and the eligibility that selected it.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "delivery"
+      }
+    },
+    {
+      "operationId": "read-run-graph",
+      "method": "GET",
+      "path": "/runs/{runId}/graph",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-graphs"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the execution graphs of a run, one per execution root.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "graph"
+      }
+    },
+    {
+      "operationId": "read-retained-run",
+      "method": "GET",
+      "path": "/retained-runs/{runId}",
+      "callers": [
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-evidence"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read a run of the caller from the run store: state, material and trust.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "retained-runs",
+        "4": {
+          "param": "runId"
+        }
+      }
+    },
+    {
+      "operationId": "read-retained-run-events",
+      "method": "GET",
+      "path": "/retained-runs/{runId}/events",
+      "callers": [
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-trace-chunks"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "Read the retained trace chunks of a run of the caller.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "retained-runs",
+        "4": {
+          "param": "runId"
+        },
+        "5": "events"
+      }
+    },
+    {
+      "operationId": "read-capability-graph",
+      "method": "GET",
+      "path": "/capabilities/{capabilityId}/graph",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "command",
+        "operation": "compile",
+        "request": {
+          "object": "capability",
+          "verb": "compile",
+          "subject": "$path.capabilityId",
+          "namespace": "$query.namespace",
+          "input": {},
+          "inputType": "json"
+        }
+      },
+      "meaning": "Compile the declared composition of a capability and return its execution-graph projection; no run is admitted.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "capabilities",
+        "4": {
+          "param": "capabilityId"
+        },
+        "5": "graph"
+      }
+    },
+    {
+      "operationId": "read-circuit-catalog",
+      "method": "GET",
+      "path": "/circuits",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "list-capabilities"
+      },
+      "meaning": "List the capabilities of the estate (list-capabilities): id, namespace, definition digest, mode, root scenario, scenario count, user story, promise and circuit availability.",
+      "cache": {
+        "ttlMilliseconds": 30000,
+        "refresh": "$query.refresh"
+      },
+      "telemetry": "circuit.capabilities",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "circuits"
+      },
+      "input": {}
+    },
+    {
+      "operationId": "read-circuit-scenario",
+      "method": "GET",
+      "path": "/circuits/{capabilityId}/scenario",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-live-scenario-circuit",
+        "outputContractId": "live-scenario-circuit.v1"
+      },
+      "input": {
+        "contractId": "live-scenario-circuit-request.v1",
+        "payload": {
+          "capabilityId": "$path.capabilityId",
+          "namespaceId": "$query.namespaceId",
+          "scenarioId": "$query.scenarioId",
+          "detailId": "$query.detailId",
+          "detailPointer": "$query.detailPointer",
+          "expectedSnapshotDigest": "$query.expectedSnapshotDigest"
+        }
+      },
+      "meaning": "Read the live scenario circuit of a capability.",
+      "cache": {
+        "ttlMilliseconds": 30000,
+        "refresh": "$query.refresh"
+      },
+      "telemetry": "circuit.scenario",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "circuits",
+        "4": {
+          "param": "capabilityId"
+        },
+        "5": "scenario"
+      }
+    },
+    {
+      "operationId": "read-circuit-details",
+      "method": "GET",
+      "path": "/circuits/{capabilityId}/details",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-capability-details",
+        "outputContractId": "capability-details.v1",
+        "timeoutMilliseconds": 90000
+      },
+      "input": {
+        "contractId": "capability-details-request.v1",
+        "payload": {
+          "capabilityId": "$path.capabilityId",
+          "namespaceId": "$query.namespaceId"
+        }
+      },
+      "meaning": "Read the details of a capability: every set, navigation included.",
+      "cache": {
+        "ttlMilliseconds": 30000,
+        "refresh": "$query.refresh"
+      },
+      "telemetry": "circuit.capability-details",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "circuits",
+        "4": {
+          "param": "capabilityId"
+        },
+        "5": "details"
+      }
+    },
+    {
+      "operationId": "read-ui-page",
+      "method": "GET",
+      "path": "/pages",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-ui-page",
+        "outputContractId": "ui-page.v1"
+      },
+      "input": {
+        "contractId": "ui-page-request.v1",
+        "payload": {
+          "path": "$query.path",
+          "expectedPageDigest": "$query.expectedPageDigest",
+          "revision": "$query.revision"
+        }
+      },
+      "meaning": "Read a declared UI page.",
+      "cache": {
+        "ttlMilliseconds": 30000,
+        "refresh": "$query.refresh"
+      },
+      "telemetry": "circuit.page",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "pages"
+      }
+    },
+    {
+      "operationId": "read-standards-crosswalk",
+      "method": "GET",
+      "path": "/crosswalks/{crosswalkId}",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-standards-crosswalk",
+        "outputContractId": "standards-crosswalk.v1"
+      },
+      "input": {
+        "contractId": "standards-crosswalk-request.v1",
+        "payload": {
+          "crosswalkId": "$path.crosswalkId"
+        }
+      },
+      "meaning": "Read a declared standards crosswalk.",
+      "cache": {
+        "ttlMilliseconds": 30000,
+        "refresh": "$query.refresh"
+      },
+      "telemetry": "circuit.crosswalk",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "crosswalks",
+        "4": {
+          "param": "crosswalkId"
+        }
+      }
+    },
+    {
+      "operationId": "read-provider-inspection",
+      "method": "GET",
+      "path": "/providers/{providerId}/inspection",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-provider-inspection",
+        "outputContractId": "provider-inspection.v1",
+        "timeoutMilliseconds": 90000
+      },
+      "input": {
+        "providerId": "$path.providerId"
+      },
+      "meaning": "Read the declared inspection of a provider: every result set of the provider inspection with its name, columns and rows.",
+      "telemetry": "circuit.provider-inspection",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "providers",
+        "4": {
+          "param": "providerId"
+        },
+        "5": "inspection"
+      }
+    }
+  ]
+}

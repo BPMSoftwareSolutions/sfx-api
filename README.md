@@ -2,13 +2,15 @@
 
 The declared API, deployed by itself. There is no frontdoor code: every mechanic up to the
 profile schema boundary is SEJ (`sej-pure.v2`), declared into the estate, and the kernel
-resolves it.
+resolves it. The only native code is the host's receive and send ([host/serve.py](host/serve.py)).
 
 ## Structure
 
 | Path | What it is |
 | --- | --- |
-| [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) | The frontdoor's SEJ: prepare the interface read, resolve the request, compose the response |
+| [host/serve.py](host/serve.py) | The host: receives HTTP, hands each request to a resident kernel as one envelope for the frontdoor, sends its answer (Python standard library) |
+| [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) | The interface as declared (`sidefx:authorities/sidefx-api-interface.v1`); a change is declared with `model-declare-semantic-object` |
+| [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) | The frontdoor's SEJ: identify the caller, prepare the interface read, resolve the request, compose the response |
 | [sej/answer-api-response.sej.json](sej/answer-api-response.sej.json) | Returns the refusal it is given, so refusals take the answer path |
 | [sej/resolve-api-request.sej.json](sej/resolve-api-request.sej.json) | The resolve stage as a standalone capability, for verification |
 | [sej/compose-api-response.sej.json](sej/compose-api-response.sej.json) | The respond stage as a standalone capability, for verification |
@@ -20,14 +22,19 @@ resolves it.
 | [declarations/04-run-views.sql](declarations/04-run-views.sql) | Resolves the run operations to the run store (`read-run-state`, `read-run-output`, `read-run-graphs`, `read-run-trace-chunks`) and answers 404 for a `NOT_FOUND` outcome |
 | [declarations/05-admit-run.sql](declarations/05-admit-run.sql) | Resolves `admit-run` to `admit-api-run` and declares its first version |
 | [declarations/06-admit-run-staged.sql](declarations/06-admit-run-staged.sql) | Admission with staged output (requires sfx-identity migration `007-run-output-stage` in sfx-dal) |
-| [sfx-api.config.json](sfx-api.config.json) | The selected kernel (the local runtime) |
+| [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel and its resident instances, the frontdoor capability, the credential carriers, the HTTP bounds |
+| [deploy/Dockerfile](deploy/Dockerfile), [deploy/start.sh](deploy/start.sh) | The container: the host, the admitted kernel and the staging host facts; no credential material |
 
 Each SEJ file is the authority of one capability namespace (`sidefx:capability:<file name>`).
 
 ## The frontdoor
 
-`serve-api-request` is the frontdoor as one declared capability, five stages in sequence:
+`serve-api-request` is the frontdoor as one declared capability, its stages in sequence:
 
+0. **identify** (SEJ `serve-identify-prepare`, `sql-database-reader` on sfx-identity, SEJ
+   `serve-identify-lift`): `identity.resolve_api_session` resolves the session the caller's digest
+   names (`{kind: user, principalId, sessionId}`) and carries the request; a caller presented without
+   a digest passes through.
 1. **prepare** (SEJ `serve-prepare-interface-read`): the read request for `sql-database-reader`.
 2. **interface** (`generic-capability-invocation.v1`): `sql-database-reader` returns the interface
    authority `sidefx:authorities/sidefx-api-interface.v1` together with the request and caller. A
@@ -69,8 +76,48 @@ cursor 0 (`TRACE_INCOMPLETE`) until the kernel's observation channel reaches the
 caller without a live session (machine) is refused `EVIDENCE_SESSION_REQUIRED`. The idempotency key
 is not honored yet: the input template carries no headers.
 
-The request is the HTTP-serving provider's native output: `method`, `segments` (the path split on
-`/`), `query`, `headers` and `body` text.
+`read-circuit-catalog` (`GET /sfx/v1/circuits`) dispatches `list-capabilities`, the capability behind
+the kernel's `capability list` command. `read-capability-graph` still answers 501: compile is a kernel
+operation on the target's own graph, not a capability the dispatch can run.
+
+## The host
+
+[host/serve.py](host/serve.py) is the authenticated ingress and the only native code: it receives a
+request, hands it to a pool of resident kernels (`KernelEntry --resident-envelopes`, one compact
+`sfx-command-delivery.v1` envelope per line on stdin, one result line on stdout) as an envelope for the
+frontdoor, and sends the `api-response.v1` it answers. The request is `method`, `segments` (the path
+split on `/`, decoded), `query`, `headers` and `body` text. Every choice is host data in
+[sfx-api.config.json](sfx-api.config.json): the kernel and its instances, the frontdoor capability,
+the credential carriers and the HTTP bounds. It runs on the Python standard library: nothing is
+installed or built.
+
+A credential never enters a capability input: the host drops `authorization`, `proxy-authorization`
+and `cookie` from the headers it forwards. Under the declared carriers (`Authorization: Bearer` and
+the `__Host-sfx-session` cookie, base64 of 32 bytes) it presents only `{sessionDigest}`, SHA-256 of the
+session's verifier hash. That digest cannot be presented to `identity.validate_session`, so nothing
+the kernel carries is a verification handle. sfx-identity resolves the session by it (sfx-dal
+migration `008-api-session-resolution`: a persisted, indexed digest of the verifier hash and
+`identity.resolve_api_session`, which applies the checks of `validate_session`). Machine callers have
+no carrier yet (EV-014).
+
+    wsl -d Ubuntu --exec sh -c 'cd /mnt/c/lab/repos/sfx-api && python3 host/serve.py sfx-api.config.json'
+
+## Deploying
+
+The image is built in the registry from a context of [deploy/Dockerfile](deploy/Dockerfile),
+[deploy/start.sh](deploy/start.sh), [host/](host/), [sfx-api.config.json](sfx-api.config.json) and the
+admitted kernel install under `kernel/`, assembled at a short path (the kernel's authority tree
+exceeds the Windows path limit under a deep directory):
+
+    az acr build --registry bpmaiengineacr --image sfx-api:<commit> --build-arg KERNEL_DIGEST=<digest> --file <context>\Dockerfile <context>
+
+The image holds no credential material. `start.sh` writes the sealed vault, its key record and its key
+from three App Service settings that reference Key Vault secrets (`sfx-api-credential-vault`,
+`sfx-api-credential-vault-key-record`, `sfx-api-credential-vault-key` in `aiengine-kv-20260406`), puts
+the key into a container-only gnome-keyring under the reference the declared vault providers read, and
+starts the host on port 8787 (`WEBSITES_PORT`). The test app is `sfx-api-test` on the plan
+`ASP-sidefxgroup-ad2e`; its system identity pulls from the registry (`AcrPull`) and reads the vault
+(`Key Vault Secrets User`).
 
 ## Declaring
 
@@ -88,6 +135,12 @@ digest (`@expected_digest`). 01 to 05 were applied to the estate on 2026-10-30.
 only the first result set and needs its result column to be JSON text, so it cannot run a script whose
 writers return result sets of their own; it does run an sfx-identity migration whose first result set
 is its JSON `value` (sfx-dal `007-run-output-stage`, dry run first with its rollback twin).
+
+Since 06 every change is declared through the estate rather than a file run by hand: transformations
+and capabilities through `apply-declared-change`, the interface through `model-declare-semantic-object`
+from [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) after
+checking that the live interface still equals the last declared one, and sfx-identity migrations
+through `sql-database-reader` on `sfx-identity-database`.
 
 ## Verified
 
@@ -125,6 +178,21 @@ Admission, admitting `read-project-tracker` (a 46 KB output) for a user with a l
 | `GET /sfx/v1/runs/{run}/output` | 200, the run's `project-tracker-result.v1` (1 project, 10 tasks) |
 | `GET /sfx/v1/retained-runs/{run}` | 200, the caller's session, capture `incomplete` (no trace yet) |
 | `POST /sfx/v1/runs` (user, no session) | 422 `EVIDENCE_SESSION_REQUIRED` |
+
+The host over real HTTP and the identity stage (7 of 7), and the catalog:
+
+| Request | Answer |
+| --- | --- |
+| frontdoor, caller `{sessionDigest}` of a live session | resolves the session's principal; `GET /sfx/v1/runs/{run}` 200 |
+| frontdoor, a pre-resolved caller | passes through; 200 |
+| frontdoor, no caller | 401 `CALLER_REQUIRED` |
+| HTTP: no credential, an unknown bearer, an unknown session cookie, a malformed bearer | 401 `CALLER_REQUIRED` |
+| HTTP: `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` |
+| `GET /sfx/v1/circuits` (user) | 200, 730 capabilities (6.6 s) |
+
+The digest formula is checked against SQL Server's (`HASHBYTES` twice over 32 zero bytes equals the
+host's SHA-256 twice). A warm resident kernel answers in about 4.7 s: the frontdoor's reads each open
+the vault and a connection.
 
 Each run starts a kernel process; the times include its start. The resolve and respond stages also
 passed 15 of 15 cases as standalone capabilities: matching, nested payload binding, user-only
@@ -171,11 +239,11 @@ object, in every isolation profile) and runs at low integrity, and the providers
 
 ## Next
 
-1. **HTTP-serving provider:** receive the request and send the response, native calls only, feeding a
-   kernel that stays running instead of one process per request.
-2. **Identity provider:** the caller from the bearer or session carrier.
-3. **Deployment:** the kernel and the HTTP-serving provider on their own App Service.
-4. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
+1. **Deployment:** the test app `sfx-api-test` (the image `sfx-api:a360819` is in the registry; the
+   app, its two role grants and the three Key Vault secrets are an owner step), then staging.
+2. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
    that appends trace chunks; then admission through the workflow workers (asynchronous), the
    idempotency key (`$header.` in the input template) and machine runs (EV-014).
-5. **Dispatch of `command` operations** (the circuit catalog and the capability graph).
+3. **The capability graph:** compile is a kernel operation, not a capability.
+4. **Session operations:** sign-in, session, session runs and sign-out.
+5. **Performance:** the frontdoor's reads each open the vault and a connection (about 4.7 s warm).
