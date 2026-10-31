@@ -1,0 +1,1465 @@
+{
+  "dependencyId": "sfx-identity-login",
+  "meaning": "Sign-in against sfx-identity, declared so the estate signs a caller in with no login host of its own. open-session begins the attempt (the throttle, the principal and its verifier: sfx-identity begin_api_login), derives the Argon2id tag of the password with Konscious.Security.Cryptography.Argon2 1.3.1 and Blake2 1.1.1 (the libraries the former login host ran, downloaded from nuget.org and loaded only when each package has its declared SHA-256), compares it with the verifier, mints a 32-byte bearer and completes the attempt with the match and the bearer SHA-256 (complete_api_login). The password, the verifier and the bearer meet only inside this one program; sfx-identity receives the realm, identifier and source, then the attempt, the match and the bearer hash. derive-tag derives the Argon2id tag of a password and salt under the same parameters.",
+  "objectGraphClosure": "object-graph.v1",
+  "runtimes": {
+    "csharp": {
+      "package": "Microsoft.Data.SqlClient",
+      "type": "Microsoft.Data.SqlClient.SqlConnection"
+    }
+  },
+  "release": {
+    "argon2": {
+      "package": "Konscious.Security.Cryptography.Argon2",
+      "version": "1.3.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.argon2/1.3.1/konscious.security.cryptography.argon2.1.3.1.nupkg",
+      "sha256Base64": "nhocunCPEKTaY1MoTkfRlrPaIDxUSLZKx4NWMNcxhVA=",
+      "entry": "lib/net8.0/Konscious.Security.Cryptography.Argon2.dll"
+    },
+    "blake2": {
+      "package": "Konscious.Security.Cryptography.Blake2",
+      "version": "1.1.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.blake2/1.1.1/konscious.security.cryptography.blake2.1.1.1.nupkg",
+      "sha256Base64": "11hhi0zt984k0mVN6DD177PNVss7/IntkC1pq6VKUY8=",
+      "entry": "lib/net8.0/Konscious.Security.Cryptography.Blake2.dll"
+    },
+    "parameters": {
+      "algorithm": "argon2id",
+      "version": 19,
+      "memoryKiB": 19456,
+      "iterations": 2,
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32
+    }
+  },
+  "operations": [
+    {
+      "operationId": "open-session",
+      "meaning": "Sign a caller in: begin the attempt, verify the password against the principal verifier with Argon2id, mint the bearer and complete the attempt. Return the disposition (AUTHENTICATED, AUTHENTICATION_REJECTED or THROTTLED), the session id, principal and expiry when a session was established, and the bearer (meaningful only when AUTHENTICATED).",
+      "parameters": [
+        {
+          "name": "connectionString",
+          "source": "input",
+          "path": "value"
+        },
+        {
+          "name": "login",
+          "source": "input",
+          "path": "context.login",
+          "encoding": "json-text"
+        },
+        {
+          "name": "password",
+          "source": "input",
+          "path": "context.password"
+        }
+      ],
+      "result": {
+        "from": "value"
+      },
+      "programs": {
+        "csharp": [
+          {
+            "bind": "connection",
+            "invocation": "new SqlConnection",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "connectionString"
+              }
+            ],
+            "release": {
+              "invocation": "connection.DisposeAsync",
+              "await": true
+            }
+          },
+          {
+            "invocation": "connection.OpenAsync",
+            "await": true
+          },
+          {
+            "bind": "begin",
+            "invocation": "connection.CreateCommand",
+            "release": {
+              "invocation": "begin.DisposeAsync",
+              "await": true
+            }
+          },
+          {
+            "invocation": "begin.CommandText.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "SET NOCOUNT ON; EXEC [identity].begin_api_login @input=@input;"
+              }
+            ]
+          },
+          {
+            "invocation": "begin.Parameters.AddWithValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "@input"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "login"
+              }
+            ]
+          },
+          {
+            "bind": "beginReader",
+            "invocation": "begin.ExecuteReaderAsync",
+            "await": true,
+            "release": {
+              "invocation": "beginReader.DisposeAsync",
+              "await": true
+            }
+          },
+          {
+            "invocation": "beginReader.ReadAsync",
+            "await": true
+          },
+          {
+            "bind": "attemptId",
+            "invocation": "beginReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "attemptId"
+            }
+          },
+          {
+            "bind": "allowed",
+            "invocation": "beginReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "allowed"
+            }
+          },
+          {
+            "bind": "salt",
+            "invocation": "beginReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "salt"
+            }
+          },
+          {
+            "bind": "expected",
+            "invocation": "beginReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "expected"
+            }
+          },
+          {
+            "invocation": "beginReader.Close"
+          },
+          {
+            "bind": "http",
+            "invocation": "new System.Net.Http.HttpClient, System.Net.Http",
+            "release": {
+              "invocation": "http.Dispose"
+            }
+          },
+          {
+            "bind": "blakePackage",
+            "invocation": "http.GetByteArrayAsync",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.blake2/1.1.1/konscious.security.cryptography.blake2.1.1.1.nupkg"
+              }
+            ],
+            "await": true
+          },
+          {
+            "bind": "argonPackage",
+            "invocation": "http.GetByteArrayAsync",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.argon2/1.3.1/konscious.security.cryptography.argon2.1.3.1.nupkg"
+              }
+            ],
+            "await": true
+          },
+          {
+            "bind": "hasher",
+            "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+            "release": {
+              "invocation": "hasher.Dispose"
+            }
+          },
+          {
+            "bind": "blakeDigest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakePackage"
+              }
+            ]
+          },
+          {
+            "bind": "argonDigest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonPackage"
+              }
+            ]
+          },
+          {
+            "bind": "digests",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "digests.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "blake"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeDigest"
+              }
+            ]
+          },
+          {
+            "invocation": "digests.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "argon"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonDigest"
+              }
+            ]
+          },
+          {
+            "bind": "blakeDigestText",
+            "invocation": "digests.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "blake"
+            }
+          },
+          {
+            "bind": "argonDigestText",
+            "invocation": "digests.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "argon"
+            }
+          },
+          {
+            "bind": "trusted",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "trusted.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "11hhi0zt984k0mVN6DD177PNVss7/IntkC1pq6VKUY8="
+              },
+              {
+                "op": "literal",
+                "value": "lib/net8.0/Konscious.Security.Cryptography.Blake2.dll"
+              }
+            ]
+          },
+          {
+            "invocation": "trusted.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "nhocunCPEKTaY1MoTkfRlrPaIDxUSLZKx4NWMNcxhVA="
+              },
+              {
+                "op": "literal",
+                "value": "lib/net8.0/Konscious.Security.Cryptography.Argon2.dll"
+              }
+            ]
+          },
+          {
+            "bind": "blakeEntryName",
+            "invocation": "trusted.$computed.$read",
+            "selector": {
+              "op": "path",
+              "from": "scope",
+              "path": "blakeDigestText"
+            }
+          },
+          {
+            "bind": "argonEntryName",
+            "invocation": "trusted.$computed.$read",
+            "selector": {
+              "op": "path",
+              "from": "scope",
+              "path": "argonDigestText"
+            }
+          },
+          {
+            "bind": "blakeMemory",
+            "invocation": "new System.IO.MemoryStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakePackage"
+              }
+            ],
+            "release": {
+              "invocation": "blakeMemory.Dispose"
+            }
+          },
+          {
+            "bind": "blakeArchive",
+            "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeMemory"
+              }
+            ],
+            "release": {
+              "invocation": "blakeArchive.Dispose"
+            }
+          },
+          {
+            "bind": "blakeEntry",
+            "invocation": "blakeArchive.GetEntry",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeEntryName"
+              }
+            ]
+          },
+          {
+            "bind": "blakeEntryStream",
+            "invocation": "blakeEntry.Open",
+            "release": {
+              "invocation": "blakeEntryStream.Dispose"
+            }
+          },
+          {
+            "bind": "blakeAssembly",
+            "invocation": "new System.IO.MemoryStream",
+            "release": {
+              "invocation": "blakeAssembly.Dispose"
+            }
+          },
+          {
+            "invocation": "blakeEntryStream.CopyTo",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeAssembly"
+              }
+            ]
+          },
+          {
+            "invocation": "blakeAssembly.Position.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "argonMemory",
+            "invocation": "new System.IO.MemoryStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonPackage"
+              }
+            ],
+            "release": {
+              "invocation": "argonMemory.Dispose"
+            }
+          },
+          {
+            "bind": "argonArchive",
+            "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonMemory"
+              }
+            ],
+            "release": {
+              "invocation": "argonArchive.Dispose"
+            }
+          },
+          {
+            "bind": "argonEntry",
+            "invocation": "argonArchive.GetEntry",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonEntryName"
+              }
+            ]
+          },
+          {
+            "bind": "argonEntryStream",
+            "invocation": "argonEntry.Open",
+            "release": {
+              "invocation": "argonEntryStream.Dispose"
+            }
+          },
+          {
+            "bind": "argonAssembly",
+            "invocation": "new System.IO.MemoryStream",
+            "release": {
+              "invocation": "argonAssembly.Dispose"
+            }
+          },
+          {
+            "invocation": "argonEntryStream.CopyTo",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonAssembly"
+              }
+            ]
+          },
+          {
+            "invocation": "argonAssembly.Position.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "loader",
+            "invocation": "new System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "sfx-identity-login"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ]
+          },
+          {
+            "invocation": "loader.LoadFromStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeAssembly"
+              }
+            ]
+          },
+          {
+            "bind": "argonLibrary",
+            "invocation": "loader.LoadFromStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonAssembly"
+              }
+            ]
+          },
+          {
+            "bind": "argonType",
+            "invocation": "argonLibrary.GetType",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "Konscious.Security.Cryptography.Argon2id"
+              }
+            ]
+          },
+          {
+            "bind": "argonConstructors",
+            "invocation": "argonType.GetConstructors"
+          },
+          {
+            "bind": "argonConstructor",
+            "invocation": "argonConstructors.GetValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "utf8",
+            "invocation": "new System.Text.UTF8Encoding"
+          },
+          {
+            "bind": "passwordBytes",
+            "invocation": "utf8.GetBytes",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "password"
+              }
+            ]
+          },
+          {
+            "bind": "argonArguments",
+            "invocation": "new System.Collections.ArrayList"
+          },
+          {
+            "invocation": "argonArguments.Add",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "passwordBytes"
+              }
+            ]
+          },
+          {
+            "bind": "argonArgumentArray",
+            "invocation": "argonArguments.ToArray"
+          },
+          {
+            "bind": "argon",
+            "invocation": "argonConstructor.Invoke",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonArgumentArray"
+              }
+            ],
+            "release": {
+              "invocation": "argon.Dispose"
+            }
+          },
+          {
+            "invocation": "argon.Salt.$write",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "salt"
+              }
+            ]
+          },
+          {
+            "invocation": "argon.MemorySize.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 19456
+              }
+            ]
+          },
+          {
+            "invocation": "argon.Iterations.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "invocation": "argon.DegreeOfParallelism.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "bind": "tag",
+            "invocation": "argon.GetBytes",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 32
+              }
+            ]
+          },
+          {
+            "bind": "derived",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "derived.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "tag"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "tag"
+              }
+            ]
+          },
+          {
+            "bind": "tagText",
+            "invocation": "derived.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "tag"
+            }
+          },
+          {
+            "bind": "equals",
+            "invocation": "expected.Equals",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "tagText"
+              }
+            ]
+          },
+          {
+            "bind": "random",
+            "invocation": "new System.Security.Cryptography.RNGCryptoServiceProvider, System.Security.Cryptography",
+            "release": {
+              "invocation": "random.Dispose"
+            }
+          },
+          {
+            "bind": "token",
+            "invocation": "tag.Clone"
+          },
+          {
+            "invocation": "random.GetBytes",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "token"
+              }
+            ]
+          },
+          {
+            "bind": "verifierHash",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "token"
+              }
+            ]
+          },
+          {
+            "invocation": "derived.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "token"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "token"
+              }
+            ]
+          },
+          {
+            "bind": "tokenText",
+            "invocation": "derived.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "token"
+            }
+          },
+          {
+            "bind": "complete",
+            "invocation": "connection.CreateCommand",
+            "release": {
+              "invocation": "complete.DisposeAsync",
+              "await": true
+            }
+          },
+          {
+            "invocation": "complete.CommandText.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "SET NOCOUNT ON; EXEC [identity].complete_api_login @attempt_id=@attempt_id,@allowed=@allowed,@equals=@equals,@verifier_hash=@verifier_hash;"
+              }
+            ]
+          },
+          {
+            "invocation": "complete.Parameters.AddWithValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "@attempt_id"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "attemptId"
+              }
+            ]
+          },
+          {
+            "invocation": "complete.Parameters.AddWithValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "@allowed"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "allowed"
+              }
+            ]
+          },
+          {
+            "invocation": "complete.Parameters.AddWithValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "@equals"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "equals"
+              }
+            ]
+          },
+          {
+            "invocation": "complete.Parameters.AddWithValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "@verifier_hash"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "verifierHash"
+              }
+            ]
+          },
+          {
+            "bind": "completeReader",
+            "invocation": "complete.ExecuteReaderAsync",
+            "await": true,
+            "release": {
+              "invocation": "completeReader.DisposeAsync",
+              "await": true
+            }
+          },
+          {
+            "invocation": "completeReader.ReadAsync",
+            "await": true
+          },
+          {
+            "bind": "disposition",
+            "invocation": "completeReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "disposition"
+            }
+          },
+          {
+            "bind": "sessionId",
+            "invocation": "completeReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "sessionId"
+            }
+          },
+          {
+            "bind": "principalId",
+            "invocation": "completeReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "principalId"
+            }
+          },
+          {
+            "bind": "expiresAt",
+            "invocation": "completeReader.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "expiresAt"
+            }
+          },
+          {
+            "bind": "value",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "disposition"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "disposition"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "sessionId"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "sessionId"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "principalId"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "principalId"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "expiresAt"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "expiresAt"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "token"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "tokenText"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "operationId": "derive-tag",
+      "meaning": "Derive the Argon2id tag (base64) of a password and a base64 salt under the declared parameters.",
+      "parameters": [
+        {
+          "name": "password",
+          "source": "input",
+          "path": "password"
+        },
+        {
+          "name": "salt",
+          "source": "input",
+          "path": "salt"
+        }
+      ],
+      "result": {
+        "from": "value"
+      },
+      "programs": {
+        "csharp": [
+          {
+            "bind": "http",
+            "invocation": "new System.Net.Http.HttpClient, System.Net.Http",
+            "release": {
+              "invocation": "http.Dispose"
+            }
+          },
+          {
+            "bind": "blakePackage",
+            "invocation": "http.GetByteArrayAsync",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.blake2/1.1.1/konscious.security.cryptography.blake2.1.1.1.nupkg"
+              }
+            ],
+            "await": true
+          },
+          {
+            "bind": "argonPackage",
+            "invocation": "http.GetByteArrayAsync",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.argon2/1.3.1/konscious.security.cryptography.argon2.1.3.1.nupkg"
+              }
+            ],
+            "await": true
+          },
+          {
+            "bind": "hasher",
+            "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+            "release": {
+              "invocation": "hasher.Dispose"
+            }
+          },
+          {
+            "bind": "blakeDigest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakePackage"
+              }
+            ]
+          },
+          {
+            "bind": "argonDigest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonPackage"
+              }
+            ]
+          },
+          {
+            "bind": "digests",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "digests.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "blake"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeDigest"
+              }
+            ]
+          },
+          {
+            "invocation": "digests.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "argon"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonDigest"
+              }
+            ]
+          },
+          {
+            "bind": "blakeDigestText",
+            "invocation": "digests.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "blake"
+            }
+          },
+          {
+            "bind": "argonDigestText",
+            "invocation": "digests.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "argon"
+            }
+          },
+          {
+            "bind": "trusted",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "trusted.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "11hhi0zt984k0mVN6DD177PNVss7/IntkC1pq6VKUY8="
+              },
+              {
+                "op": "literal",
+                "value": "lib/net8.0/Konscious.Security.Cryptography.Blake2.dll"
+              }
+            ]
+          },
+          {
+            "invocation": "trusted.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "nhocunCPEKTaY1MoTkfRlrPaIDxUSLZKx4NWMNcxhVA="
+              },
+              {
+                "op": "literal",
+                "value": "lib/net8.0/Konscious.Security.Cryptography.Argon2.dll"
+              }
+            ]
+          },
+          {
+            "bind": "blakeEntryName",
+            "invocation": "trusted.$computed.$read",
+            "selector": {
+              "op": "path",
+              "from": "scope",
+              "path": "blakeDigestText"
+            }
+          },
+          {
+            "bind": "argonEntryName",
+            "invocation": "trusted.$computed.$read",
+            "selector": {
+              "op": "path",
+              "from": "scope",
+              "path": "argonDigestText"
+            }
+          },
+          {
+            "bind": "blakeMemory",
+            "invocation": "new System.IO.MemoryStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakePackage"
+              }
+            ],
+            "release": {
+              "invocation": "blakeMemory.Dispose"
+            }
+          },
+          {
+            "bind": "blakeArchive",
+            "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeMemory"
+              }
+            ],
+            "release": {
+              "invocation": "blakeArchive.Dispose"
+            }
+          },
+          {
+            "bind": "blakeEntry",
+            "invocation": "blakeArchive.GetEntry",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeEntryName"
+              }
+            ]
+          },
+          {
+            "bind": "blakeEntryStream",
+            "invocation": "blakeEntry.Open",
+            "release": {
+              "invocation": "blakeEntryStream.Dispose"
+            }
+          },
+          {
+            "bind": "blakeAssembly",
+            "invocation": "new System.IO.MemoryStream",
+            "release": {
+              "invocation": "blakeAssembly.Dispose"
+            }
+          },
+          {
+            "invocation": "blakeEntryStream.CopyTo",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeAssembly"
+              }
+            ]
+          },
+          {
+            "invocation": "blakeAssembly.Position.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "argonMemory",
+            "invocation": "new System.IO.MemoryStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonPackage"
+              }
+            ],
+            "release": {
+              "invocation": "argonMemory.Dispose"
+            }
+          },
+          {
+            "bind": "argonArchive",
+            "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonMemory"
+              }
+            ],
+            "release": {
+              "invocation": "argonArchive.Dispose"
+            }
+          },
+          {
+            "bind": "argonEntry",
+            "invocation": "argonArchive.GetEntry",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonEntryName"
+              }
+            ]
+          },
+          {
+            "bind": "argonEntryStream",
+            "invocation": "argonEntry.Open",
+            "release": {
+              "invocation": "argonEntryStream.Dispose"
+            }
+          },
+          {
+            "bind": "argonAssembly",
+            "invocation": "new System.IO.MemoryStream",
+            "release": {
+              "invocation": "argonAssembly.Dispose"
+            }
+          },
+          {
+            "invocation": "argonEntryStream.CopyTo",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonAssembly"
+              }
+            ]
+          },
+          {
+            "invocation": "argonAssembly.Position.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "loader",
+            "invocation": "new System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "sfx-identity-login"
+              },
+              {
+                "op": "literal",
+                "value": false
+              }
+            ]
+          },
+          {
+            "invocation": "loader.LoadFromStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeAssembly"
+              }
+            ]
+          },
+          {
+            "bind": "argonLibrary",
+            "invocation": "loader.LoadFromStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonAssembly"
+              }
+            ]
+          },
+          {
+            "bind": "argonType",
+            "invocation": "argonLibrary.GetType",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "Konscious.Security.Cryptography.Argon2id"
+              }
+            ]
+          },
+          {
+            "bind": "argonConstructors",
+            "invocation": "argonType.GetConstructors"
+          },
+          {
+            "bind": "argonConstructor",
+            "invocation": "argonConstructors.GetValue",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "bind": "utf8",
+            "invocation": "new System.Text.UTF8Encoding"
+          },
+          {
+            "bind": "passwordBytes",
+            "invocation": "utf8.GetBytes",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "password"
+              }
+            ]
+          },
+          {
+            "bind": "argonArguments",
+            "invocation": "new System.Collections.ArrayList"
+          },
+          {
+            "invocation": "argonArguments.Add",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "passwordBytes"
+              }
+            ]
+          },
+          {
+            "bind": "argonArgumentArray",
+            "invocation": "argonArguments.ToArray"
+          },
+          {
+            "bind": "argon",
+            "invocation": "argonConstructor.Invoke",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "argonArgumentArray"
+              }
+            ],
+            "release": {
+              "invocation": "argon.Dispose"
+            }
+          },
+          {
+            "invocation": "argon.Salt.$write",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "salt"
+              }
+            ]
+          },
+          {
+            "invocation": "argon.MemorySize.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 19456
+              }
+            ]
+          },
+          {
+            "invocation": "argon.Iterations.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "invocation": "argon.DegreeOfParallelism.$write",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "bind": "tag",
+            "invocation": "argon.GetBytes",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": 32
+              }
+            ]
+          },
+          {
+            "bind": "derived",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "derived.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "tag"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "tag"
+              }
+            ]
+          },
+          {
+            "bind": "tagText",
+            "invocation": "derived.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "tag"
+            }
+          },
+          {
+            "bind": "value",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "tag"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "tagText"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
