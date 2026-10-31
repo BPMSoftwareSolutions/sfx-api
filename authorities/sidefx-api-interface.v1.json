@@ -35,7 +35,7 @@
     },
     "telemetryMeaning": "A read operation that names its telemetry reports one span and one sfx.reader.duration point under that name per read, with its outcome and never its input or output. The names are the circuit host's reader names, which these reads replace."
   },
-  "inputTemplate": "An operation input is a template. A string that begins with $caller., $path. or $query. names that request value and $body names the request document; a named value the request does not carry omits its member. Every other value is literal.",
+  "inputTemplate": "An operation input is a template. A string that begins with $caller., $path., $query. or $header. names that request value (a header by its lower-case name, as the ingress returns it) and $body names the request document; a named value the request does not carry omits its member. Every other value is literal.",
   "operations": [
     {
       "operationId": "admit-run",
@@ -52,9 +52,10 @@
       "input": {
         "admission": "$body",
         "principalId": "$caller.principalId",
-        "sessionId": "$caller.sessionId"
+        "sessionId": "$caller.sessionId",
+        "idempotencyKey": "$header.idempotency-key"
       },
-      "meaning": "Admit a run of a declared capability: object, operation, subject, namespace, input and an optional idempotencyKey in the body. The run store registers the run under the caller session and mints its id (the same key from the same caller names the same run, and a different submission under it is refused IDEMPOTENCY_KEY_CONFLICT); the answer is 202 with the run, and the host executes the run on a worker kernel, streams its observations and completes it in the run store when it ends. A caller without a live session is refused (EVIDENCE_SESSION_REQUIRED).",
+      "meaning": "Admit a run of a declared capability: object, operation, subject, namespace, input and an optional idempotencyKey in the body or the Idempotency-Key header (both given, they must agree). The run store registers the run under the caller session and mints its id (the same key from the same caller names the same run, and a different submission under it is refused IDEMPOTENCY_KEY_CONFLICT); the answer is 202 with the run, and the host executes the run on a worker kernel, streams its observations and completes it in the run store when it ends. A caller without a live session is refused (EVIDENCE_SESSION_REQUIRED).",
       "segments": {
         "0": "",
         "1": "sfx",

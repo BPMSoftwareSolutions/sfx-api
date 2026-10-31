@@ -80,3 +80,18 @@ percentiles.
 - After the switch, without a session: `POST /sfx/v1/runs` and `GET /sfx/v1/runs/x/events/stream`
   401 `CALLER_REQUIRED`, `GET /sfx/v1/nope` 404, a refused sign-in 400 in 0.47 s.
 - Not yet run: the signed-in journey over HTTP (sign in, admit, stream, reconnect, read back).
+
+## Run traces, the session rule and Idempotency-Key (2026-10-31, later)
+
+- Runtime source: `26aeb9d`. Image `bpmaiengineacr.azurecr.io/sfx-api@sha256:6a01942195d470108647d075c2616c89b06fe7b9fc65be9b00c4e2d963f0f3b1`
+  (tag `sfx-api:26aeb9d`), ACR build `caa9`, succeeded; serving since 22:19:42 UTC.
+- The worker retains each run's trace in the run store before completing it, and a session caller's
+  stream ends at the session's expiry or the first failed `check-api-session` recheck (README, The host,
+  Runs).
+- Declared: the trace encoding provider chain and `append-api-run-trace`, the revised
+  `complete-api-run`, `check-api-session`, the revised stream and admission, the ingress with
+  `headers.idempotency-key`, `serve-http-request` carrying `headers` (its text input re-applied 28 s
+  later), the frontdoor binding `$header.`, and the interface (definition `263423`).
+- After the changes, without a session: 404, 401 for the session, runs, the stream and the details
+  read (an `Idempotency-Key` header included), a refused sign-in 400 in 0.46 s.
+- Not yet run: the signed-in journey over HTTP.

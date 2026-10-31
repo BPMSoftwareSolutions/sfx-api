@@ -11,7 +11,7 @@
   "operations": [
     {
       "operationId": "resolve-request",
-      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the query as JSON text: each key and value percent-decoded once as UTF-8, + read as a space, members without a key dropped), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) and source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty). A request that does not parse reads as empty members.",
+      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the query as JSON text: each key and value percent-decoded once as UTF-8, + read as a space, members without a key dropped), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty) and headers (the declared request headers the interface binds as $header.: idempotency-key, empty when absent). A request that does not parse reads as empty members.",
       "parameters": [
         {
           "name": "raw",
@@ -578,6 +578,75 @@
             }
           },
           {
+            "bind": "keyPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "(?im)^idempotency-key:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+              }
+            ]
+          },
+          {
+            "bind": "keyMatch",
+            "invocation": "keyPattern.Match",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "head"
+              }
+            ]
+          },
+          {
+            "bind": "keyGroups",
+            "invocation": "keyMatch.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Groups"
+            }
+          },
+          {
+            "bind": "keyGroup",
+            "invocation": "keyGroups.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": 1
+            }
+          },
+          {
+            "bind": "idempotencyKey",
+            "invocation": "keyGroup.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Value"
+            }
+          },
+          {
+            "bind": "headers",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "headers.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "idempotency-key"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "idempotencyKey"
+              }
+            ]
+          },
+          {
             "bind": "value",
             "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
             "arguments": [
@@ -696,6 +765,20 @@
                   ]
                 },
                 "separator": ""
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "headers"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "headers"
               }
             ]
           }

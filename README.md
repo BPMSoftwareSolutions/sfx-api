@@ -86,9 +86,9 @@ received it (`{contractId: serve-http-request-request.v1, raw}`; the kernel bind
    `Connection: close` and the body.
 
 The ingress mechanics are ours, declared up to the profile schema boundary in the estate's provider
-chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `e8813515`), the mechanics
+chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `a8d6f423`), the mechanics
 `sfx-api-ingress-resolve-port.v1` and `sfx-api-ingress-compose-port.v1`, the PROVIDERs
-`sfx-api-ingress-resolve` (`8051eab0`) and `sfx-api-ingress-compose` (`f07ed911`), and their entries
+`sfx-api-ingress-resolve` (`13c047d6`) and `sfx-api-ingress-compose` (`f07ed911`), and their entries
 and overlay bindings on the graph runner `run-declared-graph-execute`. The kernel's resolver runs the
 programs; no SDA provider, contract or engine beyond the transformation port is named.
 
@@ -189,27 +189,46 @@ does what the directive says and decides nothing itself:
   while the run executes becomes the run's next event (`{eventId, cursor, at, kind, payload,
   rootExecutionId?}`, kind the record's `observationType`, else `observation`) and reaches every
   listener as it is written. Lifecycle events frame them: `run.admitted`, `run.started` and
-  `run.exited` with the state, exit code and failure. When the run ends, the worker invokes the
-  directive's completion capability (`complete-api-run`), and only then ends the run.
+  `run.exited` with the state, exit code and failure. When the run ends, the worker retains its events
+  through the directive's trace capability (`append-api-run-trace`), contiguous chunk by chunk within
+  `traceChunkBytes` and `traceChunkEvents`, then invokes its completion capability
+  (`complete-api-run`) with the last retained cursor, and only then ends the run. A refused chunk stops
+  the trace there; the completion then records the shorter trace, and the store marks it incomplete.
 - `stream-run` (from `open-api-run-stream`): answer server-sent events in the legacy framing:
   `id: <cursor>`, `event: <kind>`, `data: <event>`, every event after the cursor (`?after=`, else
   `Last-Event-ID`), then each new event as it arrives, a `: keepalive` comment while the run is quiet,
   and `event: end` with `{runId, state, cursor}` once the run has ended and been completed. A run this
-  host does not hold ends at once with the state the run store holds.
+  host does not hold ends at once with the state the run store holds. A session caller's stream ends
+  with `event: session-ended` (`{runId, cursor}`) at the session's expiry, or at the first recheck
+  that cannot confirm the session: `check-api-session`, every `recheckMilliseconds` the interface
+  passes (5000, as `callers.user.sessionRecheckMilliseconds` declares), one answer per session per
+  interval shared by its streams.
 - `respond` (a replayed idempotency key): answer the directive's response and execute nothing.
+
+The idempotency key is the `Idempotency-Key` header (the ingress returns it as
+`headers.idempotency-key`, `serve-http-request` carries `headers` to the frontdoor, and the interface
+binds `$header.idempotency-key`) or the body's `idempotencyKey`; both given, they must agree
+(`IDEMPOTENCY_KEY_CONFLICT`). The same key from the same caller names the same run.
+
+The trace is the run store's encoding, as its other writers write it: each chunk is the events as one
+JSON array, UTF-8, brotli-compressed, with the SHA-256 of the compressed bytes. The encoding is a
+declared program, the DEPENDENCY `sidefx:dependencies/sfx-api-run-trace`
+([providers/sfx-api-run-trace.dependency.json](providers/sfx-api-run-trace.dependency.json), `encode-chunk`:
+`BrotliStream` and `SHA256Managed`), bound as the PROVIDER `sfx-api-run-trace-encode` on the graph
+runner; Python's standard library has no brotli.
 
 The worker command (with a longer `--timeout`, one hour), the worker count and the run bounds
 (`retained` ended runs kept for reconnects, `maxEvents` per run, `eventPayloadBytes` before a record
-is cut to its key members, `keepaliveSeconds`) are host data. A worker kernel adds about 350 MB once
-the first run starts it.
+is cut to its key members, `traceChunkBytes` and `traceChunkEvents`, `keepaliveSeconds`) are host
+data. A worker kernel adds about 350 MB once the first run starts it.
 
-Live since 2026-10-31 on `sfx-api-test` (image `fd1fd6d4`, commit `64f3a28`):
-`admit-api-run-live`, `open-api-run-stream` and `complete-api-run` are declared
-([declarations/11](declarations/11-admit-api-run-live.dsl), [12](declarations/12-open-api-run-stream.dsl),
-[13](declarations/13-complete-api-run.dsl); runs `8ecc6399`, `22106645`, `5063f081`), and the interface
-resolves `admit-run` and `stream-run-events` to them (definition `263343`, run `48000499`; the previous
-definition `253230` resolved `admit-run` to the synchronous `admit-api-run`, and re-declaring it rolls
-back). Verified:
+Live since 2026-10-31 on `sfx-api-test` (image `fd1fd6d4`, commit `64f3a28`, then image `6a019421`,
+commit `26aeb9d`, for the trace and the session rule): `admit-api-run-live`, `open-api-run-stream`,
+`complete-api-run`, `append-api-run-trace` and `check-api-session` are declared
+([declarations/11](declarations/11-admit-api-run-live.dsl) to [15](declarations/15-check-api-session.dsl)),
+and the interface resolves `admit-run` and `stream-run-events` to them (definition `263423`; definition
+`253230` resolved `admit-run` to the synchronous `admit-api-run`, and re-declaring it rolls back).
+Verified:
 
 - the facade against a stand-in kernel, 22 checks: 202 at admission, events delivered as written over
   2 s, another request answered during a run, resume by `Last-Event-ID` and `after`, a replayed key
@@ -222,11 +241,22 @@ back). Verified:
   events, its graph capture among them) and completed in the run store (`completed`, exit 0, output
   `MATCHES` read back);
 - `sfx-api-test` after the switch, without a session: `POST /runs` and the stream answer 401
-  `CALLER_REQUIRED`, as before.
+  `CALLER_REQUIRED`, as before;
+- the trace and session rule: the facade against the stand-in, 7 more checks (chunks 1-4, 5-8, 9 and
+  `latestCursor` 9; a refused chunk stopping at cursor 4; a directive without trace; a stream ending
+  `session-ended` at expiry after 2.00 s; two streams ending at the first failed recheck with 3
+  rechecks, not 6); `encode-chunk` through the kernel's own resolver, decoded by .NET and by the legacy
+  evidence store's decoder; against the estate, chunks appended, an overlap refused
+  (`EVIDENCE_CHUNK_OVERLAP`), a chunk after completion refused (`EVIDENCE_RUN_CLOSED`), and run
+  `f8a01553` executed by the facade, streamed through three live `check-api-session` rechecks, retained
+  as 4 chunks to cursor 43 and completed with its trace complete, its 43 events read back by the
+  legacy decoder identical to the stream;
+- the header: the ingress program through the kernel's resolver (present, case, padding, absent,
+  quotes and backslashes, a longer header name), and the resolve stage through the kernel's SEJ engine
+  (every other operation resolves identically; the admission binds the header).
 
 The signed-in journey over HTTP (sign in, admit, stream, reconnect, read back) needs a session and has
-not run yet. The run's trace is not retained yet: events live in the host for the retained runs, and
-the run is completed with `latestCursor` 0, as before.
+not run yet.
 
 The bearer enters only the kernel's ingress provider, which digests it and never returns it: the
 frontdoor, sfx-identity and every run see `{sessionDigest}`, which `identity.validate_session` does
@@ -316,6 +346,22 @@ decoding fix (2026-10-31) went in this order, through the legacy CLI:
 
 `sfx-api-ingress-compose` was left as it is: its program did not change, and it still cites the
 DEPENDENCY definition `39ffb87e`, which remains in the estate.
+
+The same chain carried the `Idempotency-Key` header (2026-10-31, later): DEPENDENCY `a8d6f423` (run
+`b165fbbe`), PROVIDER `13c047d6` (run `f7a66840`), its label (`99ef3788`) and runner binding
+(`c2481b51`). Then `serve-http-request` was declared again to carry `headers` to the frontdoor, with its
+text input re-applied at once (`f254cb85`, 28 s between the two), the frontdoor's
+`serve-resolve-request` revised through `apply-declared-change` (`transformation-declaration`,
+`expectedDigest` the current definition; now `de026dfa`, run `b836bf17`) to bind `$header.`, and only
+then the interface mapping `$header.idempotency-key` (definition `263423`, run `a4add720`). That order
+matters: before the frontdoor knew `$header.`, the interface's template would have bound the literal
+string to every admission.
+
+A new provider follows the same chain from the start: the trace encoding's DEPENDENCY
+`sfx-api-run-trace` (`da5ee4ad`, run `310be6b8`), its mechanic `sfx-api-run-trace-encode-port.v1`
+(`model-declare-platform-capability`, run `d52680e6`), the PROVIDER `sfx-api-run-trace-encode`
+(`ada61f18`, run `d6b9ef21`, without `expected_digest`), its label (`bcbaabda`) and runner binding
+(`010bc1ee`).
 
 ## Verified
 
@@ -483,12 +529,10 @@ object, in every isolation profile) and runs at low integrity, and the providers
 1. **Deployment:** [the declared API's Azure app `sfx-api-test` is live](docs/azure-test-2026-10-31.md),
    with its role grants, approved Key Vault bootstrap and authenticated execution/read-back verified.
    sfx-platform still calls the legacy staging host; moving it to the declared API is still open.
-2. **Asynchronous runs and their live stream** (The host, Runs): live on `sfx-api-test`; the signed-in
-   journey over HTTP is still to run. Then: the run's trace retained in the run store as chunks (the legacy chunks
-   are brotli-compressed, which the Python standard library cannot write, so the encoding belongs in a
-   declared program), its graphs per execution root, the stream ending when the caller's session ends,
-   the `Idempotency-Key` header (the ingress returns no headers; the body's `idempotencyKey` works),
-   and machine runs (EV-014).
+2. **Asynchronous runs and their live stream** (The host, Runs): live on `sfx-api-test` with the
+   retained trace, the session rule on streams and the `Idempotency-Key` header; the signed-in journey
+   over HTTP is still to run. Then: the graphs per execution root in the run store, machine runs
+   (EV-014), and more than one worker (each adds about 350 MB on the shared plan).
 3. **The capability graph:** compile is a kernel operation, not a capability.
 4. **Session operations:** sign-in (`POST /sfx/v1/session`), session read and sign-out are served;
    sfx-platform's signed-in acceptance (2026-10-31) passed against `sfx-api-test`.

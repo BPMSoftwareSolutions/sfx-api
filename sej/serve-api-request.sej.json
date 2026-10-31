@@ -818,6 +818,11 @@
                    "from": "payload",
                    "path": "request.query"
                   },
+                  "$header": {
+                   "op": "path",
+                   "from": "payload",
+                   "path": "request.headers"
+                  },
                   "$caller": {
                    "op": "path",
                    "from": "payload",
@@ -976,7 +981,7 @@
                                  "from": "field",
                                  "path": "value"
                                 },
-                                "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                                "pattern": "^\\$(body|(path|query|caller|header)\\.[A-Za-z0-9_-]+)$"
                                },
                                "else": {
                                 "op": "literal",
@@ -1060,7 +1065,7 @@
                             "from": "member",
                             "path": "value"
                            },
-                           "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                           "pattern": "^\\$(body|(path|query|caller|header)\\.[A-Za-z0-9_-]+)$"
                           },
                           "else": {
                            "op": "literal",
@@ -1145,7 +1150,7 @@
                       "from": "operation",
                       "path": "input"
                      },
-                     "pattern": "^\\$(body|(path|query|caller)\\.[A-Za-z0-9_]+)$"
+                     "pattern": "^\\$(body|(path|query|caller|header)\\.[A-Za-z0-9_-]+)$"
                     },
                     "else": {
                      "op": "literal",
