@@ -1,0 +1,83 @@
+{
+  "dependencyId": "sfx-api-ingress",
+  "meaning": "The HTTP ingress mechanics of the declared API, resolved by the kernel so the hosting facade carries none. resolve-request reads the raw request the facade received: its method, its target as decoded path segments and its query as JSON text, its body, and the session digest of its credential carrier (an Authorization bearer, else the __Host-sfx-session cookie: SHA-256 of SHA-256 of the 32 bearer bytes). The bearer is read and digested inside this one program and never returned. compose-response writes the raw HTTP/1.1 response of a status, its reason phrase, a content type and a body.",
+  "objectGraphClosure": "object-graph.v1",
+  "runtimes": {
+    "csharp": { "package": "System.Text.RegularExpressions", "type": "System.Text.RegularExpressions.Regex" }
+  },
+  "operations": [
+    {
+      "operationId": "resolve-request",
+      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the decoded query as JSON text), body, carried (whether a well-formed carrier was presented) and sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes). A request that does not parse reads as empty members.",
+      "parameters": [
+        { "name": "raw", "source": "input", "path": "" }
+      ],
+      "result": { "from": "value" },
+      "programs": {
+        "csharp": [
+          { "bind": "requestPattern", "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions", "arguments": [ { "op": "literal", "value": "\\A([A-Z]+) (/[^ \\r\\n]*) [^\\r\\n]*\\r?\\n((?:[^\\r\\n]+\\r?\\n)*)\\r?\\n([\\s\\S]*)\\z" } ] },
+          { "bind": "request", "invocation": "requestPattern.Match", "arguments": [ { "op": "path", "from": "scope", "path": "raw" } ] },
+          { "bind": "requestGroups", "invocation": "request.$computed.$read", "selector": { "op": "literal", "value": "Groups" } },
+          { "bind": "methodGroup", "invocation": "requestGroups.$computed.$read", "selector": { "op": "literal", "value": 1 } },
+          { "bind": "method", "invocation": "methodGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "targetGroup", "invocation": "requestGroups.$computed.$read", "selector": { "op": "literal", "value": 2 } },
+          { "bind": "target", "invocation": "targetGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "headGroup", "invocation": "requestGroups.$computed.$read", "selector": { "op": "literal", "value": 3 } },
+          { "bind": "head", "invocation": "headGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "bodyGroup", "invocation": "requestGroups.$computed.$read", "selector": { "op": "literal", "value": 4 } },
+          { "bind": "body", "invocation": "bodyGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "uri", "invocation": "new System.Uri, System.Private.Uri", "arguments": [ { "op": "join", "value": { "op": "array", "items": [ { "op": "literal", "value": "http://sfx-api.local" }, { "op": "path", "from": "scope", "path": "target" } ] }, "separator": "" } ] },
+          { "bind": "path", "invocation": "uri.$computed.$read", "selector": { "op": "literal", "value": "LocalPath" } },
+          { "bind": "slash", "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions", "arguments": [ { "op": "literal", "value": "/" } ] },
+          { "bind": "segments", "invocation": "slash.Split", "arguments": [ { "op": "path", "from": "scope", "path": "path" } ] },
+          { "bind": "query", "invocation": "uri.GetComponents", "arguments": [ { "op": "literal", "value": 32 }, { "op": "literal", "value": 3 } ] },
+          { "bind": "queryEscaped", "invocation": "query.Replace", "arguments": [ { "op": "literal", "value": "\\" }, { "op": "literal", "value": "\\\\" } ] },
+          { "bind": "queryQuoted", "invocation": "queryEscaped.Replace", "arguments": [ { "op": "literal", "value": "\"" }, { "op": "literal", "value": "\\\"" } ] },
+          { "bind": "pairPattern", "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions", "arguments": [ { "op": "literal", "value": "([^=&]+)(?:=([^&]*))?" } ] },
+          { "bind": "queryMembers", "invocation": "pairPattern.Replace", "arguments": [ { "op": "path", "from": "scope", "path": "queryQuoted" }, { "op": "literal", "value": "\"$1\":\"$2\"" } ] },
+          { "bind": "queryJoined", "invocation": "queryMembers.Replace", "arguments": [ { "op": "literal", "value": "&" }, { "op": "literal", "value": "," } ] },
+          { "bind": "carrierPattern", "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions", "arguments": [ { "op": "literal", "value": "(?im)\\A(?:(?=[\\s\\S]*?^authorization:[ \\t]*bearer[ \\t]+((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*\\r?$)|(?=[\\s\\S]*?^cookie:(?:[^\\r\\n]*?;)?[ \\t]*(?-i:__Host-sfx-session)=((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*(?:;|\\r?$)))" } ] },
+          { "bind": "carrier", "invocation": "carrierPattern.Match", "arguments": [ { "op": "path", "from": "scope", "path": "head" } ] },
+          { "bind": "carried", "invocation": "carrier.$computed.$read", "selector": { "op": "literal", "value": "Success" } },
+          { "bind": "carrierGroups", "invocation": "carrier.$computed.$read", "selector": { "op": "literal", "value": "Groups" } },
+          { "bind": "bearerGroup", "invocation": "carrierGroups.$computed.$read", "selector": { "op": "literal", "value": 1 } },
+          { "bind": "bearer", "invocation": "bearerGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "cookieGroup", "invocation": "carrierGroups.$computed.$read", "selector": { "op": "literal", "value": 2 } },
+          { "bind": "cookieToken", "invocation": "cookieGroup.$computed.$read", "selector": { "op": "literal", "value": "Value" } },
+          { "bind": "hasher", "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography", "release": { "invocation": "hasher.Dispose" } },
+          { "bind": "verifier", "invocation": "hasher.ComputeHash", "arguments": [ { "op": "join", "value": { "op": "array", "items": [ { "op": "path", "from": "scope", "path": "bearer" }, { "op": "path", "from": "scope", "path": "cookieToken" } ] }, "separator": "" } ] },
+          { "bind": "sessionDigest", "invocation": "hasher.ComputeHash", "arguments": [ { "op": "path", "from": "scope", "path": "verifier" } ] },
+          { "bind": "value", "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json", "arguments": [ { "op": "literal", "value": null } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "method" }, { "op": "path", "from": "scope", "path": "method" } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "segments" }, { "op": "path", "from": "scope", "path": "segments" } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "queryJson" }, { "op": "join", "value": { "op": "array", "items": [ { "op": "literal", "value": "{" }, { "op": "path", "from": "scope", "path": "queryJoined" }, { "op": "literal", "value": "}" } ] }, "separator": "" } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "body" }, { "op": "path", "from": "scope", "path": "body" } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "carried" }, { "op": "path", "from": "scope", "path": "carried" } ] },
+          { "invocation": "value.Add", "arguments": [ { "op": "literal", "value": "sessionDigest" }, { "op": "path", "from": "scope", "path": "sessionDigest" } ] }
+        ]
+      }
+    },
+    {
+      "operationId": "compose-response",
+      "meaning": "Write the raw HTTP/1.1 response: the status line (the status and its reason phrase from the declared reasons), Content-Type, Content-Length (the UTF-8 byte count of the body), Connection: close, and the body (JSON text, or a text body as it is).",
+      "parameters": [
+        { "name": "status", "source": "input", "path": "status" },
+        { "name": "reasons", "source": "input", "path": "reasons" },
+        { "name": "contentType", "source": "input", "path": "contentType" },
+        { "name": "body", "source": "input", "path": "body", "encoding": "json-text" }
+      ],
+      "result": { "from": "raw" },
+      "programs": {
+        "csharp": [
+          { "bind": "statusText", "invocation": "status.ToString" },
+          { "bind": "reason", "invocation": "reasons.$computed.$read", "selector": { "op": "path", "from": "scope", "path": "statusText" } },
+          { "bind": "encoding", "invocation": "new System.Text.UTF8Encoding" },
+          { "bind": "length", "invocation": "encoding.GetByteCount", "arguments": [ { "op": "path", "from": "scope", "path": "body" } ] },
+          { "bind": "lengthText", "invocation": "length.ToString" },
+          { "bind": "builder", "invocation": "new System.Text.StringBuilder", "arguments": [ { "op": "join", "value": { "op": "array", "items": [ { "op": "literal", "value": "HTTP/1.1 " }, { "op": "path", "from": "scope", "path": "statusText" }, { "op": "literal", "value": " " }, { "op": "path", "from": "scope", "path": "reason" }, { "op": "literal", "value": "\r\nContent-Type: " }, { "op": "path", "from": "scope", "path": "contentType" }, { "op": "literal", "value": "\r\nContent-Length: " }, { "op": "path", "from": "scope", "path": "lengthText" }, { "op": "literal", "value": "\r\nConnection: close\r\n\r\n" }, { "op": "path", "from": "scope", "path": "body" } ] }, "separator": "" } ] },
+          { "bind": "raw", "invocation": "builder.ToString" }
+        ]
+      }
+    }
+  ]
+}

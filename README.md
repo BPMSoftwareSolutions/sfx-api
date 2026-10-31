@@ -1,14 +1,16 @@
 # sfx-api
 
-The declared API, deployed by itself. There is no frontdoor code: every mechanic up to the
-profile schema boundary is SEJ (`sej-pure.v2`), declared into the estate, and the kernel
-resolves it. The only native code is the host's receive and send ([host/serve.py](host/serve.py)).
+The declared API, deployed by itself. Every mechanic up to the profile schema boundary, the HTTP
+ingress included, is declared into the estate (SEJ `sej-pure.v2` and our own dependency programs),
+and the kernel resolves it. The host is a facade for hosting ([host/serve.py](host/serve.py)): it
+hands the raw request to one kernel invocation and writes back the raw response the kernel resolves.
 
 ## Structure
 
 | Path | What it is |
 | --- | --- |
-| [host/serve.py](host/serve.py) | The host: receives HTTP, hands each request to a resident kernel as one envelope for the frontdoor, sends its answer (Python standard library) |
+| [host/serve.py](host/serve.py) | The hosting facade: the platform's HTTP server bound to one kernel invocation of `serve-http-request` per request (Python standard library) |
+| [providers/sfx-api-ingress.dependency.json](providers/sfx-api-ingress.dependency.json) | The DEPENDENCY `sfx-api-ingress`: the ingress mechanics as C# programs the kernel's resolver runs (`resolve-request`, `compose-response`) |
 | [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) | The interface as declared (`sidefx:authorities/sidefx-api-interface.v1`); a change is declared with `model-declare-semantic-object` |
 | [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) | The frontdoor's SEJ: identify the caller, prepare the interface read, resolve the request, compose the response |
 | [sej/answer-api-response.sej.json](sej/answer-api-response.sej.json) | Returns the refusal it is given, so refusals take the answer path |
@@ -22,10 +24,44 @@ resolves it. The only native code is the host's receive and send ([host/serve.py
 | [declarations/04-run-views.sql](declarations/04-run-views.sql) | Resolves the run operations to the run store (`read-run-state`, `read-run-output`, `read-run-graphs`, `read-run-trace-chunks`) and answers 404 for a `NOT_FOUND` outcome |
 | [declarations/05-admit-run.sql](declarations/05-admit-run.sql) | Resolves `admit-run` to `admit-api-run` and declares its first version |
 | [declarations/06-admit-run-staged.sql](declarations/06-admit-run-staged.sql) | Admission with staged output (requires sfx-identity migration `007-run-output-stage` in sfx-dal) |
-| [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel and its resident instances, the frontdoor capability, the credential carriers, the HTTP bounds |
+| [declarations/07-serve-http-request.dsl](declarations/07-serve-http-request.dsl) | The DSL of `serve-http-request`, the declared HTTP ingress |
+| [declarations/08-resolve-http-request.dsl](declarations/08-resolve-http-request.dsl) | The DSL of `resolve-http-request`: the ingress read alone, without serving |
+| [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel, the kernel command the facade runs, the HTTP address |
 | [deploy/Dockerfile](deploy/Dockerfile), [deploy/start.sh](deploy/start.sh) | The container: the host, the admitted kernel and the staging host facts; no credential material |
 
 Each SEJ file is the authority of one capability namespace (`sidefx:capability:<file name>`).
+
+## The ingress
+
+`serve-http-request` is the declared HTTP ingress. Its input is the raw request as the facade
+received it (`{contractId: serve-http-request-request.v1, raw}`; the kernel binds the text input at
+`raw`), its output the raw HTTP/1.1 response. Its stages:
+
+1. **read** (inline SEJ): the raw request text.
+2. **ingress** (`sfx-api-ingress-resolve-port.v1`, the DEPENDENCY operation `resolve-request`): the
+   method, the path split on `/` and decoded, the decoded query as JSON text, the body, and the session
+   digest of the credential carrier. The carriers are `Authorization: Bearer` and, without one, the
+   `__Host-sfx-session` cookie, each base64 of 32 bytes; the digest is SHA-256 of SHA-256 of the
+   bytes, the same digest sfx-identity keeps for the session. The bearer is read and digested inside
+   this one program and never returned.
+3. **prepare** (inline SEJ): the frontdoor's input `{request: {method, segments, query, body},
+   caller}`, the caller `{sessionDigest}` when a carrier was presented and `null` otherwise.
+4. **frontdoor** (`generic-capability-invocation.v1`): `serve-api-request`.
+5. **shape** (inline SEJ): status, content type, body and the declared reason phrases; a frontdoor
+   that does not answer `api-response.v1` is 502 `FRONTDOOR_RESPONSE_INVALID`.
+6. **respond** (`sfx-api-ingress-compose-port.v1`, the operation `compose-response`): the status
+   line, `Content-Type`, `Content-Length` (the UTF-8 byte count of the body), `Connection: close`
+   and the body.
+
+The ingress mechanics are ours, declared up to the profile schema boundary in the estate's provider
+chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `a9a42c94`), the mechanics
+`sfx-api-ingress-resolve-port.v1` and `sfx-api-ingress-compose-port.v1`, the PROVIDERs
+`sfx-api-ingress-resolve` (`1ec34615`) and `sfx-api-ingress-compose` (`ce748ec5`), and their entries
+and overlay bindings on the graph runner `run-declared-graph-execute`. The kernel's resolver runs the
+programs; no SDA provider, contract or engine beyond the transformation port is named.
+
+`resolve-http-request` runs the read and ingress stages alone and returns what the ingress reads:
+how the API reads a request, without serving it.
 
 ## The frontdoor
 
@@ -33,8 +69,9 @@ Each SEJ file is the authority of one capability namespace (`sidefx:capability:<
 
 0. **identify** (SEJ `serve-identify-prepare`, `sql-database-reader` on sfx-identity, SEJ
    `serve-identify-lift`): `identity.resolve_api_session` resolves the session the caller's digest
-   names (`{kind: user, principalId, sessionId}`) and carries the request; a caller presented without
-   a digest passes through.
+   names (`{kind: user, principalId, sessionId}`, the digest as base64 or hexadecimal, sfx-dal
+   migration `010-api-session-digest-base64`) and carries the request; a digest in neither form
+   resolves no caller, and a caller presented without a digest passes through.
 1. **prepare** (SEJ `serve-prepare-interface-read`): the read request for `sql-database-reader`.
 2. **interface** (`generic-capability-invocation.v1`): `sql-database-reader` returns the interface
    authority `sidefx:authorities/sidefx-api-interface.v1` together with the request and caller. A
@@ -82,23 +119,28 @@ operation on the target's own graph, not a capability the dispatch can run.
 
 ## The host
 
-[host/serve.py](host/serve.py) is the authenticated ingress and the only native code: it receives a
-request, hands it to a pool of resident kernels (`KernelEntry --resident-envelopes`, one compact
-`sfx-command-delivery.v1` envelope per line on stdin, one result line on stdout) as an envelope for the
-frontdoor, and sends the `api-response.v1` it answers. The request is `method`, `segments` (the path
-split on `/`, decoded), `query`, `headers` and `body` text. Every choice is host data in
-[sfx-api.config.json](sfx-api.config.json): the kernel and its instances, the frontdoor capability,
-the credential carriers and the HTTP bounds. It runs on the Python standard library: nothing is
-installed or built.
+[host/serve.py](host/serve.py) is a facade for hosting. The platform's HTTP server (Python's
+`ThreadingHTTPServer`: the accept loop, a thread per connection, the request head) receives a
+request; the facade's one method, bound to each HTTP method, runs the kernel
+command from [sfx-api.config.json](sfx-api.config.json) once with the request on stdin, as the
+platform read it (the request line, the header block, and the body by its declared length), and
+writes the kernel's resolved response to the connection. It has no branch, iteration, exception
+handling, throw, validation, fallback, retry or state of its own; what remains is the binding to the
+kernel's carrier (the command's JSON output, decoded once). It runs on the Python standard library:
+nothing is installed or built.
 
-A credential never enters a capability input: the host drops `authorization`, `proxy-authorization`
-and `cookie` from the headers it forwards. Under the declared carriers (`Authorization: Bearer` and
-the `__Host-sfx-session` cookie, base64 of 32 bytes) it presents only `{sessionDigest}`, SHA-256 of the
-session's verifier hash. That digest cannot be presented to `identity.validate_session`, so nothing
-the kernel carries is a verification handle. sfx-identity resolves the session by it (sfx-dal
-migration `008-api-session-resolution`: a persisted, indexed digest of the verifier hash and
-`identity.resolve_api_session`, which applies the checks of `validate_session`). Machine callers have
-no carrier yet (EV-014).
+    KernelEntry capability invoke serve-http-request --input - --input-type text --json --config kernel-host.json --timeout 225000
+
+Each request is one kernel process, so the facade holds no pool and no session. A kernel that fails
+writes nothing to stdout: the platform closes the connection without a response (the front end
+answers 502), and the kernel's error reaches the host's stderr. The kernel bounds its standard input
+at 8 MiB and the delivery at 225 s (App Service stops a request at 230 s).
+
+The bearer enters only the kernel's ingress provider, which digests it and never returns it: the
+frontdoor, sfx-identity and every run see `{sessionDigest}`, which `identity.validate_session` does
+not accept, so nothing past the ingress carries a verification handle. The bearer text appears neither
+in the kernel's observations (`SIDEFX_OBSERVE=1`) nor in the delivered envelope's testimony. Machine
+callers have no carrier yet (EV-014).
 
     wsl -d Ubuntu --exec sh -c 'cd /mnt/c/lab/repos/sfx-api && python3 host/serve.py sfx-api.config.json'
 
@@ -142,7 +184,52 @@ from [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface
 checking that the live interface still equals the last declared one, and sfx-identity migrations
 through `sql-database-reader` on `sfx-identity-database`.
 
+The ingress (2026-10-30) was declared the same way, each row read back before the next cites it:
+
+1. The DEPENDENCY from [providers/sfx-api-ingress.dependency.json](providers/sfx-api-ingress.dependency.json)
+   (`model-declare-semantic-object`), then per operation its mechanic
+   (`model-declare-platform-capability`), its PROVIDER on the stored DEPENDENCY digest
+   (`model-declare-provider-identity`, labelled with `model-set-definition-label`), and its runner
+   entry and overlay binding (`model-declare-port-provider-binding`; a read of the runner counts both).
+2. The capabilities from [declarations/07-serve-http-request.dsl](declarations/07-serve-http-request.dsl)
+   and [declarations/08-resolve-http-request.dsl](declarations/08-resolve-http-request.dsl)
+   (`sfx-api capability author --dsl <file>`).
+3. Their text input (`capability-interface-change`: `inputType text`, `inputPath raw`). The DSL
+   declares JSON inputs only, and a DSL declaration resets the input, so this follows every
+   re-declaration. The kind took a type other than JSON and a path once it was re-registered
+   (`change-kind-registration`, the adapter on `model.declare_capability_interface`'s own
+   `@input_path`).
+
 ## Verified
+
+The facade over real HTTP on WSL, each request one kernel run of `serve-http-request` (6 of 6, run
+concurrently in 15.2 s; one request alone 6.8 s):
+
+| Request | Answer |
+| --- | --- |
+| `GET /sfx/v1/session`: no credential, an unknown bearer, a malformed bearer | 401 `CALLER_REQUIRED` |
+| `GET /sfx/v1/runs/{run}` with an unknown session cookie | 401 `CALLER_REQUIRED` |
+| `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` |
+| `POST /sfx/v1/runs` with a JSON body, no credential | 401 `CALLER_REQUIRED` |
+
+Every answer carried `Content-Type: application/json; charset=utf-8`, `Connection: close` and a
+`Content-Length` equal to its body's bytes. The ingress read (`resolve-http-request`, 6 of 6) against
+values computed outside the kernel:
+
+| Raw request | Read |
+| --- | --- |
+| `POST /sfx/v1/runs?limit=2&cursor=a%20b`, a random bearer, a JSON body | the session digest equals SHA-256 of SHA-256 of the bearer bytes; query `{limit: "2", cursor: "a b"}`; the body |
+| `GET /sfx/v1/runs/abc/output`, the session cookie among others | the cookie's digest |
+| a bearer and a session cookie | the bearer's digest |
+| a malformed bearer; no carrier | not carried |
+| text that is not HTTP | empty members |
+
+The owner's live session digest, as base64, resolves the owner through the frontdoor
+(`GET /sfx/v1/session` 200, kind `user`); an unknown base64 digest is 401. A path segment holding an
+encoded slash (`%2F`) is split there: the ingress decodes the path before it splits it.
+
+One kernel start is about 1.6 s and the ingress read alone 2.4 s; a request through the frontdoor is
+6.7 to 7.3 s.
 
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 
@@ -179,7 +266,8 @@ Admission, admitting `read-project-tracker` (a 46 KB output) for a user with a l
 | `GET /sfx/v1/retained-runs/{run}` | 200, the caller's session, capture `incomplete` (no trace yet) |
 | `POST /sfx/v1/runs` (user, no session) | 422 `EVIDENCE_SESSION_REQUIRED` |
 
-The host over real HTTP and the identity stage (7 of 7), and the catalog:
+The earlier host (resident kernels, the digest computed in the host) over real HTTP and the identity
+stage (7 of 7), and the catalog:
 
 | Request | Answer |
 | --- | --- |
@@ -190,9 +278,9 @@ The host over real HTTP and the identity stage (7 of 7), and the catalog:
 | HTTP: `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` |
 | `GET /sfx/v1/circuits` (user) | 200, 730 capabilities (6.6 s) |
 
-The digest formula is checked against SQL Server's (`HASHBYTES` twice over 32 zero bytes equals the
-host's SHA-256 twice). A warm resident kernel answers in about 4.7 s: the frontdoor's reads each open
-the vault and a connection.
+The digest formula is checked against SQL Server's (`HASHBYTES` twice over 32 zero bytes equals
+SHA-256 twice). A warm resident kernel answered in about 4.7 s: the frontdoor's reads each open the
+vault and a connection.
 
 Each run starts a kernel process; the times include its start. The resolve and respond stages also
 passed 15 of 15 cases as standalone capabilities: matching, nested payload binding, user-only
@@ -229,8 +317,10 @@ providers run there unchanged, so every capability runs locally as it does on st
   in `Default_keyring`. The keyring has a blank password, so gnome-keyring stores it unencrypted and it
   never locks: runs need no unlock after WSL restarts. The key is then protected by the Windows account
   and disk encryption only.
-- **Run:** pipe an `sfx-command-delivery.v1` envelope into
-  `./KernelEntry --stdin-envelope --config kernel-host.json` in the install root, for example
+- **Run:** pipe a raw HTTP request into the facade's command in the install root, for example
+  `printf 'GET /sfx/v1/nope HTTP/1.1\r\nHost: x\n\n' | ./KernelEntry capability invoke serve-http-request --input - --input-type text --json --config kernel-host.json`
+  (`resolve-http-request` reads the same request without serving it), or an `sfx-command-delivery.v1`
+  envelope into `./KernelEntry --stdin-envelope --config kernel-host.json`, for example
   `{"deliveryType":"sfx-command-delivery.v1","operation":"invoke","request":{"object":"capability","verb":"invoke","subject":"serve-api-request","input":"<request JSON>","inputType":"json"}}`.
 
 The Windows kernel is not a local runtime for these providers: it denies child processes (a job
@@ -239,11 +329,12 @@ object, in every isolation profile) and runs at low integrity, and the providers
 
 ## Next
 
-1. **Deployment:** the test app `sfx-api-test` (the image `sfx-api:a360819` is in the registry; the
-   app, its two role grants and the three Key Vault secrets are an owner step), then staging.
+1. **Deployment:** the test app `sfx-api-test` (the image is rebuilt from this commit; the app, its
+   two role grants and the three Key Vault secrets are an owner step), then staging.
 2. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
    that appends trace chunks; then admission through the workflow workers (asynchronous), the
    idempotency key (`$header.` in the input template) and machine runs (EV-014).
 3. **The capability graph:** compile is a kernel operation, not a capability.
 4. **Session operations:** sign-in, session, session runs and sign-out.
-5. **Performance:** the frontdoor's reads each open the vault and a connection (about 4.7 s warm).
+5. **Performance:** each request starts a kernel (about 1.6 s) and the frontdoor's reads each open
+   the vault and a connection (a request is about 6.8 s).
