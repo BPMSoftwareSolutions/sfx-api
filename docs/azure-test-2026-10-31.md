@@ -65,3 +65,18 @@ percentiles.
   open.
 - Plan memory stayed at 59% with the resident kernel (64% while the old and new containers
   overlapped during the swap).
+
+## Asynchronous runs (2026-10-31, later)
+
+- Runtime source: `64f3a28`. Image `bpmaiengineacr.azurecr.io/sfx-api@sha256:fd1fd6d43b54ff0f18ce26382d4ad4b88af26f25b049b64e123aa05f0eaf2e97`
+  (tag `sfx-api:64f3a28`), ACR build `caa8`, succeeded. Same kernel `39881693`. The site
+  started on the new image at 21:38:47 UTC; its warm-up probe paid the kernel start.
+- The facade adds a worker pool (one resident kernel, `SIDEFX_OBSERVE=1`, started by the first run)
+  and acts on host directives (README, The host, Runs).
+- Declared: `admit-api-run-live`, `open-api-run-stream`, `complete-api-run`, then the interface switch
+  (definition `263343`, run `48000499`). The live interface equalled the last declared one before the
+  switch, and the switch changes only `admit-run` and `stream-run-events`. Rollback: re-declare
+  definition `253230`'s semantics (`git show ef32bda:authorities/sidefx-api-interface.v1.json`).
+- After the switch, without a session: `POST /sfx/v1/runs` and `GET /sfx/v1/runs/x/events/stream`
+  401 `CALLER_REQUIRED`, `GET /sfx/v1/nope` 404, a refused sign-in 400 in 0.47 s.
+- Not yet run: the signed-in journey over HTTP (sign in, admit, stream, reconnect, read back).

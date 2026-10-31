@@ -124,11 +124,11 @@ run|output|graphs}`); `read-run-events` reads its trace chunks. A dispatch answe
 envelope, so each view names its slice itself and the request's filters stop at the dispatch: the
 graph view returns every execution root, the events view every chunk. A caller without a principal
 (machine) reads `NOT_FOUND` until machine runs are captured. `read-run-delivery` (the store holds no
-delivery) answers 501, and so does `stream-run-events` until the interface switch to
-`open-api-run-stream` is declared (The host, Runs).
+delivery) answers 501. `admit-run` and `stream-run-events` resolve to the asynchronous run
+capabilities (The host, Runs).
 
-`admit-run` (`POST /sfx/v1/runs`, the body `{object, operation, subject, namespace, input}`) is
-`admit-api-run`, a fan-out:
+`admit-run` (`POST /sfx/v1/runs`) resolves to `admit-api-run-live` (The host, Runs). Until
+2026-10-31 it resolved to the synchronous `admit-api-run`, which is still declared, a fan-out:
 
 1. **root**: the run store registers the run under the caller's session (`evidence.register_run` in
    sfx-identity) and mints its id.
@@ -203,18 +203,30 @@ The worker command (with a longer `--timeout`, one hour), the worker count and t
 is cut to its key members, `keepaliveSeconds`) are host data. A worker kernel adds about 350 MB once
 the first run starts it.
 
-Status (2026-10-31): the facade's run handling is verified against a stand-in kernel (22 checks:
-202 at admission, events delivered as written over 2 s, another request answered during a run,
-resume by `Last-Event-ID` and `after`, a replayed key executing nothing, a failed run, keepalives) and
-with the real kernel as the worker (18 events of `verify-password-derivation` streamed as it ran,
-its 18.8 KB graph capture among them). `admit-api-run-live`, `open-api-run-stream` and
-`complete-api-run` ([declarations/11](declarations/11-admit-api-run-live.dsl),
-[12](declarations/12-open-api-run-stream.dsl), [13](declarations/13-complete-api-run.dsl)) are not
-declared yet, and the declared interface still resolves `admit-run` to the synchronous
-`admit-api-run`; [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json)
-holds the switch, to be declared once `sfx-api-test` runs this facade. The run's trace is not
-retained yet: events live in the host for the retained runs, and the run is completed with
-`latestCursor` 0, as before.
+Live since 2026-10-31 on `sfx-api-test` (image `fd1fd6d4`, commit `64f3a28`):
+`admit-api-run-live`, `open-api-run-stream` and `complete-api-run` are declared
+([declarations/11](declarations/11-admit-api-run-live.dsl), [12](declarations/12-open-api-run-stream.dsl),
+[13](declarations/13-complete-api-run.dsl); runs `8ecc6399`, `22106645`, `5063f081`), and the interface
+resolves `admit-run` and `stream-run-events` to them (definition `263343`, run `48000499`; the previous
+definition `253230` resolved `admit-run` to the synchronous `admit-api-run`, and re-declaring it rolls
+back). Verified:
+
+- the facade against a stand-in kernel, 22 checks: 202 at admission, events delivered as written over
+  2 s, another request answered during a run, resume by `Last-Event-ID` and `after`, a replayed key
+  executing nothing, a failed run, keepalives;
+- the capabilities against the estate, 16 checks: the execute-run directive with its 202 answer and
+  observe envelope, a replayed key answering the same run without execute-run, the same key for another
+  capability refused `IDEMPOTENCY_KEY_CONFLICT`, a caller without a live session refused
+  `EVIDENCE_SESSION_REQUIRED`, the owner's stream directive and another principal's `NOT_FOUND`, and
+  run `0c5c9150` of `verify-password-derivation` executed by the facade's worker, streamed live (43
+  events, its graph capture among them) and completed in the run store (`completed`, exit 0, output
+  `MATCHES` read back);
+- `sfx-api-test` after the switch, without a session: `POST /runs` and the stream answer 401
+  `CALLER_REQUIRED`, as before.
+
+The signed-in journey over HTTP (sign in, admit, stream, reconnect, read back) needs a session and has
+not run yet. The run's trace is not retained yet: events live in the host for the retained runs, and
+the run is completed with `latestCursor` 0, as before.
 
 The bearer enters only the kernel's ingress provider, which digests it and never returns it: the
 frontdoor, sfx-identity and every run see `{sessionDigest}`, which `identity.validate_session` does
@@ -471,9 +483,8 @@ object, in every isolation profile) and runs at low integrity, and the providers
 1. **Deployment:** [the declared API's Azure app `sfx-api-test` is live](docs/azure-test-2026-10-31.md),
    with its role grants, approved Key Vault bootstrap and authenticated execution/read-back verified.
    sfx-platform still calls the legacy staging host; moving it to the declared API is still open.
-2. **Asynchronous runs and their live stream** (The host, Runs): built and verified locally; to declare
-   `admit-api-run-live`, `open-api-run-stream` and `complete-api-run`, deploy the facade, then declare
-   the interface switch. Then: the run's trace retained in the run store as chunks (the legacy chunks
+2. **Asynchronous runs and their live stream** (The host, Runs): live on `sfx-api-test`; the signed-in
+   journey over HTTP is still to run. Then: the run's trace retained in the run store as chunks (the legacy chunks
    are brotli-compressed, which the Python standard library cannot write, so the encoding belongs in a
    declared program), its graphs per execution root, the stream ending when the caller's session ends,
    the `Idempotency-Key` header (the ingress returns no headers; the body's `idempotencyKey` works),
