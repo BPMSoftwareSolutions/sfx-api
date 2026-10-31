@@ -13,7 +13,8 @@ printf '%s' "$SFX_CREDENTIAL_VAULT_B64" | base64 -d > "$HOME/.local/share/sfx/va
 printf '%s' "$SFX_CREDENTIAL_VAULT_KEY_RECORD_B64" | base64 -d > "$HOME/.local/share/sfx/credential-vault-keys/0f2fb3b502843c274efcadf4856f631a.json"
 eval "$(dbus-launch --sh-syntax)"
 export DBUS_SESSION_BUS_ADDRESS
-printf '' | gnome-keyring-daemon --unlock --components=secrets >/dev/null
+# An empty line creates/unlocks the login collection; EOF alone leaves it absent.
+printf '\n' | gnome-keyring-daemon --unlock --components=secrets >/dev/null
 gnome-keyring-daemon --start --components=secrets >/dev/null
 printf '%s' "$SFX_CREDENTIAL_VAULT_KEY" | secret-tool store --label sfx-credential-vault service sfx-credential-vault key 0f2fb3b502843c274efcadf4856f631a
 unset SFX_CREDENTIAL_VAULT_B64 SFX_CREDENTIAL_VAULT_KEY_RECORD_B64 SFX_CREDENTIAL_VAULT_KEY
