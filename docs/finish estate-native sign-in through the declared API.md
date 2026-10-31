@@ -25,6 +25,32 @@ capability is `open-api-session`, served by the declared API as `POST /sfx/v1/se
 
 Tracker: project `declared-api-frontdoor`, task `daf-open-api-session` (IN_PROGRESS).
 
+## The boundary: everything declared up to the profile schema
+
+The profile schema is the boundary (sfx-embody `docs/the-boundary.md`). Everything above it is
+declared rows in the estate, and the kernel resolves it; nothing is written as executable code.
+
+- **Declared (ours):** the capabilities (DSL), their inline SEJ, the interface authority, and every
+  mechanic as an operation of one of our DEPENDENCYs, each on the chain DEPENDENCY → mechanic
+  (platform capability) → PROVIDER → entry and overlay binding on `run-declared-graph-execute`. The
+  sign-in mechanics already exist on that chain (`sfx-identity-login`, `sfx-api-ingress`), and so do
+  the vault chain's (`sfx-vault-file`, `sfx-identity-database`, `sfx-vault-secret-service`).
+- **Resolved (the kernel):** the language resolver that runs those programs and the SEJ engine.
+- **The only `platform:` ports the new DSLs may name:**
+  - our DEPENDENCY ports: the three vault-chain ports of step 1, `sfx-identity-login-open-port.v1`
+    and `sfx-identity-login-derive-port.v1`;
+  - `sda-authority-transformation-port.v1`, for inline SEJ only;
+  - `generic-capability-invocation.v1`, for a dispatch.
+
+  This is the set the existing ingress (`declarations/07-serve-http-request.dsl`) already uses. Name no
+  other SDA port, provider or contract (`sql-database-reader` included: the vault chain replaces it).
+- **No code changes:** do not edit `host/serve.py`, the kernel, sfx-providers or any local script.
+  Every constant (the realm, the URLs, the statements) lives in a DSL or a declared operation, as it
+  already does.
+- **A missing mechanic is declared, not coded.** If something the steps need does not exist, add an
+  operation to one of our DEPENDENCYs on the chain above (the sfx-api README, "Declaring", has the
+  route and the writers), or stop and record it in the tracker. Do not work around it.
+
 ## Authorization
 
 - The owner hands you this document as the instruction to apply every change in it directly, without
@@ -86,7 +112,7 @@ graph runner for this work; use no others.
 | `literal` | `{"op":"literal","value":V}` | `V` as given (any JSON) |
 | `path` | `{"op":"path","path":"a.b.0"}` or `{"op":"path","from":"<let binding>","path":"a"}` | Reads the cell input (or a `let` binding) at a dotted path; a number segment indexes an array (`segments.3`); `""` is the whole value; a missing member is `null` |
 | `object` | `{"op":"object","fields":{"k":EXPR,...}}` | An object of the evaluated fields |
-| `let` | `{"op":"let","bindings":{"a":EXPR,"b":EXPR},"value":EXPR}` | Bindings are evaluated in order; a later binding can read an earlier one with `"from"` |
+| `let` | `{"op":"let","bindings":{"a":EXPR,"b":EXPR},"value":EXPR}` | Bindings are evaluated in order; a later binding can read an earlier one with `"from"`. The body is the `let`'s own `value` member, **beside** `bindings`; a binding named `value` is not a body, and a `let` without its own `value` is refused `LEXICAL_BINDING_NOT_AVAILABLE_AT_CELL_ALTITUDE` (so is a `literal` without `value`) |
 | `if` | `{"op":"if","when":EXPR,"then":EXPR,"else":EXPR}` | `when` is truthy unless `null`, `false`, `""`, `0`, `[]` or `{}` |
 | `equals` | `{"op":"equals","left":EXPR,"right":EXPR}` | Strict: true only for the same kind and value (ordinal strings, numbers, booleans, `null` = `null`). **Refuses an object or array operand** |
 | `type` | `{"op":"type","value":EXPR}` | `"object"`, `"array"`, `"string"`, `"number"`, `"boolean"` or `"null"` (also for a missing member) |
@@ -130,6 +156,36 @@ connection string as `value`. An inline SEJ step is `platform: sda-authority-tra
 with `config: {"expression": <SEJ expression>}`; the existing SEJ in `declarations/07-serve-http-request.dsl`
 shows the operators in use (`if`, `equals`, `object`, `path`, `literal`, `let`, `type`, `length`,
 `matches`, `lookup`, `try-parse-json`), and only operators already used there are bound.
+
+### Before authoring any DSL file
+
+The author refuses a file whose `config:` line is not valid JSON, and names only the bind; the kernel
+refuses a `let` or `literal` without its own `value` at run time. Check every DSL file first; it must
+print `ok` (pass each file you wrote):
+
+```bash
+python3 -I - C:/lab/repos/sfx-api/declarations/09-open-api-session.dsl <<'EOF'
+import json, sys
+for f in sys.argv[1:]:
+    t = open(f, 'rb').read()
+    assert b'\r' not in t and max(t) < 128, f + ': CR or non-ASCII'
+    def walk(n, where):
+        if isinstance(n, dict):
+            if n.get('op') in ('let', 'literal'):
+                assert 'value' in n, '%s: %s at %s has no value member' % (f, n['op'], where)
+            if n.get('op') == 'let':
+                assert 'value' not in n.get('bindings', {}), '%s: let at %s has a binding named value' % (f, where)
+            for k, v in n.items(): walk(v, where + '/' + k)
+        elif isinstance(n, list):
+            for i, v in enumerate(n): walk(v, where + '/' + str(i))
+    for number, line in enumerate(t.decode().split('\n'), 1):
+        if line.startswith('config: '): walk(json.loads(line[8:]), 'line %d' % number)
+print('ok')
+EOF
+```
+
+A refusal names the line or bind; the cause is in that line, never in the compiler. Compare the line
+with the working `declarations/07-serve-http-request.dsl` instead of reading the kernel.
 
 ### 2. Declare `open-api-session`
 
@@ -228,7 +284,11 @@ EOF
 ```
 
 Expected, in order: 401 with `AUTHENTICATION_REJECTED`; 400 `LOGIN_INPUT_INVALID`; 404
-`OPERATION_NOT_DECLARED`; 401 `CALLER_REQUIRED`; `MATCHES`. Then the same against Azure (no rebuild):
+`OPERATION_NOT_DECLARED`; 401 `CALLER_REQUIRED`; `MATCHES`. Then the same against Azure (no rebuild),
+**from Git Bash only**: PowerShell 5.1 strips the double quotes from a native command's argument, so
+`curl -d '{...}'` from PowerShell sends a body that is not JSON and the ingress rightly answers 400
+`LOGIN_INPUT_INVALID`. Verified 2026-10-31 from Git Bash: the first command answers 401
+`{"status":"AUTHENTICATION_REJECTED"}`.
 
 ```bash
 curl -s -i -X POST https://sfx-api-test.azurewebsites.net/sfx/v1/session -H 'Content-Type: application/json' -d '{"identifier":"nobody@invalid","password":"not-it"}'
@@ -274,6 +334,6 @@ and stop there.
 ## Done when
 
 `POST /sfx/v1/session` on `sfx-api-test` answers the bearer for a valid sign-in, as tested by the
-owner, and 401, 429 or 400 for the refusals; `verify-password-derivation` answers `MATCHES`; every
-step runs on declared estate providers; `authenticate-ide-user` is retired or its writer is tracked;
+owner, and 401, 429 or 400 for the refusals; `verify-password-derivation` answers `MATCHES`; the new
+DSLs name only the ports the boundary section allows, and no code outside the estate changed; `authenticate-ide-user` is retired or its writer is tracked;
 the tracker task reflects the results.

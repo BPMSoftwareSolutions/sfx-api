@@ -519,6 +519,25 @@
       }
     },
     {
+      "operationId": "open-session",
+      "method": "POST",
+      "path": "/session",
+      "callers": [
+        "anonymous"
+      ],
+      "resolves": {
+        "kind": "ingress",
+        "capabilityId": "open-api-session"
+      },
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "session"
+      },
+      "meaning": "Sign in: served by the ingress, so the credential never reaches the frontdoor."
+    },
+    {
       "operationId": "read-session",
       "method": "GET",
       "path": "/session",
