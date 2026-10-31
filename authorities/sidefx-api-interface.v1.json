@@ -517,6 +517,55 @@
         },
         "5": "inspection"
       }
+    },
+    {
+      "operationId": "read-session",
+      "method": "GET",
+      "path": "/session",
+      "callers": [
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-api-session"
+      },
+      "input": {
+        "kind": "$caller.kind",
+        "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId",
+        "sessionExpiresAt": "$caller.sessionExpiresAt"
+      },
+      "meaning": "Read the caller session as the authenticated ingress resolved it: kind, principal, session and expiry.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "session"
+      }
+    },
+    {
+      "operationId": "sign-out",
+      "method": "POST",
+      "path": "/session/logout",
+      "callers": [
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "revoke-api-session"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId"
+      },
+      "meaning": "Sign out: sfx-identity revokes the caller session.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "session",
+        "4": "logout"
+      }
     }
   ]
 }

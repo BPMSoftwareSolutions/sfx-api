@@ -1,0 +1,18 @@
+{
+  "authorityType": "semantic-transformation-authority.v1",
+  "transformations": [
+    {
+      "id": "read-api-session-answer",
+      "expression": {
+        "op": "object",
+        "fields": {
+          "status": { "op": "literal", "value": "READ" },
+          "kind": { "op": "path", "path": "kind" },
+          "principalId": { "op": "path", "path": "principalId" },
+          "sessionId": { "op": "path", "path": "sessionId" },
+          "sessionExpiresAt": { "op": "path", "path": "sessionExpiresAt" }
+        }
+      }
+    }
+  ]
+}

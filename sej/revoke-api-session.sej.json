@@ -1,0 +1,44 @@
+{
+  "authorityType": "semantic-transformation-authority.v1",
+  "transformations": [
+    {
+      "id": "revoke-api-session-prepare",
+      "expression": {
+        "op": "object",
+        "fields": {
+          "executionTarget": { "op": "literal", "value": "sql-database-reader" },
+          "executionNamespace": { "op": "literal", "value": "sidefx:capabilities" },
+          "executionScenario": { "op": "literal", "value": "sql-database-reader" },
+          "inputType": { "op": "literal", "value": "json" },
+          "dispatchRequest": {
+            "op": "object",
+            "fields": {
+              "dataSource": { "op": "literal", "value": "sfx-identity-database" },
+              "statement": { "op": "literal", "value": "SET NOCOUNT ON; EXEC [identity].revoke_api_session @input = @input;" },
+              "resultColumn": { "op": "literal", "value": "value" },
+              "input": { "op": "path", "path": "" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "revoke-api-session-lift",
+      "expression": {
+        "op": "if",
+        "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "result.value" } }, "right": { "op": "literal", "value": "string" } },
+        "then": {
+          "op": "let",
+          "bindings": { "parsed": { "op": "try-parse-json", "value": { "op": "path", "path": "result.value" }, "stripBom": true } },
+          "value": { "op": "path", "from": "parsed", "path": "value" }
+        },
+        "else": {
+          "op": "if",
+          "when": { "op": "equals", "left": { "op": "type", "value": { "op": "path", "path": "result.value" } }, "right": { "op": "literal", "value": "object" } },
+          "then": { "op": "path", "path": "result.value" },
+          "else": { "op": "path", "path": "result" }
+        }
+      }
+    }
+  ]
+}
