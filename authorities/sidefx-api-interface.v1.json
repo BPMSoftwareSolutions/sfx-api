@@ -131,8 +131,10 @@
       },
       "input": {
         "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId",
         "runId": "$path.runId",
-        "after": "$query.after"
+        "after": "$query.after",
+        "recheckMilliseconds": 5000
       },
       "meaning": "Stream the events of a run of the caller as server-sent events: each event after the cursor (after, or Last-Event-ID) as id, event and data, each new event as the run writes it, then an end event with the run state and last cursor once the run has ended and been completed.",
       "segments": {

@@ -34,6 +34,8 @@
     "retained": 64,
     "maxEvents": 50000,
     "eventPayloadBytes": 1048576,
+    "traceChunkBytes": 524288,
+    "traceChunkEvents": 2000,
     "keepaliveSeconds": 15
   },
   "request": {

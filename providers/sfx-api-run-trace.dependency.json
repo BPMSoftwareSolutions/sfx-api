@@ -1,0 +1,229 @@
+{
+  "dependencyId": "sfx-api-run-trace",
+  "meaning": "The run trace encoding of the declared API, resolved by the kernel so the hosting facade carries none. encode-chunk turns one contiguous chunk of a run's events into the run store's trace chunk: the events as one JSON array, UTF-8, brotli-compressed, and the SHA-256 of the compressed bytes, the encoding the run store's other writers use.",
+  "objectGraphClosure": "object-graph.v1",
+  "runtimes": {
+    "csharp": {
+      "package": "System.IO.Compression.Brotli",
+      "type": "System.IO.Compression.BrotliStream"
+    }
+  },
+  "operations": [
+    {
+      "operationId": "encode-chunk",
+      "meaning": "Encode one chunk of a run's events: runId, firstCursor, lastCursor and recordCount as given, content (the events as one JSON array, UTF-8, brotli-compressed) and digest (SHA-256 of content), both as base64.",
+      "parameters": [
+        {
+          "name": "events",
+          "source": "input",
+          "path": "events",
+          "encoding": "json-text"
+        },
+        {
+          "name": "runId",
+          "source": "input",
+          "path": "runId"
+        },
+        {
+          "name": "firstCursor",
+          "source": "input",
+          "path": "firstCursor"
+        },
+        {
+          "name": "lastCursor",
+          "source": "input",
+          "path": "lastCursor"
+        },
+        {
+          "name": "recordCount",
+          "source": "input",
+          "path": "recordCount"
+        }
+      ],
+      "result": {
+        "from": "value"
+      },
+      "programs": {
+        "csharp": [
+          {
+            "bind": "encoding",
+            "invocation": "new System.Text.UTF8Encoding"
+          },
+          {
+            "bind": "plain",
+            "invocation": "encoding.GetBytes",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "events"
+              }
+            ]
+          },
+          {
+            "bind": "plainLength",
+            "invocation": "plain.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Length"
+            }
+          },
+          {
+            "bind": "buffer",
+            "invocation": "new System.IO.MemoryStream"
+          },
+          {
+            "bind": "compressor",
+            "invocation": "new System.IO.Compression.BrotliStream, System.IO.Compression.Brotli",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "buffer"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "invocation": "compressor.Write",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "plain"
+              },
+              {
+                "op": "literal",
+                "value": 0
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "plainLength"
+              }
+            ]
+          },
+          {
+            "invocation": "compressor.Dispose"
+          },
+          {
+            "bind": "content",
+            "invocation": "buffer.ToArray"
+          },
+          {
+            "bind": "hasher",
+            "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography"
+          },
+          {
+            "bind": "digest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "content"
+              }
+            ]
+          },
+          {
+            "bind": "value",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "runId"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "runId"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "firstCursor"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "firstCursor"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "lastCursor"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "lastCursor"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "recordCount"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "recordCount"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "content"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "content"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "digest"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "digest"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
