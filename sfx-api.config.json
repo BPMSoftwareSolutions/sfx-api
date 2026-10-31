@@ -2,12 +2,40 @@
   "contractId": "sfx-api-config.v1",
   "kernel": {
     "digest": "9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
-    "entryPoint": "KernelEntry",
     "rid": "linux-x64",
+    "root": "~/.local/share/sfx/kernel/{digest}",
+    "entryPoint": "KernelEntry",
     "args": [
-      "--stdin-envelope",
+      "--resident-envelopes",
       "--config",
       "kernel-host.json"
-    ]
+    ],
+    "instances": 2
+  },
+  "frontdoor": {
+    "capabilityId": "serve-api-request"
+  },
+  "credentialCarriers": [
+    {
+      "header": "authorization",
+      "scheme": "Bearer",
+      "encoding": "base64",
+      "bytes": 32,
+      "digestRounds": 2,
+      "as": "sessionDigest"
+    },
+    {
+      "cookie": "__Host-sfx-session",
+      "encoding": "base64",
+      "bytes": 32,
+      "digestRounds": 2,
+      "as": "sessionDigest"
+    }
+  ],
+  "http": {
+    "host": "0.0.0.0",
+    "port": 8787,
+    "requestTimeoutMs": 225000,
+    "bodyByteCap": 16777216
   }
 }
