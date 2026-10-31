@@ -11,7 +11,7 @@ as the Azure app `sfx-api-test`. **It is not the legacy `sfx-api` CLI.** The two
 | What it is | The new HTTP API: every operation declared in the estate, served by [host/serve.py](host/serve.py) and the kernel | An installed command-line client: `sfx-api capability observe ...`, `sfx-api capability author ...`, `sfx-api run ...`, `sfx-api login` |
 | Its code | This repository | Elsewhere. Nothing here builds, configures, ships or depends on it |
 | Where it runs | Azure App Service `sfx-api-test` (`https://sfx-api-test.azurewebsites.net`, image `bpmaiengineacr.azurecr.io/sfx-api`), and locally on WSL | The developer's machine. It calls **the legacy staging host**, `https://sidefx-staging-fyfhb9gubneqbpaz.eastus2-01.azurewebsites.net` |
-| Its role | The product being built; API callers (sfx-platform) move to it from the legacy staging host | An operator tool only: today it is how declarations are written into the estate database and how runs are read |
+| Its role | The product being built; API callers (sfx-platform) will migrate to the declared API (this repo) from the legacy staging host | An operator tool only: today it is how declarations are written into the estate database and how runs are read |
 
 They share one thing: **the staging estate database** (and sfx-identity). The declared API's
 interface, ingress, frontdoor and providers are rows in that database. The legacy CLI is how those
