@@ -11,6 +11,8 @@ RUN apt-get update \
 ARG KERNEL_DIGEST
 USER sjones
 ENV HOME=/home/sjones
+# Create writable bootstrap directories before COPY creates root-owned parent paths.
+RUN mkdir -p "$HOME/.local/share/sfx/vault" "$HOME/.local/share/sfx/credential-vault-keys"
 COPY --chown=sjones:sjones kernel/ /home/sjones/.local/share/sfx/kernel/${KERNEL_DIGEST}/
 COPY --chown=sjones:sjones host/ /home/sjones/sfx-api/host/
 COPY --chown=sjones:sjones sfx-api.config.json start.sh /home/sjones/sfx-api/
