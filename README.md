@@ -1,9 +1,38 @@
-# sfx-api
+# sfx-api: the declared SideFX API
 
-The declared API, deployed by itself. Every mechanic up to the profile schema boundary, the HTTP
-ingress included, is declared into the estate (SEJ `sej-pure.v2` and our own dependency programs),
-and the kernel resolves it. The host is a facade for hosting ([host/serve.py](host/serve.py)): it
-hands the raw request to one kernel invocation and writes back the raw response the kernel resolves.
+This repository is **the new SideFX API**: the HTTP API declared as
+`sidefx:authorities/sidefx-api-interface.v1`, served by a hosting facade and the kernel, and deployed
+as the Azure app `sfx-api-test`. **It is not the legacy `sfx-api` CLI.** The two only share a name.
+
+## Two different things are called sfx-api
+
+| | **The declared API** (this repository) | **The legacy `sfx-api` CLI** (not in this repository) |
+| --- | --- | --- |
+| What it is | The new HTTP API: every operation declared in the estate, served by [host/serve.py](host/serve.py) and the kernel | An installed command-line client: `sfx-api capability observe ...`, `sfx-api capability author ...`, `sfx-api run ...`, `sfx-api login` |
+| Its code | This repository | Elsewhere. Nothing here builds, configures, ships or depends on it |
+| Where it runs | Azure App Service `sfx-api-test` (`https://sfx-api-test.azurewebsites.net`, image `bpmaiengineacr.azurecr.io/sfx-api`), and locally on WSL | The developer's machine. It calls **the legacy staging host**, `https://sidefx-staging-fyfhb9gubneqbpaz.eastus2-01.azurewebsites.net` |
+| Its role | The product being built; API callers (sfx-platform) move to it from the legacy staging host | An operator tool only: today it is how declarations are written into the estate database and how runs are read |
+
+They share one thing: **the staging estate database** (and sfx-identity). The declared API's
+interface, ingress, frontdoor and providers are rows in that database. The legacy CLI is how those
+rows are written today: its requests run on the legacy staging host, whose kernel calls the estate's
+writers. The declared API's kernel reads the same rows on every request, so a declaration is live in
+`sfx-api-test` at once, with no rebuild. The image is rebuilt only when [host/](host/),
+[sfx-api.config.json](sfx-api.config.json), [deploy/](deploy/) or the kernel change.
+
+The words used below:
+
+- **the declared API**: this repository and what it serves (`sfx-api-test` on Azure, the facade on WSL);
+- **the legacy CLI**: the installed `sfx-api` command;
+- **the legacy staging host**: the existing staging API that the legacy CLI calls;
+- **the estate database**: the staging estate database both of them read.
+
+## How the declared API works
+
+Every mechanic up to the profile schema boundary, the HTTP ingress included, is declared into the
+estate (SEJ `sej-pure.v2` and our own dependency programs), and the kernel resolves it. The host is a
+facade for hosting ([host/serve.py](host/serve.py)): it hands the raw request to one kernel invocation
+and writes back the raw response the kernel resolves.
 
 ## Structure
 
@@ -27,7 +56,8 @@ hands the raw request to one kernel invocation and writes back the raw response 
 | [declarations/07-serve-http-request.dsl](declarations/07-serve-http-request.dsl) | The DSL of `serve-http-request`, the declared HTTP ingress |
 | [declarations/08-resolve-http-request.dsl](declarations/08-resolve-http-request.dsl) | The DSL of `resolve-http-request`: the ingress read alone, without serving |
 | [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel, the kernel command the facade runs, the HTTP address |
-| [deploy/Dockerfile](deploy/Dockerfile), [deploy/start.sh](deploy/start.sh) | The container: the host, the admitted kernel and the staging host facts; no credential material |
+| [providers/sfx-identity-login.dependency.json](providers/sfx-identity-login.dependency.json) | The DEPENDENCY `sfx-identity-login`: sign-in against sfx-identity with Argon2id (`open-session`, `derive-tag`) |
+| [deploy/Dockerfile](deploy/Dockerfile), [deploy/start.sh](deploy/start.sh) | The declared API's container: the host, the admitted kernel and the host facts the declared vault providers read; no credential material |
 
 Each SEJ file is the authority of one capability namespace (`sidefx:capability:<file name>`).
 
@@ -43,20 +73,21 @@ received it (`{contractId: serve-http-request-request.v1, raw}`; the kernel bind
    digest of the credential carrier. The carriers are `Authorization: Bearer` and, without one, the
    `__Host-sfx-session` cookie, each base64 of 32 bytes; the digest is SHA-256 of SHA-256 of the
    bytes, the same digest sfx-identity keeps for the session. The bearer is read and digested inside
-   this one program and never returned.
+   this one program and never returned. It also reads the client source (`X-Client-IP`, else the
+   first `X-Forwarded-For` entry).
 3. **prepare** (inline SEJ): the frontdoor's input `{request: {method, segments, query, body},
    caller}`, the caller `{sessionDigest}` when a carrier was presented and `null` otherwise.
 4. **frontdoor** (`generic-capability-invocation.v1`): `serve-api-request`.
 5. **shape** (inline SEJ): status, content type, body and the declared reason phrases; a frontdoor
    that does not answer `api-response.v1` is 502 `FRONTDOOR_RESPONSE_INVALID`.
 6. **respond** (`sfx-api-ingress-compose-port.v1`, the operation `compose-response`): the status
-   line, `Content-Type`, `Content-Length` (the UTF-8 byte count of the body), `Connection: close`
-   and the body.
+   line, `Content-Type`, `Content-Length` (the UTF-8 byte count of the body), `Cache-Control: no-store`,
+   `Connection: close` and the body.
 
 The ingress mechanics are ours, declared up to the profile schema boundary in the estate's provider
-chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `a9a42c94`), the mechanics
+chain: the DEPENDENCY `sidefx:dependencies/sfx-api-ingress` (definition `39ffb87e`), the mechanics
 `sfx-api-ingress-resolve-port.v1` and `sfx-api-ingress-compose-port.v1`, the PROVIDERs
-`sfx-api-ingress-resolve` (`1ec34615`) and `sfx-api-ingress-compose` (`ce748ec5`), and their entries
+`sfx-api-ingress-resolve` (`d06badff`) and `sfx-api-ingress-compose` (`f07ed911`), and their entries
 and overlay bindings on the graph runner `run-declared-graph-execute`. The kernel's resolver runs the
 programs; no SDA provider, contract or engine beyond the transformation port is named.
 
@@ -163,6 +194,11 @@ starts the host on port 8787 (`WEBSITES_PORT`). The test app is `sfx-api-test` o
 
 ## Declaring
 
+Declarations go into the estate database, not into `sfx-api-test`. Today they are written through
+the legacy CLI, whose requests run on the legacy staging host. A command below that begins `sfx-api`
+is the legacy CLI. The declared API has no command-line client of its own, and none of these commands
+calls `sfx-api-test`.
+
 Run the files in [declarations/](declarations/) in order against the estate database. Each runs in one
 transaction through installed writers (`model.declare_port_provider_binding`,
 `model.declare_transformation`, `model.declare_semantic_object`,
@@ -193,7 +229,7 @@ The ingress (2026-10-30) was declared the same way, each row read back before th
    entry and overlay binding (`model-declare-port-provider-binding`; a read of the runner counts both).
 2. The capabilities from [declarations/07-serve-http-request.dsl](declarations/07-serve-http-request.dsl)
    and [declarations/08-resolve-http-request.dsl](declarations/08-resolve-http-request.dsl)
-   (`sfx-api capability author --dsl <file>`).
+   (the legacy CLI: `sfx-api capability author --dsl <file>`).
 3. Their text input (`capability-interface-change`: `inputType text`, `inputPath raw`). The DSL
    declares JSON inputs only, and a DSL declaration resets the input, so this follows every
    re-declaration. The kind took a type other than JSON and a path once it was re-registered
@@ -299,9 +335,10 @@ What the kernel's SEJ taught the declaration, each found by a run:
 
 ## Local testing
 
-The local runtime is WSL Ubuntu, the staging host's twin: user `sjones`, `HOME=/home/sjones`,
-`secret-tool` and the vault at `~/.local/share/sfx/vault/vault.json`. The estate's declared vault
-providers run there unchanged, so every capability runs locally as it does on staging.
+The local runtime for the declared API is WSL Ubuntu, with the same host facts as its container
+(`sfx-api-test`) and as the legacy staging host: user `sjones`, `HOME=/home/sjones`, `secret-tool`
+and the vault at `~/.local/share/sfx/vault/vault.json`. The estate's declared vault providers run
+there unchanged, so every capability runs locally as it does on Azure.
 
 - **Kernel:** built and installed from `C:\lab\repos\scenario-driven-architecture`
   (`ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody`) and placed at
@@ -329,13 +366,15 @@ object, in every isolation profile) and runs at low integrity, and the providers
 
 ## Next
 
-1. **Deployment:** [the Azure test app is live](docs/azure-test-2026-10-31.md), with its role grants,
-   approved Key Vault bootstrap and authenticated execution/read-back verified. Platform traffic
-   has not moved; the remaining migration work below is still open.
+1. **Deployment:** [the declared API's Azure app `sfx-api-test` is live](docs/azure-test-2026-10-31.md),
+   with its role grants, approved Key Vault bootstrap and authenticated execution/read-back verified.
+   sfx-platform still calls the legacy staging host; moving it to the declared API is still open.
 2. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
    that appends trace chunks; then admission through the workflow workers (asynchronous), the
    idempotency key (`$header.` in the input template) and machine runs (EV-014).
 3. **The capability graph:** compile is a kernel operation, not a capability.
-4. **Session operations:** sign-in, session, session runs and sign-out.
+4. **Session operations:** sign-in (`open-api-session`, `POST /sfx/v1/session`: its providers and
+   sfx-identity migration 011 are declared; the capability and its ingress route are not), session
+   runs. Session read and sign-out are served.
 5. **Performance:** each request starts a kernel (about 1.6 s) and the frontdoor's reads each open
    the vault and a connection (a request is about 6.8 s).
