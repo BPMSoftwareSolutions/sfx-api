@@ -1,5 +1,5 @@
 {
-  "contractId": "sfx-api-config.v3",
+  "contractId": "sfx-api-config.v4",
   "kernel": {
     "digest": "3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
     "rid": "linux-x64",
@@ -14,6 +14,27 @@
     ],
     "instances": 1,
     "answerTimeoutMs": 228000
+  },
+  "workers": {
+    "command": [
+      "./KernelEntry",
+      "--resident-envelopes",
+      "--config",
+      "kernel-host.json",
+      "--timeout",
+      "3600000"
+    ],
+    "instances": 1,
+    "answerTimeoutMs": 3605000,
+    "environment": {
+      "SIDEFX_OBSERVE": "1"
+    }
+  },
+  "runs": {
+    "retained": 64,
+    "maxEvents": 50000,
+    "eventPayloadBytes": 1048576,
+    "keepaliveSeconds": 15
   },
   "request": {
     "object": "capability",

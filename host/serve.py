@@ -7,45 +7,75 @@ serve-http-request, and writes back the raw HTTP response the kernel resolves. E
 API is declared and resolved by the kernel: the request target, query and body, the credential carrier
 and its session digest, the operation, the caller, the run, refusals and the response itself. The
 kernels keep running between requests (--resident-envelopes: one envelope per line on stdin, one
-delivery per line on stdout), so no request pays a kernel start. The kernel command, the pool size,
-the answer bound and the envelope's request are host data in sfx-api.config.json. Python standard
-library only: nothing is installed or built.
+delivery per line on stdout), so no request pays a kernel start.
+
+A run outlives the request that admits it, so a response cannot carry it. For a run the kernel
+answers a host directive instead: a response of type application/vnd.sfx.host-directive+json, written
+only by the declared capabilities the interface resolves to. The facade does what it says:
+
+- execute-run: answer the directive's response (202 with the run), then execute the run's observe
+  envelope on a worker kernel started with SIDEFX_OBSERVE=1. Each observation the kernel writes while
+  the run executes becomes the run's next event and reaches every listener as it is written. When the
+  run ends, the facade invokes the directive's completion capability, and only then ends the run.
+- stream-run: answer server-sent events: the run's events after the cursor (or Last-Event-ID), then
+  each new event as it arrives, then an end event once the run has ended.
+- respond: answer the directive's response.
+
+The kernel commands, pool sizes, answer bounds, the envelope's request and the run bounds are host
+data in sfx-api.config.json. Python standard library only: nothing is installed or built.
 
     python3 host/serve.py sfx-api.config.json
 """
+import datetime
+import http
 import http.server
 import json
+import os
 import queue
 import subprocess
 import sys
 import threading
 
 host = json.load(open(sys.argv[1], encoding='utf-8'))
+DIRECTIVE = 'application/vnd.sfx.host-directive+json'
+OBSERVATION = 'SFX_OBSERVATION '
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
 class Kernel:
-    """One resident kernel, started on first use and again after it exits or overruns the bound."""
+    """One resident kernel, started on first use and again after it exits or overruns the bound. A worker
+    kernel's observation lines go to the run it is executing; its other diagnostics go to the host log."""
 
     process = None
+    run = None
 
-    def answer(self, raw):
+    def __init__(self, settings):
+        self.settings = settings
+
+    def deliver(self, envelope):
         if self.process is None or self.process.poll() is not None:
-            self.process = subprocess.Popen(host['kernel']['command'], cwd=host['kernel']['root'],
-                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            observed = 'environment' in self.settings
+            self.process = subprocess.Popen(self.settings['command'], cwd=host['kernel']['root'],
+                                            env=dict(os.environ, **self.settings.get('environment', {})),
+                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE if observed else None)
             self.lines = queue.Queue()
             threading.Thread(target=self.read, args=(self.process.stdout, self.lines), daemon=True).start()
-        envelope = {'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
-                    'request': dict(host['request'], input=raw)}
+            if observed:
+                threading.Thread(target=self.observe, args=(self.process.stderr,), daemon=True).start()
         self.process.stdin.write(json.dumps(envelope, separators=(',', ':')).encode('utf-8') + b'\n')
         self.process.stdin.flush()
         try:
-            line = self.lines.get(timeout=host['kernel']['answerTimeoutMs'] / 1000)
+            line = self.lines.get(timeout=self.settings['answerTimeoutMs'] / 1000)
         except queue.Empty:
             line = b''
         if not line:
             self.process.kill()
             self.process = None
-        return json.loads(line)['outcome']['result']['outcome']
+        return json.loads(line)
 
     @staticmethod
     def read(stdout, lines):
@@ -53,10 +83,142 @@ class Kernel:
             lines.put(line)
         lines.put(b'')
 
+    def observe(self, stderr):
+        for line in stderr:
+            text = line.decode('utf-8', 'replace').rstrip('\r\n')
+            if text.startswith(OBSERVATION):
+                run = self.run
+                if run is not None:
+                    run.observe(text[len(OBSERVATION):])
+            elif text:
+                sys.stderr.write(text + '\n')
+
+
+class Run:
+    """One run this host executes: its events in order, and the condition every listener waits on."""
+
+    def __init__(self, directive):
+        self.directive = directive
+        self.run_id = directive['runId']
+        self.events = []
+        self.dropped = 0
+        self.state = 'admitted'
+        self.ended = False
+        self.changed = threading.Condition()
+        self.append('run.admitted', {'capability': directive.get('capability'), 'admittedAt': directive.get('admittedAt')})
+
+    def append(self, kind, payload):
+        with self.changed:
+            cursor = len(self.events) + 1
+            event = {'eventId': 'urn:sfx-api:run-event:%s:%d' % (self.run_id, cursor), 'cursor': cursor, 'at': now(),
+                     'kind': kind, 'payload': payload}
+            if isinstance(payload, dict) and isinstance(payload.get('rootExecutionId'), str):
+                event['rootExecutionId'] = payload['rootExecutionId']
+            self.events.append(event)
+            self.changed.notify_all()
+
+    def observe(self, text):
+        if len(self.events) >= host['runs']['maxEvents']:
+            self.dropped += 1
+            return
+        try:
+            record = json.loads(text)
+        except ValueError:
+            self.append('observation.malformed', {'line': text[:1024]})
+            return
+        kind = record.get('observationType') if isinstance(record, dict) else None
+        if len(text) > host['runs']['eventPayloadBytes']:
+            kept = record if isinstance(record, dict) else {}
+            record = {'truncated': True, 'byteLength': len(text.encode('utf-8')),
+                      **{key: kept[key] for key in ('observationType', 'testimonyType', 'graphId', 'rootExecutionId',
+                                                   'cellId', 'phase', 'status') if key in kept}}
+        self.append(kind if isinstance(kind, str) else 'observation', record)
+
+    def end(self, state):
+        with self.changed:
+            self.state, self.ended = state, True
+            self.changed.notify_all()
+
+    def after(self, cursor, timeout):
+        """The events after the cursor, waiting up to the timeout for one, and whether the run has ended."""
+        with self.changed:
+            if len(self.events) <= cursor and not self.ended:
+                self.changed.wait(timeout)
+            return self.events[cursor:], self.ended
+
+
+def settle(delivery):
+    """The run's state, exit code, failure and output from the worker kernel's delivery."""
+    result = (delivery.get('outcome') or {}).get('result') or {}
+    if delivery.get('disposition') == 'terminated' and result.get('disposition') == 'completed':
+        return 'completed', 0, None, result.get('outcome')
+    failure = (delivery.get('error') or result.get('failure') or (delivery.get('outcome') or {}).get('error')
+               or {'code': 'RUN_FAILED', 'message': str(result.get('disposition') or delivery.get('disposition'))})
+    return 'failed', 1, failure, None
+
+
+class Runs:
+    """The runs this host has admitted, the retained bound of ended ones, and the queue the workers take."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.runs = {}
+        self.pending = queue.Queue()
+
+    def admit(self, directive):
+        with self.lock:
+            if directive['runId'] in self.runs:
+                return
+            run = self.runs[directive['runId']] = Run(directive)
+            ended = [run_id for run_id, known in self.runs.items() if known.ended]
+            for run_id in ended[:max(0, len(self.runs) - host['runs']['retained'])]:
+                del self.runs[run_id]
+        self.pending.put(run)
+
+    def get(self, run_id):
+        with self.lock:
+            return self.runs.get(run_id)
+
+    def work(self, kernel):
+        while True:
+            run = self.pending.get()
+            run.state, started = 'executing', now()
+            run.append('run.started', {'startedAt': started})
+            kernel.run = run
+            try:
+                delivery = kernel.deliver(run.directive['envelope'])
+            except (ValueError, OSError) as error:
+                delivery = {'disposition': 'failed', 'error': {'code': 'RUN_KERNEL_FAILED', 'message': type(error).__name__}}
+            kernel.run = None
+            state, exit_code, failure, output = settle(delivery)
+            ended = now()
+            run.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': ended,
+                                      **({'failure': failure} if failure else {}),
+                                      **({'droppedEvents': run.dropped} if run.dropped else {})})
+            completion = dict(run.directive['completion']['input'], state=state, exitCode=exit_code,
+                              startedAt=started, endedAt=ended)
+            if failure:
+                completion['failure'] = failure
+            if isinstance(output, (dict, list)):
+                completion['output'] = output
+            try:
+                completed = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke', 'request': {
+                    'object': 'capability', 'verb': 'invoke', 'subject': run.directive['completion']['capabilityId'],
+                    'input': completion, 'inputType': 'json'}})
+                answer = ((completed.get('outcome') or {}).get('result') or {}).get('outcome')
+                if not isinstance(answer, dict) or answer.get('status') != 'COMPLETED':
+                    sys.stderr.write('[sfx-api run %s] completion answered %s\n' % (run.run_id, json.dumps(answer)[:500]))
+            except (ValueError, OSError) as error:
+                sys.stderr.write('[sfx-api run %s] completion failed: %s\n' % (run.run_id, type(error).__name__))
+            run.end(state)
+
 
 kernels = queue.Queue()
 for _ in range(host['kernel']['instances']):
-    kernels.put(Kernel())
+    kernels.put(Kernel(host['kernel']))
+runs = Runs()
+for _ in range(host['workers']['instances']):
+    threading.Thread(target=runs.work, args=(Kernel(host['workers']),), daemon=True).start()
 
 
 class Facade(http.server.BaseHTTPRequestHandler):
@@ -67,9 +229,59 @@ class Facade(http.server.BaseHTTPRequestHandler):
                + self.rfile.read(int(self.headers.get('content-length', 0)))).decode('utf-8', 'replace')
         kernel = kernels.get()
         try:
-            self.wfile.write(kernel.answer(raw).encode('utf-8'))
+            response = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
+                                       'request': dict(host['request'], input=raw)})['outcome']['result']['outcome']
         finally:
             kernels.put(kernel)
+        head, _, body = response.partition('\r\n\r\n')
+        types = [value.strip() for name, _, value in (line.partition(':') for line in head.split('\r\n')[1:])
+                 if name.strip().lower() == 'content-type']
+        if types != [DIRECTIVE]:
+            self.wfile.write(response.encode('utf-8'))
+            return
+        directive = json.loads(body)
+        if directive['directive'] == 'stream-run':
+            self.stream(directive)
+            return
+        if directive['directive'] == 'execute-run':
+            runs.admit(directive['run'])
+        self.respond(directive['respond'])
+
+    def respond(self, response):
+        body = json.dumps(response['body'], separators=(',', ':')).encode('utf-8')
+        self.wfile.write(('HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nCache-Control: no-store\r\n'
+                          'Connection: close\r\n\r\n' % (response['status'], http.HTTPStatus(response['status']).phrase,
+                                                          response['contentType'], len(body))).encode('latin-1') + body)
+
+    def stream(self, directive):
+        self.close_connection = True
+        cursor = directive.get('after')
+        if cursor is None and (self.headers.get('last-event-id') or '').strip().isdigit():
+            cursor = int(self.headers['last-event-id'].strip())
+        cursor, state = max(0, cursor or 0), directive.get('state') or 'unknown'
+        run = runs.get(directive['runId'])
+        try:
+            self.wfile.write(('HTTP/1.1 200 OK\r\nContent-Type: %s\r\nCache-Control: no-cache, no-store\r\n'
+                              'X-Accel-Buffering: no\r\nConnection: close\r\n\r\n: sfx-api run event stream\n\n'
+                              % directive['respond']['contentType']).encode('latin-1'))
+            self.wfile.flush()
+            while run is not None:
+                events, ended = run.after(cursor, host['runs']['keepaliveSeconds'])
+                if events:
+                    cursor = events[-1]['cursor']
+                    self.wfile.write(''.join('id: %d\nevent: %s\ndata: %s\n\n' % (
+                        event['cursor'], event['kind'], json.dumps(event, separators=(',', ':'))) for event in events).encode('utf-8'))
+                elif not ended:
+                    self.wfile.write(b': keepalive\n\n')
+                self.wfile.flush()
+                if ended:
+                    state = run.state
+                    break
+            self.wfile.write(('event: end\ndata: %s\n\n' % json.dumps(
+                {'runId': directive['runId'], 'state': state, 'cursor': cursor}, separators=(',', ':'))).encode('utf-8'))
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
     do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = answer
 

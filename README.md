@@ -55,7 +55,8 @@ and writes back the raw response the kernel resolves.
 | [declarations/06-admit-run-staged.sql](declarations/06-admit-run-staged.sql) | Admission with staged output (requires sfx-identity migration `007-run-output-stage` in sfx-dal) |
 | [declarations/07-serve-http-request.dsl](declarations/07-serve-http-request.dsl) | The DSL of `serve-http-request`, the declared HTTP ingress |
 | [declarations/08-resolve-http-request.dsl](declarations/08-resolve-http-request.dsl) | The DSL of `resolve-http-request`: the ingress read alone, without serving |
-| [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel, the kernel command the facade runs, the HTTP address |
+| [declarations/11-admit-api-run-live.dsl](declarations/11-admit-api-run-live.dsl), [12-open-api-run-stream.dsl](declarations/12-open-api-run-stream.dsl), [13-complete-api-run.dsl](declarations/13-complete-api-run.dsl) | Asynchronous runs: admission that answers an `execute-run` host directive, the stream directive for a run of the caller, and the completion the host invokes when a run ends (The host, Runs) |
+| [sfx-api.config.json](sfx-api.config.json) | Host data: the selected kernel, the kernel commands of the request pool and the run workers, the run bounds, the HTTP address |
 | [providers/sfx-identity-login.dependency.json](providers/sfx-identity-login.dependency.json) | The DEPENDENCY `sfx-identity-login`: sign-in against sfx-identity with Argon2id (`open-session`, `derive-tag`) |
 | [deploy/Dockerfile](deploy/Dockerfile), [deploy/start.sh](deploy/start.sh) | The declared API's container: the host, the admitted kernel and the host facts the declared vault providers read; no credential material |
 
@@ -123,7 +124,8 @@ run|output|graphs}`); `read-run-events` reads its trace chunks. A dispatch answe
 envelope, so each view names its slice itself and the request's filters stop at the dispatch: the
 graph view returns every execution root, the events view every chunk. A caller without a principal
 (machine) reads `NOT_FOUND` until machine runs are captured. `read-run-delivery` (the store holds no
-delivery) and `stream-run-events` (the HTTP-serving provider streams) answer 501.
+delivery) answers 501, and so does `stream-run-events` until the interface switch to
+`open-api-run-stream` is declared (The host, Runs).
 
 `admit-run` (`POST /sfx/v1/runs`, the body `{object, operation, subject, namespace, input}`) is
 `admit-api-run`, a fan-out:
@@ -173,6 +175,46 @@ A kernel that fails writes no delivery: the platform closes the connection witho
 front end answers 502), and the kernel's error reaches the host's stderr. `--timeout` bounds each
 delivery at 225 s, not the kernel's life (App Service stops a request at 230 s). The 8 MiB
 standard-input bound of a per-request kernel is not established for a resident envelope.
+
+### Runs
+
+A run outlives the request that admits it, so its answer cannot be one response. For a run the kernel
+answers a **host directive** instead: a response of type `application/vnd.sfx.host-directive+json`,
+written only by the declared capabilities the interface resolves the run operations to. The facade
+does what the directive says and decides nothing itself:
+
+- `execute-run` (from `admit-api-run-live`): answer the directive's response (202 with the run), then
+  queue the run's `observe` envelope for a worker kernel. The workers are a second pool of resident
+  kernels, started with `SIDEFX_OBSERVE=1` on first use. Each `SFX_OBSERVATION` line the worker writes
+  while the run executes becomes the run's next event (`{eventId, cursor, at, kind, payload,
+  rootExecutionId?}`, kind the record's `observationType`, else `observation`) and reaches every
+  listener as it is written. Lifecycle events frame them: `run.admitted`, `run.started` and
+  `run.exited` with the state, exit code and failure. When the run ends, the worker invokes the
+  directive's completion capability (`complete-api-run`), and only then ends the run.
+- `stream-run` (from `open-api-run-stream`): answer server-sent events in the legacy framing:
+  `id: <cursor>`, `event: <kind>`, `data: <event>`, every event after the cursor (`?after=`, else
+  `Last-Event-ID`), then each new event as it arrives, a `: keepalive` comment while the run is quiet,
+  and `event: end` with `{runId, state, cursor}` once the run has ended and been completed. A run this
+  host does not hold ends at once with the state the run store holds.
+- `respond` (a replayed idempotency key): answer the directive's response and execute nothing.
+
+The worker command (with a longer `--timeout`, one hour), the worker count and the run bounds
+(`retained` ended runs kept for reconnects, `maxEvents` per run, `eventPayloadBytes` before a record
+is cut to its key members, `keepaliveSeconds`) are host data. A worker kernel adds about 350 MB once
+the first run starts it.
+
+Status (2026-10-31): the facade's run handling is verified against a stand-in kernel (22 checks:
+202 at admission, events delivered as written over 2 s, another request answered during a run,
+resume by `Last-Event-ID` and `after`, a replayed key executing nothing, a failed run, keepalives) and
+with the real kernel as the worker (18 events of `verify-password-derivation` streamed as it ran,
+its 18.8 KB graph capture among them). `admit-api-run-live`, `open-api-run-stream` and
+`complete-api-run` ([declarations/11](declarations/11-admit-api-run-live.dsl),
+[12](declarations/12-open-api-run-stream.dsl), [13](declarations/13-complete-api-run.dsl)) are not
+declared yet, and the declared interface still resolves `admit-run` to the synchronous
+`admit-api-run`; [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json)
+holds the switch, to be declared once `sfx-api-test` runs this facade. The run's trace is not
+retained yet: events live in the host for the retained runs, and the run is completed with
+`latestCursor` 0, as before.
 
 The bearer enters only the kernel's ingress provider, which digests it and never returns it: the
 frontdoor, sfx-identity and every run see `{sessionDigest}`, which `identity.validate_session` does
@@ -429,13 +471,16 @@ object, in every isolation profile) and runs at low integrity, and the providers
 1. **Deployment:** [the declared API's Azure app `sfx-api-test` is live](docs/azure-test-2026-10-31.md),
    with its role grants, approved Key Vault bootstrap and authenticated execution/read-back verified.
    sfx-platform still calls the legacy staging host; moving it to the declared API is still open.
-2. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
-   that appends trace chunks; then admission through the workflow workers (asynchronous), the
-   idempotency key (`$header.` in the input template) and machine runs (EV-014).
+2. **Asynchronous runs and their live stream** (The host, Runs): built and verified locally; to declare
+   `admit-api-run-live`, `open-api-run-stream` and `complete-api-run`, deploy the facade, then declare
+   the interface switch. Then: the run's trace retained in the run store as chunks (the legacy chunks
+   are brotli-compressed, which the Python standard library cannot write, so the encoding belongs in a
+   declared program), its graphs per execution root, the stream ending when the caller's session ends,
+   the `Idempotency-Key` header (the ingress returns no headers; the body's `idempotencyKey` works),
+   and machine runs (EV-014).
 3. **The capability graph:** compile is a kernel operation, not a capability.
-4. **Session operations:** sign-in (`open-api-session`, `POST /sfx/v1/session`: its providers and
-   sfx-identity migration 011 are declared; the capability and its ingress route are not), session
-   runs. Session read and sign-out are served.
+4. **Session operations:** sign-in (`POST /sfx/v1/session`), session read and sign-out are served;
+   sfx-platform's signed-in acceptance (2026-10-31) passed against `sfx-api-test`.
 5. **Performance:** resident kernels removed the kernel start (a warm request is about 3.9 s on WSL;
    `sfx-api-test` runs one resident kernel). With the declaration cache (SDA `3296bc1`) and the
    estate's `declaration_generation`, a warm request is about 1.1 s on WSL and a median 0.88 s of

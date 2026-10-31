@@ -47,14 +47,14 @@
       ],
       "resolves": {
         "kind": "capability",
-        "capabilityId": "admit-api-run"
+        "capabilityId": "admit-api-run-live"
       },
       "input": {
         "admission": "$body",
         "principalId": "$caller.principalId",
         "sessionId": "$caller.sessionId"
       },
-      "meaning": "Admit a run of a declared capability: object, operation, subject, namespace and input in the body. The run store registers the run under the caller session and mints its id, the capability runs, and the store completes the run with its outcome; returns the run id and its state. A caller without a live session is refused (EVIDENCE_SESSION_REQUIRED).",
+      "meaning": "Admit a run of a declared capability: object, operation, subject, namespace, input and an optional idempotencyKey in the body. The run store registers the run under the caller session and mints its id (the same key from the same caller names the same run, and a different submission under it is refused IDEMPOTENCY_KEY_CONFLICT); the answer is 202 with the run, and the host executes the run on a worker kernel, streams its observations and completes it in the run store when it ends. A caller without a live session is refused (EVIDENCE_SESSION_REQUIRED).",
       "segments": {
         "0": "",
         "1": "sfx",
@@ -126,14 +126,15 @@
         "user"
       ],
       "resolves": {
-        "kind": "run",
-        "view": "stream"
+        "kind": "capability",
+        "capabilityId": "open-api-run-stream"
       },
       "input": {
+        "principalId": "$caller.principalId",
         "runId": "$path.runId",
         "after": "$query.after"
       },
-      "meaning": "Stream the observations of a run as server-sent events until it ends.",
+      "meaning": "Stream the events of a run of the caller as server-sent events: each event after the cursor (after, or Last-Event-ID) as id, event and data, each new event as the run writes it, then an end event with the run state and last cursor once the run has ended and been completed.",
       "segments": {
         "0": "",
         "1": "sfx",
