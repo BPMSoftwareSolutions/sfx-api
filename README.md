@@ -329,8 +329,9 @@ object, in every isolation profile) and runs at low integrity, and the providers
 
 ## Next
 
-1. **Deployment:** the test app `sfx-api-test` (the image is rebuilt from this commit; the app, its
-   two role grants and the three Key Vault secrets are an owner step), then staging.
+1. **Deployment:** [the Azure test app is live](docs/azure-test-2026-10-31.md), with its role grants,
+   approved Key Vault bootstrap and authenticated execution/read-back verified. Platform traffic
+   has not moved; the remaining migration work below is still open.
 2. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
    that appends trace chunks; then admission through the workflow workers (asynchronous), the
    idempotency key (`$header.` in the input template) and machine runs (EV-014).

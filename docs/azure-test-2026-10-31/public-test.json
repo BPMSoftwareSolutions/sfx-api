@@ -1,0 +1,131 @@
+{
+  "origin": "https://sfx-api-test.azurewebsites.net",
+  "startedAt": "2026-10-31T04:03:36.285Z",
+  "checks": [
+    {
+      "route": "/sfx/v1/nope",
+      "status": 404,
+      "milliseconds": 42674,
+      "data": {
+        "error": {
+          "code": "OPERATION_NOT_DECLARED"
+        }
+      }
+    },
+    {
+      "route": "/sfx/v1/session",
+      "status": 401,
+      "milliseconds": 4403,
+      "data": {
+        "error": {
+          "code": "CALLER_REQUIRED"
+        }
+      }
+    },
+    {
+      "route": "/sfx/v1/session",
+      "status": 200,
+      "milliseconds": 4878,
+      "data": {
+        "status": "READ",
+        "kind": "user",
+        "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+        "sessionId": "91acd063-397a-4884-b750-249e9a503488",
+        "sessionExpiresAt": "2026-11-01T04:04:30.9211795Z"
+      }
+    },
+    {
+      "route": "/sfx/v1/runs",
+      "status": 200,
+      "milliseconds": 7122,
+      "data": {
+        "status": "COMPLETED",
+        "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+        "state": "completed",
+        "admittedAt": "2026-10-31T04:04:41.6035533Z",
+        "traceComplete": false
+      }
+    },
+    {
+      "route": "/sfx/v1/runs/ba94da98-9684-491a-a2b0-3f370e0b8db6",
+      "status": 200,
+      "milliseconds": 5095,
+      "data": {
+        "status": "READ",
+        "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+        "run": {
+          "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+          "state": "completed",
+          "capability": {
+            "object": "capability",
+            "operation": "invoke",
+            "subject": "say-hello-world"
+          },
+          "exitCode": 0,
+          "partial": false,
+          "output": {
+            "available": true
+          }
+        }
+      }
+    },
+    {
+      "route": "/sfx/v1/runs/ba94da98-9684-491a-a2b0-3f370e0b8db6/output",
+      "status": 200,
+      "milliseconds": 5359,
+      "data": {
+        "status": "READ",
+        "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+        "output": {
+          "contractId": "hello-world-greeting.v1",
+          "payload": {
+            "message": "Hello, World!"
+          }
+        }
+      }
+    },
+    {
+      "route": "/sfx/v1/retained-runs/ba94da98-9684-491a-a2b0-3f370e0b8db6",
+      "status": 200,
+      "milliseconds": 4477,
+      "data": {
+        "status": "READ",
+        "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+        "capabilityId": "say-hello-world",
+        "namespaceId": "sidefx:capabilities",
+        "admittedAt": "2026-10-31T04:04:41.6035533Z",
+        "sessionId": "91acd063-397a-4884-b750-249e9a503488",
+        "captureStatus": "incomplete",
+        "traceComplete": false,
+        "latestCursor": 0,
+        "materialDigest": "4740eb95ddd76614dcb44e0966a7a7eda46270fede9f5bfad92a2508d439645f",
+        "run": {
+          "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+          "state": "completed",
+          "capability": {
+            "object": "capability",
+            "operation": "invoke",
+            "subject": "say-hello-world"
+          },
+          "exitCode": 0,
+          "partial": false,
+          "output": {
+            "available": true
+          }
+        },
+        "graph": null,
+        "graphs": null,
+        "output": {
+          "contractId": "hello-world-greeting.v1",
+          "payload": {
+            "message": "Hello, World!"
+          }
+        },
+        "trust": "NOT_EVALUATED"
+      }
+    }
+  ],
+  "runId": "ba94da98-9684-491a-a2b0-3f370e0b8db6",
+  "result": "passed",
+  "logoutStatus": 200
+}
