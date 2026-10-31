@@ -165,8 +165,9 @@ or built.
 
     KernelEntry --resident-envelopes --config kernel-host.json --timeout 225000
 
-The command, the pool size (`instances`, 2), the answer bound and the envelope's request are host
-data in [sfx-api.config.json](sfx-api.config.json). Each kernel holds about 260 to 350 MB. A request
+The command, the pool size (`instances`), the answer bound and the envelope's request are host
+data in [sfx-api.config.json](sfx-api.config.json). Each kernel holds about 260 to 350 MB, so the pool
+is one kernel: `sfx-api-test` shares a 4 GB plan whose memory already averages 57 to 67%. A request
 waits for a free kernel, and a client that gives up still holds its kernel until the kernel answers.
 A kernel that fails writes no delivery: the platform closes the connection without a response (the
 front end answers 502), and the kernel's error reaches the host's stderr. `--timeout` bounds each
@@ -282,6 +283,28 @@ With resident kernels (2026-10-31, WSL, kernel `9f78e78d`, over real HTTP): a ke
 `sql-database-reader` twice, `answer-api-response`) from the estate, 0.7 s in the two SQL reads and
 1.1 s executing.
 
+Kernel `39881693` (SDA `3296bc1`) reports what each envelope resolves (`outcome.evidence.declarations`).
+Warm, on WSL against the estate, `GET /sfx/v1/nope`, `GET /sfx/v1/session` and
+`GET /sfx/v1/capabilities` each resolve the same 15 definitions, all read from the estate: 2.8 to
+3.0 s of a 3.6 to 3.9 s kernel window, with session setup 0.25 to 0.29 s. That is about the earlier
+1.0 s and 1.8 s together. The reads cross from WSL to Azure SQL; from `sfx-api-test` each costs less.
+
+Since the estate declared `declaration_generation` (2026-10-31, sfx-embody
+`sql/migrations/declare-declaration-generation.sql`: change tracking on the 50 tables those reads
+depend on), the kernel holds the 15 definitions per generation. On WSL against the estate:
+
+| | Before | After |
+| --- | --- | --- |
+| A warm request over HTTP (two kernels) | 3.8 to 4.1 s | 1.10 to 1.32 s |
+| Definition resolution in a warm envelope | 2.8 to 3.0 s, 15 reads | 0.3 to 20 ms, 0 reads |
+| A refused sign-in | 1.5 s | 0.56 s |
+
+Cached and uncached envelopes answered identically (response, graph digests, every cell's outcome).
+A rolled-back write left the generation and the next envelope stayed warm; a committed write moved it,
+and the next envelope read its definitions once and was warm again. Each kernel's first two requests
+still read: the first starts the kernel (5 to 6 s) and the second refreshes once more (about 3 s),
+because the kernel's first envelope reports a different generation for the same estate.
+
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 
 | Request | Answer |
@@ -392,8 +415,9 @@ object, in every isolation profile) and runs at low integrity, and the providers
    sfx-identity migration 011 are declared; the capability and its ingress route are not), session
    runs. Session read and sign-out are served.
 5. **Performance:** resident kernels removed the kernel start (a warm request is about 3.9 s on WSL;
-   `sfx-api-test` still runs the per-request facade until it is redeployed). What remains: the kernel
-   reads every capability's definition from the estate on each invocation (five per request, about
-   1.8 s); the frontdoor's two SQL reads each open the vault and a connection (about 0.7 s); about
-   1.0 s before a request's first delivery phase is unexplained; the declared read cache is not
-   served; and a client that gives up still holds a kernel until it answers.
+   `sfx-api-test` still runs the per-request facade and kernel `9f78e78d` until it is redeployed).
+   With the declaration cache (SDA `3296bc1`) and the estate's `declaration_generation`, a warm
+   request is about 1.1 s on WSL. What remains: the frontdoor's two SQL reads each open the vault and
+   a connection; session setup is 0.27 to 0.34 s, including the generation read; each kernel's second
+   request refreshes once more than it needs to; the declared read cache is not served; and a client
+   that gives up still holds a kernel until it answers.

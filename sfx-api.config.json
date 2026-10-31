@@ -1,9 +1,9 @@
 {
   "contractId": "sfx-api-config.v3",
   "kernel": {
-    "digest": "9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
+    "digest": "3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
     "rid": "linux-x64",
-    "root": "/home/sjones/.local/share/sfx/kernel/9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
+    "root": "/home/sjones/.local/share/sfx/kernel/3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -12,7 +12,7 @@
       "--timeout",
       "225000"
     ],
-    "instances": 2,
+    "instances": 1,
     "answerTimeoutMs": 228000
   },
   "request": {
