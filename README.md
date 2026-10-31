@@ -13,10 +13,13 @@ resolves it.
 | [sej/resolve-api-request.sej.json](sej/resolve-api-request.sej.json) | The resolve stage as a standalone capability, for verification |
 | [sej/compose-api-response.sej.json](sej/compose-api-response.sej.json) | The respond stage as a standalone capability, for verification |
 | [sej/read-run-state.sej.json](sej/read-run-state.sej.json), [sej/read-run-output.sej.json](sej/read-run-output.sej.json), [sej/read-run-graphs.sej.json](sej/read-run-graphs.sej.json) | The run views: each reads the run's evidence (`read-run-evidence`) and selects its slice |
+| [sej/admit-api-run.sej.json](sej/admit-api-run.sej.json) | Run admission: register the run, run the capability and stage its output, carry the run id, complete the run |
 | [declarations/01-sej-pure-overlay-bindings.sql](declarations/01-sej-pure-overlay-bindings.sql) | Binds the 14 `sej-pure.v2` operators the graph runner (`run-declared-graph-execute`) lacked |
 | [declarations/02-resolve-and-compose.sql](declarations/02-resolve-and-compose.sql) | Declares `resolve-api-request` and `compose-api-response` |
 | [declarations/03-serve-api-request.sql](declarations/03-serve-api-request.sql) | Declares `segments` on the interface operations, the frontdoor's SEJ, `answer-api-response` and `serve-api-request` |
 | [declarations/04-run-views.sql](declarations/04-run-views.sql) | Resolves the run operations to the run store (`read-run-state`, `read-run-output`, `read-run-graphs`, `read-run-trace-chunks`) and answers 404 for a `NOT_FOUND` outcome |
+| [declarations/05-admit-run.sql](declarations/05-admit-run.sql) | Resolves `admit-run` to `admit-api-run` and declares its first version |
+| [declarations/06-admit-run-staged.sql](declarations/06-admit-run-staged.sql) | Admission with staged output (requires sfx-identity migration `007-run-output-stage` in sfx-dal) |
 | [sfx-api.config.json](sfx-api.config.json) | The selected kernel (the local runtime) |
 
 Each SEJ file is the authority of one capability namespace (`sidefx:capability:<file name>`).
@@ -47,6 +50,25 @@ graph view returns every execution root, the events view every chunk. A caller w
 (machine) reads `NOT_FOUND` until machine runs are captured. `read-run-delivery` (the store holds no
 delivery) and `stream-run-events` (the HTTP-serving provider streams) answer 501.
 
+`admit-run` (`POST /sfx/v1/runs`, the body `{object, operation, subject, namespace, input}`) is
+`admit-api-run`, a fan-out:
+
+1. **root**: the run store registers the run under the caller's session (`evidence.register_run` in
+   sfx-identity) and mints its id.
+2. **execute** leg: the kernel runs the admitted capability, and the run store stages its output under
+   its SHA-256 digest (`evidence.stage_run_output`); the leg settles only the digest.
+3. **carry** leg: the run id, admission time and capability.
+4. **join**: the run store completes the run from the staged output (`evidence.complete_staged_run`);
+   the answer is `{status: COMPLETED, runId, state, admittedAt, traceComplete}`.
+
+A dispatch answers only its own envelope, so the run id reaches the completion on its own leg; a join
+carries a leg outcome only up to 16 KB (the kernel's `SettlementOutcomePayloadByteBound`), so the
+output travels by digest. A fan-out edge joins one scenario's outcome to the next one's input, so the
+capability has one contract for both. The run is admitted synchronously and completed with trace
+cursor 0 (`TRACE_INCOMPLETE`) until the kernel's observation channel reaches the run's trace. A
+caller without a live session (machine) is refused `EVIDENCE_SESSION_REQUIRED`. The idempotency key
+is not honored yet: the input template carries no headers.
+
 The request is the HTTP-serving provider's native output: `method`, `segments` (the path split on
 `/`), `query`, `headers` and `body` text.
 
@@ -58,7 +80,14 @@ transaction through installed writers (`model.declare_port_provider_binding`,
 `model.apply_capability_from_dsl`); nothing commits unless every statement succeeds. A declaration
 embeds the SEJ files as they were when it was written; a changed SEJ file needs its declaration
 rewritten. A declaration that revises an existing transformation passes its current definition
-digest (`@expected_digest`). All four were applied to the estate on 2026-10-30.
+digest (`@expected_digest`). 01 to 05 were applied to the estate on 2026-10-30.
+
+06 was applied through the declared-change runner (`apply-declared-change`, kinds
+`transformation-declaration` and `capability-from-dsl`), the route for writer calls: it executes on
+`sql-server-client`'s execute operation, which reads every result set. `sql-database-reader` returns
+only the first result set and needs its result column to be JSON text, so it cannot run a script whose
+writers return result sets of their own; it does run an sfx-identity migration whose first result set
+is its JSON `value` (sfx-dal `007-run-output-stage`, dry run first with its rollback twin).
 
 ## Verified
 
@@ -86,6 +115,16 @@ The run operations, for a completed run of a user (10 of 10, run concurrently in
 | `GET /sfx/v1/runs/{run}/delivery` (user) | 501 `OPERATION_DISPATCH_NOT_DECLARED` |
 | `GET /sfx/v1/providers/sfx-vault-file-host/inspection` (machine) | 200, 11 result sets |
 | `GET /sfx/v1/nope` | 404 `OPERATION_NOT_DECLARED` |
+
+Admission, admitting `read-project-tracker` (a 46 KB output) for a user with a live session (5 of 5):
+
+| Request | Answer |
+| --- | --- |
+| `POST /sfx/v1/runs` (user, session) | 200, `COMPLETED`, run `cee9eb91`, state `completed` (11.0 s) |
+| `GET /sfx/v1/runs/{run}` | 200, state `completed`, output available |
+| `GET /sfx/v1/runs/{run}/output` | 200, the run's `project-tracker-result.v1` (1 project, 10 tasks) |
+| `GET /sfx/v1/retained-runs/{run}` | 200, the caller's session, capture `incomplete` (no trace yet) |
+| `POST /sfx/v1/runs` (user, no session) | 422 `EVIDENCE_SESSION_REQUIRED` |
 
 Each run starts a kernel process; the times include its start. The resolve and respond stages also
 passed 15 of 15 cases as standalone capabilities: matching, nested payload binding, user-only
@@ -136,6 +175,7 @@ object, in every isolation profile) and runs at low integrity, and the providers
    kernel that stays running instead of one process per request.
 2. **Identity provider:** the caller from the bearer or session carrier.
 3. **Deployment:** the kernel and the HTTP-serving provider on their own App Service.
-4. **Admission** (`admit-run`): register the run, run the capability, complete it; then the trace from
-   the kernel's observation channel and the event stream.
+4. **The run's trace and event stream:** the kernel's observation channel forwarded to a declared sink
+   that appends trace chunks; then admission through the workflow workers (asynchronous), the
+   idempotency key (`$header.` in the input template) and machine runs (EV-014).
 5. **Dispatch of `command` operations** (the circuit catalog and the capability graph).
