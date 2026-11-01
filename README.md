@@ -169,7 +169,12 @@ batches on a kernel of its own, for the frame every subscriber then writes uncha
 The record is the observer's `{seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text,
 payload}`. The stream opens with `retry: 3000`, replays the published frames after `since` (or
 `Last-Event-ID`; without either, none), writes `: replay-complete`, then each new frame as it is
-published, with `: keep-alive` while quiet. The `x-observer-instance` header names the channel: a host
+published, with `: keep-alive` while quiet. `run=current` (narrowed by `graphId`), `run=<n>` and
+`run=next` follow one run: the host keeps the run windows publish's window effects describe, and
+`select-estate-live-observation` ([20](declarations/20-select-estate-live-observation.dsl)) chooses the
+window whose frames the stream writes; a refused `run` or `since` answers 400. Each request this host
+answers is published as well, as an execution of `serve-http-request` with the capability it resolved
+to as its nested invocation (`observation.requests` in the host data). The `x-observer-instance` header names the channel: a host
 restart begins a new sequence. A run's `run-end` is published only once its completion stored its
 output, which `GET /api/circuit/v1/runs/{runId}/output`, the legacy path, also reads. The stream ends
 with `: session-ended` at the session expiry or at the first `check-api-session` recheck that cannot

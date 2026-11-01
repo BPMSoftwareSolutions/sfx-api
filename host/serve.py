@@ -163,25 +163,23 @@ class Kernel:
                 sys.stderr.write(text + '\n')
 
 
-class Run:
-    """One run this host executes: its events in order, and the condition every listener waits on."""
+class Execution:
+    """One execution this host publishes, a run or a request: its events in order, and the condition every listener
+    waits on."""
 
-    def __init__(self, directive):
-        self.directive = directive
-        self.run_id = directive['runId']
+    def __init__(self, execution_id, capability):
+        self.run_id = execution_id
+        self.capability = capability
         self.events = []
         self.dropped = 0
-        self.state = 'admitted'
-        self.ended = False
         self.changed = threading.Condition()
-        self.append('run.admitted', {'capability': directive.get('capability'), 'admittedAt': directive.get('admittedAt')})
 
     def identity(self):
-        """The run as the channel publishes it: its id and the capability it was admitted for."""
-        return {'executionId': self.run_id, 'capability': self.directive.get('capability')}
+        """The execution as the channel publishes it: its id and its capability."""
+        return {'executionId': self.run_id, 'capability': self.capability}
 
     def append(self, kind, payload, publish=True):
-        """The run's next event, to its listeners and, unless the caller publishes it later, to the channel."""
+        """The execution's next event, to its listeners and, unless the caller publishes it later, to the channel."""
         with self.changed:
             cursor = len(self.events) + 1
             event = {'eventId': 'urn:sfx-api:run-event:%s:%d' % (self.run_id, cursor), 'cursor': cursor, 'at': now(),
@@ -210,6 +208,17 @@ class Run:
                       **{key: kept[key] for key in ('observationType', 'testimonyType', 'graphId', 'rootExecutionId',
                                                    'cellId', 'phase', 'status') if key in kept}}
         self.append(kind if isinstance(kind, str) else 'observation', record)
+
+
+class Run(Execution):
+    """One run this host executes, admitted by a directive, with its state for the run's listeners."""
+
+    def __init__(self, directive):
+        super().__init__(directive['runId'], directive.get('capability'))
+        self.directive = directive
+        self.state = 'admitted'
+        self.ended = False
+        self.append('run.admitted', {'capability': directive.get('capability'), 'admittedAt': directive.get('admittedAt')})
 
     def end(self, state):
         with self.changed:
@@ -242,6 +251,31 @@ def invoke(kernel, capability_id, payload):
     except (ValueError, OSError):
         return None
     return ((delivery.get('outcome') or {}).get('result') or {}).get('outcome')
+
+
+def choose(select, started):
+    """The run window a subscription's select capability chooses from the channel's retained windows, or None."""
+    kernel = kernels.get()
+    try:
+        outcome = invoke(kernel, select['capabilityId'], {
+            'select': {'run': select.get('run'), 'graphId': select.get('graphId')},
+            'windows': channel.retained_windows(), 'started': started})
+    finally:
+        kernels.put(kernel)
+    window = outcome.get('window') if isinstance(outcome, dict) else None
+    return window if isinstance(window, dict) and isinstance(window.get('runId'), str) else None
+
+
+def release(kernel, execution, delivery):
+    """Return a request kernel to the pool. A request's execution is detached once the kernel's observations are in,
+    and ends with its delivery's state."""
+    if execution is not None:
+        kernel.quiet()
+        kernel.run = None
+        state, exit_code, failure, _ = settle(delivery)
+        execution.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': now(),
+                                        **({'failure': failure} if failure else {})})
+    kernels.put(kernel)
 
 
 def chunks(events):
@@ -302,13 +336,15 @@ class Channel:
     """The estate's live observation channel: every event this host publishes, in one sequence within the channel
     bounds, read by every subscriber. An event's position is reserved when it is written; the publish capability frames
     each batch of one execution's consecutive events, in position order, on a kernel of its own, and the channel keeps
-    each frame exactly as answered."""
+    each frame exactly as answered, with the execution it belongs to. It keeps the retained run windows as the publish
+    capability's window effects describe them: an execution's window opens, takes the graphs it captured, and closes."""
 
     def __init__(self):
         self.instance = str(uuid.uuid4())
         self.changed = threading.Condition()
         self.pending = collections.deque()
         self.frames = collections.deque()
+        self.windows = []
         self.reserved = 0
         self.published = 0
         self.bytes = 0
@@ -350,18 +386,42 @@ class Channel:
                 sys.stderr.write('[sfx-api channel] events %d..%d were not published: %s\n' % (
                     batch[0][0], batch[-1][0], json.dumps(answer)[:500]))
                 publications = [{'seq': seq, 'frame': ''} for seq, _, _ in batch]
+            execution_id = execution.run_id
             with self.changed:
                 for each in publications:
                     length = len(each['frame'].encode('utf-8'))
-                    self.frames.append((each['seq'], each['frame'], length))
+                    self.frames.append((each['seq'], each['frame'], length, execution_id))
                     self.bytes += length
+                    effect = each.get('window') if isinstance(each.get('window'), dict) else {}
+                    if effect.get('opens'):
+                        self.windows.append({'runId': execution_id, 'startSeq': each['seq'], 'endSeq': None, 'graphs': []})
+                    elif effect.get('closes') or 'graph' in effect:
+                        window = next((window for window in reversed(self.windows) if window['runId'] == execution_id), None)
+                        if window is not None and window['endSeq'] is None:
+                            if effect.get('closes'):
+                                window['endSeq'] = each['seq']
+                            else:
+                                window['graphs'].append(effect['graph'])
                 self.published = batch[-1][0]
                 while len(self.frames) > host['runs']['feedEvents'] or self.bytes > host['runs']['feedBytes']:
                     self.bytes -= self.frames.popleft()[2]
+                while self.windows and self.windows[0]['endSeq'] is not None and self.frames and self.windows[0]['endSeq'] < self.frames[0][0]:
+                    self.windows.pop(0)
                 self.changed.notify_all()
 
+    def retained_windows(self):
+        """The retained run windows, newest first, as the select capability takes them."""
+        with self.changed:
+            return [dict(window, graphs=list(window['graphs'])) for window in reversed(self.windows)]
+
+    def opens(self, position):
+        """Whether a retained run window opens at the position."""
+        with self.changed:
+            return any(window['startSeq'] == position for window in self.windows)
+
     def after(self, cursor, timeout):
-        """The published frames after the cursor, as (position, frame, length), waiting up to the timeout for one."""
+        """The published frames after the cursor, as (position, frame, length, execution), waiting up to the timeout
+        for one."""
         with self.changed:
             if self.published <= cursor:
                 self.changed.wait(timeout)
@@ -452,11 +512,19 @@ class Facade(http.server.BaseHTTPRequestHandler):
         raw = (self.raw_requestline + str(self.headers).encode('latin-1')
                + self.rfile.read(int(self.headers.get('content-length', 0)))).decode('utf-8', 'replace')
         kernel = kernels.get()
+        execution = None
+        if host['observation'].get('requests'):
+            execution = Execution(str(uuid.uuid4()), {'subject': host['request']['subject']})
+            if kernel.process is None or kernel.process.poll() is not None:
+                kernel.start()
+            execution.append('run.started', {'startedAt': now(), 'pid': kernel.process.pid})
+            kernel.run = execution
         try:
             delivery = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
                                        'request': dict(host['request'], input=raw)})
-        finally:
-            kernels.put(kernel)
+        except (ValueError, OSError) as error:
+            delivery = {'disposition': 'failed', 'error': {'code': 'REQUEST_KERNEL_FAILED', 'message': type(error).__name__}}
+        threading.Thread(target=release, args=(kernel, execution, delivery), daemon=True).start()
         response = ((delivery.get('outcome') or {}).get('result') or {}).get('outcome')
         if not isinstance(response, str):
             self.respond({'status': 502, 'contentType': 'application/json; charset=utf-8',
@@ -543,15 +611,31 @@ class Facade(http.server.BaseHTTPRequestHandler):
         """Server-sent frames of the channel: the declared opening, the published frames after the cursor (or
         Last-Event-ID; without one, none) and the declared replay end, then each frame as it is published, the declared
         keep-alive frame while it is quiet, and the declared end frame at the caller session's expiry or the first
-        declared recheck that cannot confirm the session."""
+        declared recheck that cannot confirm the session. With a run selection only the chosen run window's frames are
+        written: the directive's select capability chooses it from the retained windows, and chooses again each time a
+        window opens while none is chosen."""
         self.close_connection = True
         cursor = directive.get('after')
         if cursor is None and (self.headers.get('last-event-id') or '').strip().isdigit():
             cursor = int(self.headers['last-event-id'].strip())
-        frames, respond = directive.get('frames') or {}, directive['respond']
+        frames, respond, select = directive.get('frames') or {}, directive['respond'], directive.get('select')
         session = directive.get('session') or {}
         expires, recheck = instant(session.get('expiresAt')), session.get('recheck')
         keepalive = host['runs']['keepaliveSeconds']
+        window = choose(select, None) if select else None
+
+        def selected(published):
+            nonlocal window
+            if not select:
+                return ''.join(frame for _, frame, _, _ in published)
+            kept = []
+            for position, frame, _, execution_id in published:
+                if window is None and channel.opens(position):
+                    window = choose(select, position)
+                if (window is not None and execution_id == window['runId'] and position >= window['startSeq']
+                        and (window['endSeq'] is None or position <= window['endSeq'])):
+                    kept.append(frame)
+            return ''.join(kept)
         head = ('HTTP/1.1 200 OK\r\nContent-Type: %s\r\nCache-Control: no-cache, no-store\r\nX-Accel-Buffering: no\r\n'
                 'Connection: close\r\n' % respond['contentType'])
         if respond.get('instanceHeader'):
@@ -563,7 +647,7 @@ class Facade(http.server.BaseHTTPRequestHandler):
                 cursor = channel.latest()
             else:
                 published = channel.after(max(0, cursor), 0)
-                self.wfile.write(''.join(frame for _, frame, _ in published).encode('utf-8'))
+                self.wfile.write(selected(published).encode('utf-8'))
                 cursor = published[-1][0] if published else max(0, cursor)
             self.wfile.write(frames.get('replayComplete', '').encode('utf-8'))
             self.wfile.flush()
@@ -575,9 +659,11 @@ class Facade(http.server.BaseHTTPRequestHandler):
                 if expires:
                     wait = min(wait, (expires - datetime.datetime.now(datetime.timezone.utc)).total_seconds())
                 published = channel.after(cursor, max(0.05, wait))
+                text = selected(published) if published else ''
                 if published:
-                    self.wfile.write(''.join(frame for _, frame, _ in published).encode('utf-8'))
                     cursor = published[-1][0]
+                if text:
+                    self.wfile.write(text.encode('utf-8'))
                     wrote = time.monotonic()
                 elif time.monotonic() - wrote >= keepalive:
                     self.wfile.write(frames.get('keepalive', ': keepalive\n\n').encode('utf-8'))
