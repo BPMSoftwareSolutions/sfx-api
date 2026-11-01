@@ -19,6 +19,10 @@ API is in [sfx-platform-improvements.md](sfx-platform-improvements.md).
 Every statement below gives its evidence: a run id, a revision, a probe made on 2026-11-01, a declaration, or code at
 a file and line. A statement without evidence is marked **not verified**.
 
+Status: sfx-platform answered sections 3 and 4 in `67c8365`. Its record is
+`docs/analysis/declared-observer-2026-11-01.md`, and the per-item results are in
+[sfx-platform-improvements.md](sfx-platform-improvements.md) (P1 to P3).
+
 ## 1. Facts
 
 | # | Fact | Evidence |
@@ -30,7 +34,7 @@ a file and line. A statement without evidence is marked **not verified**.
 | F5 | The subscription's selectors answer as declared. | Estate runs of `subscribe-estate-live-observation`. No selector: no cursor (`3c934aad`). `since=7`: replay after 7 (`bd99cb41`). `run=current&graphId=…`, `run=LAST`, `run=2`: replay from 0 with the selection (`cd659a0d`, `e0425083`, `cdf7ad49`). `run=next&since=7`: no replay (`c0901206`). `run=03`: 400 `invalid_run` (`67fe2a74`). `since=-1`: 400 `invalid_since` (`12f9a1be`). |
 | F6 | The run window is chosen as the legacy observer chose it. | Estate runs `623b8efa` to `de672be8` of `select-estate-live-observation`: 7 of 7 cases chose the expected window. |
 | F7 | The record is framed as declared. | Estate run `de0ca705` of `publish-estate-live-observation` framed a two-execution batch. Each record has `runId` `sfx-api:<execution>`, `kind` `run-start`/`observation`/`run-end`, `api.subject.capabilityId`, and a nested invocation's `capabilityId` in its payload. |
-| F8 | **Not verified:** the host writing only the selected run's records on a live `run=` subscription. | No subscriber has opened `GET /events?run=…` on `sfx-api-test` yet. Step A4 in section 4 verifies it. |
+| F8 | The host writes only the selected run's records on a live `run=` subscription. | sfx-platform's step A4 (`67c8365`, `docs/analysis/declared-observer-2026-11-01.md`): `run=current&graphId=graph%3Averify-password-derivation` replayed exactly run `ec577b9d`'s 42 records, and a selected subscription kept open across run `5f6bd214` still held only those. |
 | F9 | Executions answered within a request (`serve-http-request`) are **not** on the channel now. | sfx-api `ff44a75` sets `observation.requests: false` in `sfx-api.config.json`. |
 
 ## 2. The contract sfx-api serves
