@@ -1,31 +1,11 @@
 # sfx-api: the declared SideFX API
 
-This repository is **the new SideFX API**: the HTTP API declared as
-`sidefx:authorities/sidefx-api-interface.v1`, served by a hosting facade and the kernel, and deployed
-as the Azure app `sfx-api-test`. **It is not the legacy `sfx-api` CLI.** The two only share a name.
+This repository serves the declared SideFX HTTP API at `https://sfx-api-test.azurewebsites.net/sfx/v1`.
+The browser, desktop and installed operator CLI are clients maintained in [sfx-platform](https://github.com/BPMSoftwareSolutions/sfx-platform).
+The CLI admits declaration writers through this same API. The former composite staging slot is stopped.
 
-## Two different things are called sfx-api
-
-| | **The declared API** (this repository) | **The legacy `sfx-api` CLI** (not in this repository) |
-| --- | --- | --- |
-| What it is | The new HTTP API: every operation declared in the estate, served by [host/serve.py](host/serve.py) and the kernel | An installed command-line client: `sfx-api capability observe ...`, `sfx-api capability author ...`, `sfx-api run ...`, `sfx-api login` |
-| Its code | This repository | Elsewhere. Nothing here builds, configures, ships or depends on it |
-| Where it runs | Azure App Service `sfx-api-test` (`https://sfx-api-test.azurewebsites.net`, image `bpmaiengineacr.azurecr.io/sfx-api`), and locally on WSL | The developer's machine. It calls **the legacy staging host**, `https://sidefx-staging-fyfhb9gubneqbpaz.eastus2-01.azurewebsites.net` |
-| Its role | The product being built; API callers (sfx-platform) will migrate to the declared API (this repo) from the legacy staging host | An operator tool only: today it is how declarations are written into the estate database and how runs are read |
-
-They share one thing: **the staging estate database** (and sfx-identity). The declared API's
-interface, ingress, frontdoor and providers are rows in that database. The legacy CLI is how those
-rows are written today: its requests run on the legacy staging host, whose kernel calls the estate's
-writers. The declared API's kernel reads the same rows on every request, so a declaration is live in
-`sfx-api-test` at once, with no rebuild. The image is rebuilt only when [host/](host/),
-[sfx-api.config.json](sfx-api.config.json), [deploy/](deploy/) or the kernel change.
-
-The words used below:
-
-- **the declared API**: this repository and what it serves (`sfx-api-test` on Azure, the facade on WSL);
-- **the legacy CLI**: the installed `sfx-api` command;
-- **the legacy staging host**: the existing staging API that the legacy CLI calls;
-- **the estate database**: the staging estate database both of them read.
+The interface, ingress, frontdoor and provider declarations live in the estate database. The kernel reads
+that authority at execution time. Rebuild the image for changes to the hosting facade, kernel or container.
 
 ## How the declared API works
 
@@ -286,10 +266,11 @@ starts the host on port 8787 (`WEBSITES_PORT`). The test app is `sfx-api-test` o
 
 ## Declaring
 
-Declarations go into the estate database, not into `sfx-api-test`. Today they are written through
-the legacy CLI, whose requests run on the legacy staging host. A command below that begins `sfx-api`
-is the legacy CLI. The declared API has no command-line client of its own, and none of these commands
-calls `sfx-api-test`.
+Use the installed operator CLI to sign in with `sfx-api login --endpoint https://sfx-api-test.azurewebsites.net`.
+Check the selected endpoint with `sfx-api whoami --json`. Writer admissions use `POST /sfx/v1/runs`;
+read the result and evidence with `sfx-api run <id> --json --events`.
+Run `890c91f6-d6c9-966d-203b-e7c3ae8729d4` executed a no-op writer through this path after the old slot was stopped.
+[Platform cutover receipt](https://github.com/BPMSoftwareSolutions/sfx-platform/pull/78)
 
 Run the files in [declarations/](declarations/) in order against the estate database. Each runs in one
 transaction through installed writers (`model.declare_port_provider_binding`,
@@ -528,10 +509,10 @@ object, in every isolation profile) and runs at low integrity, and the providers
 
 1. **Deployment:** [the declared API's Azure app `sfx-api-test` is live](docs/azure-test-2026-10-31.md),
    with its role grants, approved Key Vault bootstrap and authenticated execution/read-back verified.
-   sfx-platform still calls the legacy staging host; moving it to the declared API is still open.
+   The staging browser and the signed-in Windows CLI use this API.
 2. **Asynchronous runs and their live stream** (The host, Runs): live on `sfx-api-test` with the
-   retained trace, the session rule on streams and the `Idempotency-Key` header; the signed-in journey
-   over HTTP is still to run. Then: the graphs per execution root in the run store, machine runs
+   retained trace, the session rule on streams and the `Idempotency-Key` header; signed-in
+   browser observation and run read-back passed on staging. Then: the graphs per execution root in the run store, machine runs
    (EV-014), and more than one worker (each adds about 350 MB on the shared plan).
 3. **The capability graph:** compile is a kernel operation, not a capability.
 4. **Session operations:** sign-in (`POST /sfx/v1/session`), session read and sign-out are served;
