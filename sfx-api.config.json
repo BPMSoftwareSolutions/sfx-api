@@ -13,10 +13,7 @@
       "225000"
     ],
     "instances": 1,
-    "answerTimeoutMs": 228000,
-    "environment": {
-      "SIDEFX_OBSERVE": "1"
-    }
+    "answerTimeoutMs": 228000
   },
   "workers": {
     "command": [
@@ -35,7 +32,7 @@
   },
   "observation": {
     "publish": "publish-estate-live-observation",
-    "requests": true,
+    "requests": false,
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
