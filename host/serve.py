@@ -61,26 +61,68 @@ class Kernel:
         self.settings = settings
 
     def deliver(self, envelope):
-        if self.process is None or self.process.poll() is not None:
-            observed = 'environment' in self.settings
-            self.process = subprocess.Popen(self.settings['command'], cwd=host['kernel']['root'],
-                                            env=dict(os.environ, **self.settings.get('environment', {})),
-                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE if observed else None)
-            self.lines = queue.Queue()
-            threading.Thread(target=self.read, args=(self.process.stdout, self.lines), daemon=True).start()
-            if observed:
-                threading.Thread(target=self.observe, args=(self.process.stderr,), daemon=True).start()
-        self.process.stdin.write(json.dumps(envelope, separators=(',', ':')).encode('utf-8') + b'\n')
-        self.process.stdin.flush()
+        """The kernel's delivery of the envelope. A kernel that answers a failure and then exits had not begun the
+        envelope (it could not open the envelope's session, or it refused the line), unless the failure is its
+        timeout, so the envelope goes once more, to a fresh kernel."""
+        delivery = self.send(envelope)
+        if 'outcome' in delivery or delivery.get('errorCode') in ('DELIVERY_TIMEOUT', 'KERNEL_EXITED', 'KERNEL_TIMEOUT'):
+            return delivery
         try:
-            line = self.lines.get(timeout=self.settings['answerTimeoutMs'] / 1000)
-        except queue.Empty:
-            line = b''
-        if not line:
-            self.process.kill()
+            self.process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            return delivery
+        self.process = None
+        sys.stderr.write('[sfx-api kernel] it exited before beginning the envelope; delivering it to a fresh kernel\n')
+        return self.send(envelope)
+
+    def send(self, envelope):
+        """One envelope to the running kernel and its answer. A kernel that ends or overruns the bound without
+        answering answers KERNEL_EXITED or KERNEL_TIMEOUT; every failure goes to the host log."""
+        line = json.dumps(envelope, separators=(',', ':')).encode('utf-8') + b'\n'
+        for _ in range(2):
+            if self.process is None or self.process.poll() is not None:
+                self.start()
+            try:
+                self.process.stdin.write(line)
+                self.process.stdin.flush()
+                break
+            except OSError:
+                # It ended before reading the line, so nothing was delivered.
+                self.process = None
+        if self.process is None:
+            answer = b''
+        else:
+            try:
+                answer = self.lines.get(timeout=self.settings['answerTimeoutMs'] / 1000)
+            except queue.Empty:
+                answer = None
+        if answer:
+            try:
+                delivery = json.loads(answer)
+            except ValueError:
+                delivery = {'disposition': 'failed', 'errorCode': 'KERNEL_ANSWER_INVALID',
+                            'error': {'code': 'KERNEL_ANSWER_INVALID', 'message': answer[:500].decode('utf-8', 'replace')}}
+        else:
+            code = 'KERNEL_TIMEOUT' if answer is None else 'KERNEL_EXITED'
+            if self.process is not None:
+                self.process.kill()
             self.process = None
-        return json.loads(line)
+            delivery = {'disposition': 'failed', 'errorCode': code, 'error': {'code': code}}
+        if 'outcome' not in delivery:
+            sys.stderr.write('[sfx-api kernel] %s %s\n' % (envelope['request'].get('subject'),
+                                                          json.dumps(delivery.get('error') or delivery)[:2000]))
+        return delivery
+
+    def start(self):
+        observed = 'environment' in self.settings
+        self.process = subprocess.Popen(self.settings['command'], cwd=host['kernel']['root'],
+                                        env=dict(os.environ, **self.settings.get('environment', {})),
+                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE if observed else None)
+        self.lines = queue.Queue()
+        threading.Thread(target=self.read, args=(self.process.stdout, self.lines), daemon=True).start()
+        if observed:
+            threading.Thread(target=self.observe, args=(self.process.stderr,), daemon=True).start()
 
     @staticmethod
     def read(stdout, lines):
@@ -305,10 +347,15 @@ class Facade(http.server.BaseHTTPRequestHandler):
                + self.rfile.read(int(self.headers.get('content-length', 0)))).decode('utf-8', 'replace')
         kernel = kernels.get()
         try:
-            response = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
-                                       'request': dict(host['request'], input=raw)})['outcome']['result']['outcome']
+            delivery = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
+                                       'request': dict(host['request'], input=raw)})
         finally:
             kernels.put(kernel)
+        response = ((delivery.get('outcome') or {}).get('result') or {}).get('outcome')
+        if not isinstance(response, str):
+            self.respond({'status': 502, 'contentType': 'application/json; charset=utf-8',
+                          'body': {'error': {'code': 'KERNEL_DELIVERY_FAILED'}}})
+            return
         head, _, body = response.partition('\r\n\r\n')
         types = [value.strip() for name, _, value in (line.partition(':') for line in head.split('\r\n')[1:])
                  if name.strip().lower() == 'content-type']
