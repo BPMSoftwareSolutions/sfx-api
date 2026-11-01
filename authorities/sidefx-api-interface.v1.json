@@ -694,21 +694,78 @@
       ],
       "resolves": {
         "kind": "capability",
-        "capabilityId": "open-api-estate-stream"
+        "capabilityId": "subscribe-estate-live-observation"
       },
       "input": {
         "principalId": "$caller.principalId",
         "sessionId": "$caller.sessionId",
         "since": "$query.since",
+        "run": "$query.run",
+        "graphId": "$query.graphId",
         "recheckMilliseconds": 5000
       },
-      "meaning": "Watch the estate live: every event of every run the host executes, as server-sent events in the legacy observer record ({seq, receivedAt, kind, payload, api}), framed by project-api-estate-events. since (or Last-Event-ID) replays the retained feed after that sequence number; without it only new events arrive. The x-observer-instance header names the feed; a new instance began a new sequence. The stream ends at the caller session expiry and at the first recheck that cannot confirm the session.",
+      "meaning": "Watch the estate live: subscribe to the estate's live observation channel, every execution the host publishes, as server-sent events of the observer record ({seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text, payload}) framed by publish-estate-live-observation, through subscribe-estate-live-observation. since (or Last-Event-ID) replays the retained channel after that sequence; without it only new publications arrive; a refused selector answers 400 invalid_run or invalid_since. The x-observer-instance header names the channel; a new instance began a new sequence. The stream ends at the caller session expiry and at the first recheck that cannot confirm the session. The same subscription as GET /events.",
       "segments": {
         "0": "",
         "1": "sfx",
         "2": "v1",
         "3": "estate-execution",
         "4": "stream"
+      }
+    },
+    {
+      "operationId": "stream-observer-events",
+      "method": "GET",
+      "path": "/events",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "subscribe-estate-live-observation"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId",
+        "since": "$query.since",
+        "run": "$query.run",
+        "graphId": "$query.graphId",
+        "recheckMilliseconds": 5000
+      },
+      "meaning": "The legacy observer's subscription at its own path, outside the API prefix, for the subscribers built against it (the machine watchers and routers, the Explorer's live circuit, the Fractal Lab bridge): the same channel, selectors and record as /sfx/v1/estate-execution/stream, through subscribe-estate-live-observation.",
+      "segments": {
+        "0": "",
+        "1": "events"
+      }
+    },
+    {
+      "operationId": "read-observer-run-output",
+      "method": "GET",
+      "path": "/api/circuit/v1/runs/{runId}/output",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-run-output"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "runId": "$path.runId"
+      },
+      "meaning": "The legacy circuit host's run output path, outside the API prefix, for the subscribers that read a run's output when its run-end reaches the feed (the machine watchers and routers): the same read as /sfx/v1/runs/{runId}/output.",
+      "segments": {
+        "0": "",
+        "1": "api",
+        "2": "circuit",
+        "3": "v1",
+        "4": "runs",
+        "5": {
+          "param": "runId"
+        },
+        "6": "output"
       }
     },
     {

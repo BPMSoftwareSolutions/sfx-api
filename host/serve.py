@@ -17,21 +17,25 @@ only by the declared capabilities the interface resolves to. The facade does wha
   envelope on a worker kernel started with SIDEFX_OBSERVE=1. Each observation the kernel writes while
   the run executes becomes the run's next event and reaches every listener as it is written. When the
   run ends, the facade retains its events through the directive's trace capability, contiguous chunk
-  by chunk, invokes its completion capability with the last retained cursor, and only then ends the
-  run.
+  by chunk, invokes its completion capability with the last retained cursor, and only then publishes
+  the run's end to the channel and ends the run, so a subscriber that sees the end can read the output.
 - stream-run: answer server-sent events: the run's events after the cursor (or Last-Event-ID), then
   each new event as it arrives, then an end event once the run has ended. A session caller's stream
   ends instead at the session's expiry, or at the first recheck (the directive's capability, at its
   interval) that cannot confirm the session.
-- stream-estate: answer server-sent events of the feed, every event of every run in one sequence: the
-  directive's opening frame, the frames after the cursor (or Last-Event-ID; without one, none), its
-  replay end, then each new event's frame as it arrives, until the session ends as for stream-run. The
-  directive's capability projects each event into its frame once, on a kernel of its own, and every
-  subscriber writes the same frames; the directive's header names the feed instance.
+- stream-estate: answer server-sent events of the estate's live observation channel: the directive's
+  opening frame, the published frames after the cursor (or Last-Event-ID; without one, none), its
+  replay end, then each frame as it is published, its keep-alive frame while quiet, until the session
+  ends as for stream-run. The directive's header names the channel instance.
 - respond: answer the directive's response.
 
-The kernel commands, pool sizes, answer bounds, the envelope's request and the run and feed bounds are
-host data in sfx-api.config.json. Python standard library only: nothing is installed or built.
+Every event of every run is published to the channel in the order written, at the position the channel
+reserves for it. The publish capability frames each batch of one execution's events, on a kernel of its
+own; the channel keeps each frame exactly as answered, and every subscriber writes the same frames.
+
+The kernel commands, pool sizes, answer bounds, the envelope's request, the publish capability and the
+run and channel bounds are host data in sfx-api.config.json. Python standard library only: nothing is
+installed or built.
 
     python3 host/serve.py sfx-api.config.json
 """
@@ -138,8 +142,18 @@ class Kernel:
             lines.put(line)
         lines.put(b'')
 
+    def quiet(self, gap=0.05, bound=2.0):
+        """Wait until the kernel's diagnostics have been quiet for the gap since now, at most the bound. The kernel writes
+        its observations before its answer, but on another pipe, so they can still be on the way when the answer is read."""
+        started = time.monotonic()
+        while time.monotonic() - max(self.heard, started) < gap and time.monotonic() - started < bound:
+            time.sleep(gap / 5)
+
+    heard = 0.0
+
     def observe(self, stderr):
         for line in stderr:
+            self.heard = time.monotonic()
             text = line.decode('utf-8', 'replace').rstrip('\r\n')
             if text.startswith(OBSERVATION):
                 run = self.run
@@ -162,7 +176,12 @@ class Run:
         self.changed = threading.Condition()
         self.append('run.admitted', {'capability': directive.get('capability'), 'admittedAt': directive.get('admittedAt')})
 
-    def append(self, kind, payload):
+    def identity(self):
+        """The run as the channel publishes it: its id and the capability it was admitted for."""
+        return {'executionId': self.run_id, 'capability': self.directive.get('capability')}
+
+    def append(self, kind, payload, publish=True):
+        """The run's next event, to its listeners and, unless the caller publishes it later, to the channel."""
         with self.changed:
             cursor = len(self.events) + 1
             event = {'eventId': 'urn:sfx-api:run-event:%s:%d' % (self.run_id, cursor), 'cursor': cursor, 'at': now(),
@@ -171,7 +190,9 @@ class Run:
                 event['rootExecutionId'] = payload['rootExecutionId']
             self.events.append(event)
             self.changed.notify_all()
-            feed.append(self, event)
+            if publish:
+                channel.append(self, event)
+        return event
 
     def observe(self, text):
         if len(self.events) >= host['runs']['maxEvents']:
@@ -277,71 +298,75 @@ class Sessions:
         return answer
 
 
-class Feed:
-    """Every event of every run this host executes, in one sequence, within the feed bounds. Each event is projected
-    into its frame once, by the capability a stream-estate directive names, on a kernel of its own; every subscriber
-    writes the same frames."""
+class Channel:
+    """The estate's live observation channel: every event this host publishes, in one sequence within the channel
+    bounds, read by every subscriber. An event's position is reserved when it is written; the publish capability frames
+    each batch of one execution's consecutive events, in position order, on a kernel of its own, and the channel keeps
+    each frame exactly as answered."""
 
     def __init__(self):
         self.instance = str(uuid.uuid4())
         self.changed = threading.Condition()
-        self.records = collections.deque()
-        self.next = 1
+        self.pending = collections.deque()
+        self.frames = collections.deque()
+        self.reserved = 0
+        self.published = 0
         self.bytes = 0
-        self.projecting = threading.Lock()
-        self.projection = None
-        self.projector = Kernel(host['projection'])
+        self.publisher = Kernel(host['observation'])
+        threading.Thread(target=self.publish, daemon=True).start()
 
-    def append(self, run, event):
-        size = len(json.dumps(event, separators=(',', ':')).encode('utf-8'))
+    def append(self, execution, event):
+        """Reserve the event's position and queue it for publishing."""
         with self.changed:
-            self.records.append({'seq': self.next, 'receivedAt': event['at'], 'runId': run.run_id,
-                                 'capability': run.directive.get('capability'), 'event': event, 'bytes': size, 'frame': None})
-            self.next += 1
-            self.bytes += size
-            while len(self.records) > host['runs']['feedEvents'] or self.bytes > host['runs']['feedBytes']:
-                self.bytes -= self.records.popleft()['bytes']
+            self.reserved += 1
+            self.pending.append((self.reserved, execution, event))
             self.changed.notify_all()
 
     def latest(self):
         with self.changed:
-            return self.next - 1
+            return self.reserved
+
+    def publish(self):
+        """Publish the queued events in position order. A batch the capability does not answer position by position
+        has empty frames, and its positions are a gap."""
+        while True:
+            with self.changed:
+                while not self.pending:
+                    self.changed.wait()
+                execution, batch, size = self.pending[0][1], [], 0
+                while self.pending and self.pending[0][1] is execution and len(batch) < host['runs']['feedBatchEvents']:
+                    length = len(json.dumps(self.pending[0][2], separators=(',', ':')).encode('utf-8'))
+                    if batch and size + length > host['runs']['feedBatchBytes']:
+                        break
+                    batch.append(self.pending.popleft())
+                    size += length
+            answer = invoke(self.publisher, host['observation']['publish'], {
+                'channel': self.instance, 'execution': execution.identity(),
+                'events': [{'seq': seq, 'receivedAt': event['at'], 'event': event} for seq, _, event in batch]})
+            publications = answer.get('publications') if isinstance(answer, dict) else None
+            if not (isinstance(publications, list) and len(publications) == len(batch)
+                    and all(isinstance(each, dict) and each.get('seq') == seq and isinstance(each.get('frame'), str)
+                            for each, (seq, _, _) in zip(publications, batch))):
+                sys.stderr.write('[sfx-api channel] events %d..%d were not published: %s\n' % (
+                    batch[0][0], batch[-1][0], json.dumps(answer)[:500]))
+                publications = [{'seq': seq, 'frame': ''} for seq, _, _ in batch]
+            with self.changed:
+                for each in publications:
+                    length = len(each['frame'].encode('utf-8'))
+                    self.frames.append((each['seq'], each['frame'], length))
+                    self.bytes += length
+                self.published = batch[-1][0]
+                while len(self.frames) > host['runs']['feedEvents'] or self.bytes > host['runs']['feedBytes']:
+                    self.bytes -= self.frames.popleft()[2]
+                self.changed.notify_all()
 
     def after(self, cursor, timeout):
-        """The retained records after the cursor, waiting up to the timeout for one."""
+        """The published frames after the cursor, as (position, frame, length), waiting up to the timeout for one."""
         with self.changed:
-            if self.next - 1 <= cursor:
+            if self.published <= cursor:
                 self.changed.wait(timeout)
-            first = self.records[0]['seq'] if self.records else self.next
-            return list(itertools.islice(self.records, max(0, cursor + 1 - first), None))
-
-    def frames(self, records, projection):
-        """The records' frames, each projected the first time it is asked for, in batches within the feed bounds.
-        A batch the capability does not answer frame by frame has no frames, and its sequence numbers are a gap."""
-        with self.projecting:
-            if projection != self.projection:
-                with self.changed:
-                    for record in self.records:
-                        record['frame'] = None
-                self.projection = projection
-            batch, size = [], 0
-            for record in [record for record in records if record['frame'] is None] + [None]:
-                if batch and (record is None or len(batch) >= host['runs']['feedBatchEvents']
-                              or size + record['bytes'] > host['runs']['feedBatchBytes']):
-                    answer = invoke(self.projector, projection['capabilityId'], {'instance': self.instance, 'events': [
-                        {key: each[key] for key in ('seq', 'receivedAt', 'runId', 'capability', 'event')} for each in batch]})
-                    frames = answer.get('frames') if isinstance(answer, dict) else None
-                    if not (isinstance(frames, list) and len(frames) == len(batch) and all(isinstance(f, str) for f in frames)):
-                        sys.stderr.write('[sfx-api feed] events %d..%d were not projected: %s\n' % (
-                            batch[0]['seq'], batch[-1]['seq'], json.dumps(answer)[:500]))
-                        frames = [''] * len(batch)
-                    for each, frame in zip(batch, frames):
-                        each['frame'] = frame
-                    batch, size = [], 0
-                if record is not None:
-                    batch.append(record)
-                    size += record['bytes']
-        return ''.join(record['frame'] for record in records)
+            first = self.frames[0][0] if self.frames else self.published + 1
+            return list(itertools.islice(self.frames, max(0, cursor + 1 - first), None))
 
 
 class Runs:
@@ -370,18 +395,21 @@ class Runs:
         while True:
             run = self.pending.get()
             run.state, started = 'executing', now()
-            run.append('run.started', {'startedAt': started})
+            if kernel.process is None or kernel.process.poll() is not None:
+                kernel.start()
+            run.append('run.started', {'startedAt': started, 'pid': kernel.process.pid})
             kernel.run = run
             try:
                 delivery = kernel.deliver(run.directive['envelope'])
             except (ValueError, OSError) as error:
                 delivery = {'disposition': 'failed', 'error': {'code': 'RUN_KERNEL_FAILED', 'message': type(error).__name__}}
+            kernel.quiet()
             kernel.run = None
             state, exit_code, failure, output = settle(delivery)
             ended = now()
-            run.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': ended,
-                                      **({'failure': failure} if failure else {}),
-                                      **({'droppedEvents': run.dropped} if run.dropped else {})})
+            exited = run.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': ended,
+                                               **({'failure': failure} if failure else {}),
+                                               **({'droppedEvents': run.dropped} if run.dropped else {})}, publish=False)
             completion = dict(run.directive['completion']['input'], state=state, exitCode=exit_code,
                               startedAt=started, endedAt=ended)
             if failure:
@@ -403,6 +431,7 @@ class Runs:
             answer = invoke(kernel, run.directive['completion']['capabilityId'], completion)
             if not isinstance(answer, dict) or answer.get('status') != 'COMPLETED':
                 sys.stderr.write('[sfx-api run %s] completion answered %s\n' % (run.run_id, json.dumps(answer)[:500]))
+            channel.append(run, exited)
             run.end(state)
 
 
@@ -410,7 +439,7 @@ kernels = queue.Queue()
 for _ in range(host['kernel']['instances']):
     kernels.put(Kernel(host['kernel']))
 sessions = Sessions()
-feed = Feed()
+channel = Channel()
 runs = Runs()
 for _ in range(host['workers']['instances']):
     threading.Thread(target=runs.work, args=(Kernel(host['workers']),), daemon=True).start()
@@ -444,7 +473,7 @@ class Facade(http.server.BaseHTTPRequestHandler):
             self.stream(directive)
             return
         if directive['directive'] == 'stream-estate':
-            self.feed(directive)
+            self.subscribe(directive)
             return
         if directive['directive'] == 'execute-run':
             runs.admit(directive['run'])
@@ -510,33 +539,32 @@ class Facade(http.server.BaseHTTPRequestHandler):
             {'runId': run_id, 'cursor': cursor}, separators=(',', ':'))).encode('utf-8'))
         self.wfile.flush()
 
-    def feed(self, directive):
-        """Server-sent frames of the feed: the declared opening, the frames after the cursor and the declared replay
-        end, then each new event's frame as it arrives, keepalive comments while it is quiet, and the declared end
-        frame at the caller session's expiry or the first declared recheck that cannot confirm the session."""
+    def subscribe(self, directive):
+        """Server-sent frames of the channel: the declared opening, the published frames after the cursor (or
+        Last-Event-ID; without one, none) and the declared replay end, then each frame as it is published, the declared
+        keep-alive frame while it is quiet, and the declared end frame at the caller session's expiry or the first
+        declared recheck that cannot confirm the session."""
         self.close_connection = True
         cursor = directive.get('after')
         if cursor is None and (self.headers.get('last-event-id') or '').strip().isdigit():
             cursor = int(self.headers['last-event-id'].strip())
-        frames, projection, respond = directive.get('frames') or {}, directive['projection'], directive['respond']
+        frames, respond = directive.get('frames') or {}, directive['respond']
         session = directive.get('session') or {}
         expires, recheck = instant(session.get('expiresAt')), session.get('recheck')
         keepalive = host['runs']['keepaliveSeconds']
         head = ('HTTP/1.1 200 OK\r\nContent-Type: %s\r\nCache-Control: no-cache, no-store\r\nX-Accel-Buffering: no\r\n'
                 'Connection: close\r\n' % respond['contentType'])
         if respond.get('instanceHeader'):
-            head += '%s: %s\r\n' % (respond['instanceHeader'], feed.instance)
+            head += '%s: %s\r\n' % (respond['instanceHeader'], channel.instance)
         try:
             self.wfile.write(head.encode('latin-1') + b'\r\n' + frames.get('open', '').encode('utf-8'))
             self.wfile.flush()
             if cursor is None:
-                cursor = feed.latest()
+                cursor = channel.latest()
             else:
-                # A cursor past this feed's last event counted another instance's sequence: replay all of this one.
-                cursor = max(0, cursor) if cursor <= feed.latest() else 0
-                records = feed.after(cursor, 0)
-                self.wfile.write(feed.frames(records, projection).encode('utf-8'))
-                cursor = records[-1]['seq'] if records else cursor
+                published = channel.after(max(0, cursor), 0)
+                self.wfile.write(''.join(frame for _, frame, _ in published).encode('utf-8'))
+                cursor = published[-1][0] if published else max(0, cursor)
             self.wfile.write(frames.get('replayComplete', '').encode('utf-8'))
             self.wfile.flush()
             wrote = checked = time.monotonic()
@@ -546,13 +574,13 @@ class Facade(http.server.BaseHTTPRequestHandler):
                     wait = min(wait, recheck['intervalMilliseconds'] / 1000 - (time.monotonic() - checked))
                 if expires:
                     wait = min(wait, (expires - datetime.datetime.now(datetime.timezone.utc)).total_seconds())
-                records = feed.after(cursor, max(0.05, wait))
-                if records:
-                    self.wfile.write(feed.frames(records, projection).encode('utf-8'))
-                    cursor = records[-1]['seq']
+                published = channel.after(cursor, max(0.05, wait))
+                if published:
+                    self.wfile.write(''.join(frame for _, frame, _ in published).encode('utf-8'))
+                    cursor = published[-1][0]
                     wrote = time.monotonic()
                 elif time.monotonic() - wrote >= keepalive:
-                    self.wfile.write(b': keepalive\n\n')
+                    self.wfile.write(frames.get('keepalive', ': keepalive\n\n').encode('utf-8'))
                     wrote = time.monotonic()
                 self.wfile.flush()
                 if (expires and datetime.datetime.now(datetime.timezone.utc) >= expires

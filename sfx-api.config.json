@@ -30,7 +30,8 @@
       "SIDEFX_OBSERVE": "1"
     }
   },
-  "projection": {
+  "observation": {
+    "publish": "publish-estate-live-observation",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -39,7 +40,6 @@
       "--timeout",
       "55000"
     ],
-    "instances": 1,
     "answerTimeoutMs": 58000
   },
   "runs": {
