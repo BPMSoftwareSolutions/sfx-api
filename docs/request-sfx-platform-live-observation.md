@@ -13,7 +13,8 @@ within a request: sfx-api switched those off (F9), and that gap is sfx-api's to 
 local kernel, which the owner deferred.
 
 This request asks sfx-platform for its part: its subscribers receive and show what the channel carries, and its
-acceptance tools accept the channel's identities.
+acceptance tools accept the channel's identities. Everything else sfx-platform still has to change for the declared
+API is in [sfx-platform-improvements.md](sfx-platform-improvements.md).
 
 Every statement below gives its evidence: a run id, a revision, a probe made on 2026-11-01, a declaration, or code at
 a file and line. A statement without evidence is marked **not verified**.
