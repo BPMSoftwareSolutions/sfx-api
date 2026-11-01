@@ -2,99 +2,84 @@
 
 Date: 2026-11-01. From: sfx-api. To: the sfx-platform maintainers.
 
-Goal: the owner observes executions on the staging web and the desktop as before the cutover. The Explorer animates a
-run as it executes and replays the latest run of a circuit, and Estate Live shows runs started from any client.
+Goal: the owner observes executions on the staging web and the desktop as before the cutover. The Explorer receives
+a run's records as it executes and replays the latest run of a circuit, and Estate Live shows runs started from any
+client.
 
-## Where things stand
+Every statement below gives its evidence: a run id, a revision, a probe made on 2026-11-01, a declaration, or code at
+a file and line. A statement without evidence is marked **not verified**.
 
-| Piece | Owner | State on 2026-11-01 |
+## 1. Facts
+
+| # | Fact | Evidence |
 | --- | --- | --- |
-| The live observation channel at `GET /events` and `GET /sfx/v1/estate-execution/stream` | sfx-api | Live on `sfx-api-test` since sfx-api `d442242` (run selectors since `0f652da`). A run's events reach a subscriber within seconds. |
-| The staging web routes `GET /events` to sfx-api; `/workspace/execution` answers `globalObserver: true`; the Explorer connects when configured | sfx-platform | Done in sfx-platform `6d4092f`, deployed: `sidefx-web-staging` reports that revision and answers `GET /events` with 401 `SIGN_IN_REQUIRED` when signed out, where it answered 404 before. |
-| Estate Live on `/workspace/estate-execution/stream` | sfx-platform | Bound in #82. |
-| The acceptance tools' event identity checks | sfx-platform | **Requested, section 3.** |
-| Signed-in acceptance on the staging web and the desktop | sfx-platform | **Requested, section 4.** |
-
-## 1. Boundary
-
-- **sfx-api** serves the channel, its subscription rules and its record, through declared capabilities
-  (`subscribe-estate-live-observation`, `select-estate-live-observation`, `publish-estate-live-observation`). The
-  contract is section 2. Every run sfx-api executes is published, from any client on any machine.
-- **sfx-platform** carries the browser's and the desktop's requests to it with the signed-in session, and owns the
-  Explorer, Estate Live and their acceptance.
+| F1 | `sidefx-web-staging` serves sfx-platform `6d4092f`, which forwards `GET /events` to `sfx-api-test` and answers `/workspace/execution` with `globalObserver: true`. | Probe: `GET https://sidefx-web-staging.azurewebsites.net/events` answered `401 {"error":"SIGN_IN_REQUIRED"}` with header `x-sfx-frontend-revision: 6d4092f08eb41c599d48c418e4d012d96ded56fb`. Before `6d4092f` it answered `404 {"error":"NOT_FOUND"}`. |
+| F2 | `sfx-api-test` serves the channel at `GET /events` and `GET /sfx/v1/estate-execution/stream`, and refuses a caller without a session. | Probe: both answered `401 {"error":{"code":"CALLER_REQUIRED"}}`. Deployed: sfx-api `ff44a75`, image `sha256:567b6fce…`. |
+| F3 | A run's records reach a subscriber. | A workspace watcher (`sfx-embody` `tools/sfx-listener/watch.mjs`) subscribed to `GET /events` on `sfx-api-test`. Run `b0f093c4` (`author-workspace-file`) returned, and the watcher created the authored file 6.6 s later. |
+| F4 | A run's `run-end` is published only after its output is stored. | Run `24830b03`: when its `run-end` arrived, the watcher read `GET /api/circuit/v1/runs/24830b03-e255-7aad-e5d7-f283e06aa442/output` and got 200 on the first attempt. |
+| F5 | The subscription's selectors answer as declared. | Estate runs of `subscribe-estate-live-observation`. No selector: no cursor (`3c934aad`). `since=7`: replay after 7 (`bd99cb41`). `run=current&graphId=…`, `run=LAST`, `run=2`: replay from 0 with the selection (`cd659a0d`, `e0425083`, `cdf7ad49`). `run=next&since=7`: no replay (`c0901206`). `run=03`: 400 `invalid_run` (`67fe2a74`). `since=-1`: 400 `invalid_since` (`12f9a1be`). |
+| F6 | The run window is chosen as the legacy observer chose it. | Estate runs `623b8efa` to `de672be8` of `select-estate-live-observation`: 7 of 7 cases chose the expected window. |
+| F7 | The record is framed as declared. | Estate run `de0ca705` of `publish-estate-live-observation` framed a two-execution batch. Each record has `runId` `sfx-api:<execution>`, `kind` `run-start`/`observation`/`run-end`, `api.subject.capabilityId`, and a nested invocation's `capabilityId` in its payload. |
+| F8 | **Not verified:** the host writing only the selected run's records on a live `run=` subscription. | No subscriber has opened `GET /events?run=…` on `sfx-api-test` yet. Step A4 in section 4 verifies it. |
+| F9 | Executions answered within a request (`serve-http-request`) are **not** on the channel now. | sfx-api `ff44a75` sets `observation.requests: false` in `sfx-api.config.json`. |
 
 ## 2. The contract sfx-api serves
 
-Features: [features/estate-live-observation.feature](../features/estate-live-observation.feature) (approved
-2026-11-01).
+The declarations are the source. A record or answer that differs from them is an sfx-api defect.
 
-**Subscription.** `GET /events`, or the same query on `GET /sfx/v1/estate-execution/stream`.
-- Session required, as cookie `__Host-sfx-session` or bearer. Without one: 401 `CALLER_REQUIRED`.
-- `since=<seq>` or `Last-Event-ID` replays the retained channel after that position. Without either, only new records.
-- `run=current` (or `last`), narrowed by `graphId=graph:<capability>` to the latest run that captured that graph;
-  `run=<n>`, the nth retained run; `run=next`, the next run to start. Each keeps to that run.
-- `run=03` and other refused selectors: 400 `{"error":"invalid_run"}`; a refused `since`: 400 `{"error":"invalid_since"}`.
+- Subscription: [21-subscribe-estate-live-observation.dsl](../declarations/21-subscribe-estate-live-observation.dsl).
+- Run window choice: [20-select-estate-live-observation.dsl](../declarations/20-select-estate-live-observation.dsl).
+- Record and frame: [19-publish-estate-live-observation.dsl](../declarations/19-publish-estate-live-observation.dsl).
+- Routes: `stream-observer-events` (`GET /events`), `stream-estate-events` (`GET /sfx/v1/estate-execution/stream`)
+  and `read-observer-run-output` (`GET /api/circuit/v1/runs/{runId}/output`) in
+  [authorities/sidefx-api-interface.v1.json](../authorities/sidefx-api-interface.v1.json).
 
-**Stream.** `text/event-stream` with an `x-observer-instance` header that names the channel; a new instance began a
-new sequence. Frames: `retry: 3000`, the replay, `: replay-complete`, then `id: <seq>` with one `data:` line per
-record, `: keep-alive` while quiet, and `: session-ended` at the session's expiry or a failed recheck.
+What those declare, in short:
+- **Session:** the cookie `__Host-sfx-session` or a bearer. Without one: `401 CALLER_REQUIRED`.
+- **Selectors:** `since=<seq>` (or `Last-Event-ID`); `run=current` or `last`, with `graphId=graph:<capability>`;
+  `run=<n>`; `run=next`. Refused: `400 {"error":"invalid_run"}` and `400 {"error":"invalid_since"}`.
+- **Stream:** `text/event-stream`, with header `x-observer-instance`. Frames, in order: `retry: 3000`, the replay,
+  `: replay-complete`, then `id: <seq>` with one `data:` line per record. `: keep-alive` while quiet;
+  `: session-ended` at the session's expiry or a failed recheck.
+- **Record:** `{seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text, payload}`.
+  - `observationKey` is `sfx-observer:<x-observer-instance>:<seq>`.
+  - `runId` is `sfx-api:<run>`, where the legacy host wrote `sda-api:<run>`.
+  - `api.eventId` is `urn:sfx-api:run-event:<run>:<cursor>`, where the legacy host wrote `urn:sda-api:run-event:…`.
+  - `api.runId` is the bare run id.
 
-**Record.** The legacy observer's members in its order:
-`{seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text, payload}`.
-- `kind` is `run-start`, `observation` or `run-end`; `seq` is contiguous within an instance.
-- `observationKey` is `sfx-observer:<channel>:<seq>`.
-- **Changed from the legacy host:** `runId` is `sfx-api:<run>`, and `api.eventId` is
-  `urn:sfx-api:run-event:<run>:<cursor>`. They were `sda-api:<run>` and `urn:sda-api:run-event:<run>:<cursor>`.
-- `api` also carries `runId` (the bare run id), `cursor`, `kind`, `occurredAt`, `recordedAt`, `rootExecutionId` and
-  `subject {capabilityId, namespaceId}`.
-- A run's `run-end` is published only after its output is stored, so `GET /sfx/v1/runs/{runId}/output` (also served at
-  the legacy `GET /api/circuit/v1/runs/{runId}/output`) answers as soon as `run-end` arrives.
+## 3. Requested: the acceptance tools assert the legacy identities
 
-**Not on the channel for now:** executions answered within a request (`serve-http-request`). sfx-api built them and
-switched them off, because publishing every request put the channel minutes behind its runs. They return when the
-channel keeps up, and they will name `serve-http-request` with the resolved capability as a nested invocation.
+Each row says which sfx-api path the code reaches and why it fails, so the failure is certain, not likely.
 
-## 3. Requested: accept the sfx-api event identity in the acceptance tools
-
-These checks still assert the legacy SDA API identities, so they fail against every record sfx-api serves. Estate Live
-already accepts both prefixes (`live-circuit/circuit/estate-live.mjs:60`); the tools should do the same.
-
-| File | Line | Asserts | Should accept |
+| File:line | Reaches | Asserts | Result against sfx-api |
 | --- | --- | --- | --- |
-| `tools/live-circuit/acceptance-evidence.mjs` | 95, 140 | `eventId === urn:sda-api:run-event:<run>:<cursor>` | `urn:sfx-api:run-event:<run>:<cursor>` as well |
-| `tools/live-circuit/acceptance-evidence.mjs` | 170, 177 | `record.runId === 'sda-api:' + runId` | `'sfx-api:' + runId`, or `record.api.runId === runId` |
-| `tools/live-circuit/durable-snapshot.mjs` | 45 | `urn:sda-api:run-event:` | `urn:sfx-api:run-event:` as well |
-| `tools/live-circuit/estate-evidence.mjs` | 34 | `urn:sda-api:run-event:` | `urn:sfx-api:run-event:` as well |
+| `tools/live-circuit/acceptance-evidence.mjs:95` | `<origin>/workspace/runs/<run>/events/stream` (lines 71, 87). The web forwards it to `sfx-api` `/sfx/v1/runs/<run>/events/stream`. | `eventId === urn:sda-api:run-event:<run>:<cursor>` | sfx-api writes `urn:sfx-api:run-event:<run>:<cursor>` (`host/serve.py`, `Execution.append`). Fails on the first event: `EXECUTION_EVENT_IDENTITY`. |
+| `tools/live-circuit/acceptance-evidence.mjs:140` | The installed CLI's `sfx-api-run-evidence.v1` record (`requireCliExecution`, line 129), whose events the CLI reads from `sfx-api` | the same | The same failure, on the first event. |
+| `tools/live-circuit/acceptance-evidence.mjs:170, 177` | `<origin>/events` (line 154) | `record.runId === 'sda-api:' + runId` | Records carry `runId` `sfx-api:<run>` (declaration 19). The filter never matches, so it fails `DELIVERY_TERMINAL_MISSING` at its timeout. |
+| `tools/live-circuit/durable-snapshot.mjs:45` | `<origin>/workspace/runs/<run>/events/stream` (lines 6, 32) | `urn:sda-api:run-event:` | Fails on the first event. |
+| `tools/live-circuit/estate-evidence.mjs:14` | `<origin>/v1/runs`, the removed SDA API host's path | (it fails before line 34's identity check) | Probe: `sfx-api-test` answers `/v1/runs` with `404 OPERATION_NOT_DECLARED`, and `sidefx-web-staging` with `404 NOT_FOUND`. It is used by `estate-live-acceptance.mjs` and `verify-acceptance-evidence-browser.mjs`. |
+
+Requested:
+1. Accept `urn:sfx-api:run-event:<run>:<cursor>` and `sfx-api:<run>` wherever the legacy forms are asserted, as
+   `live-circuit/circuit/estate-live.mjs:60` already does for `eventId`.
+2. For `estate-evidence.mjs`, either point it at `<origin>/workspace/runs`, as `acceptance-evidence.mjs` does, and
+   apply item 1 to line 34, or retire it with its two callers.
 
 ## 4. Requested: signed-in acceptance
 
-sfx-api cannot hold a user's session, so these need a signed-in sfx-platform run.
+sfx-api never holds a user's session, so these steps need a signed-in run by sfx-platform. Use the capability
+`verify-password-derivation`: it runs with input `{}`, and its graph is `graph:verify-password-derivation` (run
+`f8a01553`'s trace). Record each step's result, the run ids and the `x-observer-instance` value.
 
-```gherkin
-Feature: The owner observes executions on the staging web and the desktop
+| Step | Do | Expect |
+| --- | --- | --- |
+| A1 | Signed out: `GET https://sidefx-web-staging.azurewebsites.net/events` | `401 {"error":"SIGN_IN_REQUIRED"}` |
+| A2 | Signed in: open `https://sidefx-web-staging.azurewebsites.net/circuit/explorer?capability=verify-password-derivation` | The browser opens `GET /events` (`circuit-runtime.js:410`), answered `200 text/event-stream` with an `x-observer-instance` header. |
+| A3 | On another machine: `sfx-api capability observe verify-password-derivation --input "{}" --json`, which prints run id R | The Explorer receives R's records: `run-start` with `runId` `sfx-api:R`, the graph capture with `graphId` `graph:verify-password-derivation`, then `run-end`. |
+| A4 | After R ends, press Replay | The browser opens `GET /events?run=current&graphId=graph%3Averify-password-derivation` (`circuit-runtime.js:410`). The stream replays R's records only, from `run-start` to `run-end`. This verifies F8. |
+| A5 | Signed in: open `https://sidefx-web-staging.azurewebsites.net/circuit/estate`, then repeat A3 to get run R2 | R2 appears in Live without its id being entered. The browser log shows no `POST /workspace/runs` from the page. |
+| A6 | Repeat A2 to A4 in the desktop app | As A2 to A4 |
 
-  Background:
-    Given a signed-in session on https://sidefx-web-staging.azurewebsites.net, and on the desktop
-
-  Scenario: The Explorer animates a run as it executes
-    Given the Explorer open on a circuit
-    When that circuit's capability is run from the CLI on another machine
-    Then the Explorer animates its cells and edges while it executes, without its run id being entered
-
-  Scenario: The Explorer replays the latest run of its circuit
-    When Replay is pressed after the run ended
-    Then the Explorer replays that run (GET /events?run=current&graphId=graph:<capability>)
-
-  Scenario: Estate Live shows a run started from another client
-    Given Estate open
-    When a run is started from the CLI on another machine
-    Then it appears in Live without its run id being entered and without the page creating runs
-
-  Scenario: Signed out, nothing is observed
-    When GET /events is opened signed out
-    Then the answer is 401 SIGN_IN_REQUIRED
-```
-
-Please record each scenario's result and the run ids you used. A failure that points at the channel, such as a missing
-record, a gap in `seq`, or a record that differs from section 2, goes back to sfx-api on its issue tracker, with the
-run id and the `x-observer-instance` value.
+If a step fails at the channel, send it to sfx-api with the step, the run id and the `x-observer-instance` value. That
+covers a missing record, a gap in `seq`, a record that differs from section 2, or a selector answer that differs from
+F5. Anything that passes the channel's contract but doesn't render belongs to sfx-platform.
