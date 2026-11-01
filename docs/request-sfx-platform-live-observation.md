@@ -2,9 +2,18 @@
 
 Date: 2026-11-01. From: sfx-api. To: the sfx-platform maintainers.
 
-Goal: the owner observes executions on the staging web and the desktop as before the cutover. The Explorer receives
-a run's records as it executes and replays the latest run of a circuit, and Estate Live shows runs started from any
-client.
+Goal: every capability execution in the estate is observable live, from any machine, including the capabilities a
+frontier model invokes through the estate. The estate publishes each execution to one channel, and any signed-in
+subscriber anywhere receives it as it happens. The Explorer, Estate Live and the desktop are subscribers of that
+channel. They show what it carries; they are not the goal.
+
+Where the channel stands against that goal: it carries every run admitted through the API, from any client on any
+machine, including an agent invoking a capability with the `sfx-api` CLI (F3). It does not carry executions answered
+within a request: sfx-api switched those off (F9), and that gap is sfx-api's to close. It does not carry executions on a
+local kernel, which the owner deferred.
+
+This request asks sfx-platform for its part: its subscribers receive and show what the channel carries, and its
+acceptance tools accept the channel's identities.
 
 Every statement below gives its evidence: a run id, a revision, a probe made on 2026-11-01, a declaration, or code at
 a file and line. A statement without evidence is marked **not verified**.
@@ -75,7 +84,7 @@ sfx-api never holds a user's session, so these steps need a signed-in run by sfx
 | --- | --- | --- |
 | A1 | Signed out: `GET https://sidefx-web-staging.azurewebsites.net/events` | `401 {"error":"SIGN_IN_REQUIRED"}` |
 | A2 | Signed in: open `https://sidefx-web-staging.azurewebsites.net/circuit/explorer?capability=verify-password-derivation` | The browser opens `GET /events` (`circuit-runtime.js:410`), answered `200 text/event-stream` with an `x-observer-instance` header. |
-| A3 | On another machine: `sfx-api capability observe verify-password-derivation --input "{}" --json`, which prints run id R | The Explorer receives R's records: `run-start` with `runId` `sfx-api:R`, the graph capture with `graphId` `graph:verify-password-derivation`, then `run-end`. |
+| A3 | On another machine, as an agent would: `sfx-api capability observe verify-password-derivation --input "{}" --json`, which prints run id R | The Explorer receives R's records: `run-start` with `runId` `sfx-api:R`, the graph capture with `graphId` `graph:verify-password-derivation`, then `run-end`. |
 | A4 | After R ends, press Replay | The browser opens `GET /events?run=current&graphId=graph%3Averify-password-derivation` (`circuit-runtime.js:410`). The stream replays R's records only, from `run-start` to `run-end`. This verifies F8. |
 | A5 | Signed in: open `https://sidefx-web-staging.azurewebsites.net/circuit/estate`, then repeat A3 to get run R2 | R2 appears in Live without its id being entered. The browser log shows no `POST /workspace/runs` from the page. |
 | A6 | Repeat A2 to A4 in the desktop app | As A2 to A4 |
