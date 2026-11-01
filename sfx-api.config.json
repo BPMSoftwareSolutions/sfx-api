@@ -1,9 +1,9 @@
 {
   "contractId": "sfx-api-config.v4",
   "kernel": {
-    "digest": "3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
+    "digest": "efd992349a820278d369022e01c1c6d4304ac2f02b0657b61b0c541b93a404cb",
     "rid": "linux-x64",
-    "root": "/home/sjones/.local/share/sfx/kernel/3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
+    "root": "/home/sjones/.local/share/sfx/kernel/efd992349a820278d369022e01c1c6d4304ac2f02b0657b61b0c541b93a404cb",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
