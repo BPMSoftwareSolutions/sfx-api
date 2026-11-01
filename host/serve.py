@@ -23,16 +23,23 @@ only by the declared capabilities the interface resolves to. The facade does wha
   each new event as it arrives, then an end event once the run has ended. A session caller's stream
   ends instead at the session's expiry, or at the first recheck (the directive's capability, at its
   interval) that cannot confirm the session.
+- stream-estate: answer server-sent events of the feed, every event of every run in one sequence: the
+  directive's opening frame, the frames after the cursor (or Last-Event-ID; without one, none), its
+  replay end, then each new event's frame as it arrives, until the session ends as for stream-run. The
+  directive's capability projects each event into its frame once, on a kernel of its own, and every
+  subscriber writes the same frames; the directive's header names the feed instance.
 - respond: answer the directive's response.
 
-The kernel commands, pool sizes, answer bounds, the envelope's request and the run bounds are host
-data in sfx-api.config.json. Python standard library only: nothing is installed or built.
+The kernel commands, pool sizes, answer bounds, the envelope's request and the run and feed bounds are
+host data in sfx-api.config.json. Python standard library only: nothing is installed or built.
 
     python3 host/serve.py sfx-api.config.json
 """
+import collections
 import datetime
 import http
 import http.server
+import itertools
 import json
 import os
 import queue
@@ -40,6 +47,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 
 host = json.load(open(sys.argv[1], encoding='utf-8'))
 DIRECTIVE = 'application/vnd.sfx.host-directive+json'
@@ -163,6 +171,7 @@ class Run:
                 event['rootExecutionId'] = payload['rootExecutionId']
             self.events.append(event)
             self.changed.notify_all()
+            feed.append(self, event)
 
     def observe(self, text):
         if len(self.events) >= host['runs']['maxEvents']:
@@ -268,6 +277,73 @@ class Sessions:
         return answer
 
 
+class Feed:
+    """Every event of every run this host executes, in one sequence, within the feed bounds. Each event is projected
+    into its frame once, by the capability a stream-estate directive names, on a kernel of its own; every subscriber
+    writes the same frames."""
+
+    def __init__(self):
+        self.instance = str(uuid.uuid4())
+        self.changed = threading.Condition()
+        self.records = collections.deque()
+        self.next = 1
+        self.bytes = 0
+        self.projecting = threading.Lock()
+        self.projection = None
+        self.projector = Kernel(host['projection'])
+
+    def append(self, run, event):
+        size = len(json.dumps(event, separators=(',', ':')).encode('utf-8'))
+        with self.changed:
+            self.records.append({'seq': self.next, 'receivedAt': event['at'], 'runId': run.run_id,
+                                 'capability': run.directive.get('capability'), 'event': event, 'bytes': size, 'frame': None})
+            self.next += 1
+            self.bytes += size
+            while len(self.records) > host['runs']['feedEvents'] or self.bytes > host['runs']['feedBytes']:
+                self.bytes -= self.records.popleft()['bytes']
+            self.changed.notify_all()
+
+    def latest(self):
+        with self.changed:
+            return self.next - 1
+
+    def after(self, cursor, timeout):
+        """The retained records after the cursor, waiting up to the timeout for one."""
+        with self.changed:
+            if self.next - 1 <= cursor:
+                self.changed.wait(timeout)
+            first = self.records[0]['seq'] if self.records else self.next
+            return list(itertools.islice(self.records, max(0, cursor + 1 - first), None))
+
+    def frames(self, records, projection):
+        """The records' frames, each projected the first time it is asked for, in batches within the feed bounds.
+        A batch the capability does not answer frame by frame has no frames, and its sequence numbers are a gap."""
+        with self.projecting:
+            if projection != self.projection:
+                with self.changed:
+                    for record in self.records:
+                        record['frame'] = None
+                self.projection = projection
+            batch, size = [], 0
+            for record in [record for record in records if record['frame'] is None] + [None]:
+                if batch and (record is None or len(batch) >= host['runs']['feedBatchEvents']
+                              or size + record['bytes'] > host['runs']['feedBatchBytes']):
+                    answer = invoke(self.projector, projection['capabilityId'], {'instance': self.instance, 'events': [
+                        {key: each[key] for key in ('seq', 'receivedAt', 'runId', 'capability', 'event')} for each in batch]})
+                    frames = answer.get('frames') if isinstance(answer, dict) else None
+                    if not (isinstance(frames, list) and len(frames) == len(batch) and all(isinstance(f, str) for f in frames)):
+                        sys.stderr.write('[sfx-api feed] events %d..%d were not projected: %s\n' % (
+                            batch[0]['seq'], batch[-1]['seq'], json.dumps(answer)[:500]))
+                        frames = [''] * len(batch)
+                    for each, frame in zip(batch, frames):
+                        each['frame'] = frame
+                    batch, size = [], 0
+                if record is not None:
+                    batch.append(record)
+                    size += record['bytes']
+        return ''.join(record['frame'] for record in records)
+
+
 class Runs:
     """The runs this host has admitted, the retained bound of ended ones, and the queue the workers take."""
 
@@ -334,6 +410,7 @@ kernels = queue.Queue()
 for _ in range(host['kernel']['instances']):
     kernels.put(Kernel(host['kernel']))
 sessions = Sessions()
+feed = Feed()
 runs = Runs()
 for _ in range(host['workers']['instances']):
     threading.Thread(target=runs.work, args=(Kernel(host['workers']),), daemon=True).start()
@@ -365,6 +442,9 @@ class Facade(http.server.BaseHTTPRequestHandler):
         directive = json.loads(body)
         if directive['directive'] == 'stream-run':
             self.stream(directive)
+            return
+        if directive['directive'] == 'stream-estate':
+            self.feed(directive)
             return
         if directive['directive'] == 'execute-run':
             runs.admit(directive['run'])
@@ -422,13 +502,69 @@ class Facade(http.server.BaseHTTPRequestHandler):
             self.wfile.write(('event: end\ndata: %s\n\n' % json.dumps(
                 {'runId': directive['runId'], 'state': state, 'cursor': cursor}, separators=(',', ':'))).encode('utf-8'))
             self.wfile.flush()
-        except (BrokenPipeError, ConnectionResetError):
+        except ConnectionError:
             return
 
     def session_ended(self, run_id, cursor):
         self.wfile.write(('event: session-ended\ndata: %s\n\n' % json.dumps(
             {'runId': run_id, 'cursor': cursor}, separators=(',', ':'))).encode('utf-8'))
         self.wfile.flush()
+
+    def feed(self, directive):
+        """Server-sent frames of the feed: the declared opening, the frames after the cursor and the declared replay
+        end, then each new event's frame as it arrives, keepalive comments while it is quiet, and the declared end
+        frame at the caller session's expiry or the first declared recheck that cannot confirm the session."""
+        self.close_connection = True
+        cursor = directive.get('after')
+        if cursor is None and (self.headers.get('last-event-id') or '').strip().isdigit():
+            cursor = int(self.headers['last-event-id'].strip())
+        frames, projection, respond = directive.get('frames') or {}, directive['projection'], directive['respond']
+        session = directive.get('session') or {}
+        expires, recheck = instant(session.get('expiresAt')), session.get('recheck')
+        keepalive = host['runs']['keepaliveSeconds']
+        head = ('HTTP/1.1 200 OK\r\nContent-Type: %s\r\nCache-Control: no-cache, no-store\r\nX-Accel-Buffering: no\r\n'
+                'Connection: close\r\n' % respond['contentType'])
+        if respond.get('instanceHeader'):
+            head += '%s: %s\r\n' % (respond['instanceHeader'], feed.instance)
+        try:
+            self.wfile.write(head.encode('latin-1') + b'\r\n' + frames.get('open', '').encode('utf-8'))
+            self.wfile.flush()
+            if cursor is None:
+                cursor = feed.latest()
+            else:
+                # A cursor past this feed's last event counted another instance's sequence: replay all of this one.
+                cursor = max(0, cursor) if cursor <= feed.latest() else 0
+                records = feed.after(cursor, 0)
+                self.wfile.write(feed.frames(records, projection).encode('utf-8'))
+                cursor = records[-1]['seq'] if records else cursor
+            self.wfile.write(frames.get('replayComplete', '').encode('utf-8'))
+            self.wfile.flush()
+            wrote = checked = time.monotonic()
+            while True:
+                wait = keepalive - (time.monotonic() - wrote)
+                if recheck:
+                    wait = min(wait, recheck['intervalMilliseconds'] / 1000 - (time.monotonic() - checked))
+                if expires:
+                    wait = min(wait, (expires - datetime.datetime.now(datetime.timezone.utc)).total_seconds())
+                records = feed.after(cursor, max(0.05, wait))
+                if records:
+                    self.wfile.write(feed.frames(records, projection).encode('utf-8'))
+                    cursor = records[-1]['seq']
+                    wrote = time.monotonic()
+                elif time.monotonic() - wrote >= keepalive:
+                    self.wfile.write(b': keepalive\n\n')
+                    wrote = time.monotonic()
+                self.wfile.flush()
+                if (expires and datetime.datetime.now(datetime.timezone.utc) >= expires
+                        or recheck and time.monotonic() - checked >= recheck['intervalMilliseconds'] / 1000
+                        and not sessions.live(recheck)):
+                    self.wfile.write(frames.get('sessionEnded', '').encode('utf-8'))
+                    self.wfile.flush()
+                    return
+                if recheck and time.monotonic() - checked >= recheck['intervalMilliseconds'] / 1000:
+                    checked = time.monotonic()
+        except ConnectionError:
+            return
 
     do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = answer
 

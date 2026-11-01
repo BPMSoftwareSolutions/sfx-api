@@ -685,6 +685,33 @@
       }
     },
     {
+      "operationId": "stream-estate-events",
+      "method": "GET",
+      "path": "/estate-execution/stream",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "open-api-estate-stream"
+      },
+      "input": {
+        "principalId": "$caller.principalId",
+        "sessionId": "$caller.sessionId",
+        "since": "$query.since",
+        "recheckMilliseconds": 5000
+      },
+      "meaning": "Watch the estate live: every event of every run the host executes, as server-sent events in the legacy observer record ({seq, receivedAt, kind, payload, api}), framed by project-api-estate-events. since (or Last-Event-ID) replays the retained feed after that sequence number; without it only new events arrive. The x-observer-instance header names the feed; a new instance began a new sequence. The stream ends at the caller session expiry and at the first recheck that cannot confirm the session.",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "stream"
+      }
+    },
+    {
       "operationId": "open-session",
       "method": "POST",
       "path": "/session",

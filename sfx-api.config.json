@@ -30,13 +30,29 @@
       "SIDEFX_OBSERVE": "1"
     }
   },
+  "projection": {
+    "command": [
+      "./KernelEntry",
+      "--resident-envelopes",
+      "--config",
+      "kernel-host.json",
+      "--timeout",
+      "55000"
+    ],
+    "instances": 1,
+    "answerTimeoutMs": 58000
+  },
   "runs": {
     "retained": 64,
     "maxEvents": 50000,
     "eventPayloadBytes": 1048576,
     "traceChunkBytes": 524288,
     "traceChunkEvents": 2000,
-    "keepaliveSeconds": 15
+    "keepaliveSeconds": 15,
+    "feedEvents": 20000,
+    "feedBytes": 33554432,
+    "feedBatchEvents": 200,
+    "feedBatchBytes": 1048576
   },
   "request": {
     "object": "capability",

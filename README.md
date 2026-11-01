@@ -153,6 +153,25 @@ and provenance 160 KB), and the activity, provenance and revision readers use IN
 no statement can capture them. The activity reader reads `model.execution_fact`, which the legacy
 host's capture writes; runs this host executes are not captured there yet.
 
+`stream-estate-events` (`GET /sfx/v1/estate-execution/stream`) is the live feed the circuit host served
+at `/events`: every event of every run this host executes, to any signed-in session, as server-sent
+events. It resolves to `open-api-estate-stream` ([17](declarations/17-open-api-estate-stream.dsl)),
+which confirms the caller session and answers the host directive `stream-estate`; the host keeps one
+numbered feed of its runs' events (`feedEvents`, `feedBytes`) and asks `project-api-estate-events`
+([18](declarations/18-project-api-estate-events.dsl)) once per event, in batches on a kernel of its own,
+for the frame every subscriber then writes:
+
+    id: 58
+    data: {"seq":58,"receivedAt":"…","kind":"run.admitted","payload":{…},"api":{"runId":"…","eventId":"urn:sfx-api:run-event:<run>:1","cursor":1,"recordedAt":"…","rootExecutionId":null,"subject":{"capabilityId":"…","namespaceId":"…"}}}
+
+The record is the observer's `{seq, receivedAt, kind, payload, api}`; a run's `run.started` and
+`run.exited` are its `run-start` and `run-end`. The stream opens with `retry: 3000`, replays the
+retained events after `since` (or `Last-Event-ID`; without either, none), writes `: replay-complete`,
+then each new event as a run writes it, with `: keepalive` comments while quiet. The
+`x-observer-instance` header names the feed: a host restart begins a new sequence, and a cursor past
+the current one replays it from 1. The stream ends with `: session-ended` at the session expiry or at
+the first `check-api-session` recheck that cannot confirm it. Only runs this host executes appear.
+
 ## The host
 
 [host/serve.py](host/serve.py) is a facade for hosting. The platform's HTTP server (Python's
