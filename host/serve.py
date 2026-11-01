@@ -29,9 +29,10 @@ only by the declared capabilities the interface resolves to. The facade does wha
   ends as for stream-run. The directive's header names the channel instance.
 - respond: answer the directive's response.
 
-Every event of every run is published to the channel in the order written, at the position the channel
-reserves for it. The publish capability frames each batch of one execution's events, on a kernel of its
-own; the channel keeps each frame exactly as answered, and every subscriber writes the same frames.
+Every event of every run, and of every request when the host data says so, is published to the channel in
+the order written, at the position the channel reserves for it. The publish capability frames each batch of
+queued events, whatever executions they belong to, on a kernel of its own; the channel keeps each frame
+exactly as answered, and every subscriber writes the same frames.
 
 The kernel commands, pool sizes, answer bounds, the envelope's request, the publish capability and the
 run and channel bounds are host data in sfx-api.config.json. Python standard library only: nothing is
@@ -335,9 +336,10 @@ class Sessions:
 class Channel:
     """The estate's live observation channel: every event this host publishes, in one sequence within the channel
     bounds, read by every subscriber. An event's position is reserved when it is written; the publish capability frames
-    each batch of one execution's consecutive events, in position order, on a kernel of its own, and the channel keeps
-    each frame exactly as answered, with the execution it belongs to. It keeps the retained run windows as the publish
-    capability's window effects describe them: an execution's window opens, takes the graphs it captured, and closes."""
+    each batch of queued events, in position order and whatever executions they belong to, on a kernel of its own, and
+    the channel keeps each frame exactly as answered, with the execution it belongs to. It keeps the retained run windows
+    as the publish capability's window effects describe them: an execution's window opens, takes the graphs it captured,
+    and closes."""
 
     def __init__(self):
         self.instance = str(uuid.uuid4())
@@ -363,22 +365,24 @@ class Channel:
             return self.reserved
 
     def publish(self):
-        """Publish the queued events in position order. A batch the capability does not answer position by position
-        has empty frames, and its positions are a gap."""
+        """Publish the queued events in position order, each batch the queued events within the bounds, whatever
+        executions they belong to. A batch the capability does not answer position by position has empty frames, and
+        its positions are a gap."""
         while True:
             with self.changed:
                 while not self.pending:
                     self.changed.wait()
-                execution, batch, size = self.pending[0][1], [], 0
-                while self.pending and self.pending[0][1] is execution and len(batch) < host['runs']['feedBatchEvents']:
+                batch, size = [], 0
+                while self.pending and len(batch) < host['runs']['feedBatchEvents']:
                     length = len(json.dumps(self.pending[0][2], separators=(',', ':')).encode('utf-8'))
                     if batch and size + length > host['runs']['feedBatchBytes']:
                         break
                     batch.append(self.pending.popleft())
                     size += length
             answer = invoke(self.publisher, host['observation']['publish'], {
-                'channel': self.instance, 'execution': execution.identity(),
-                'events': [{'seq': seq, 'receivedAt': event['at'], 'event': event} for seq, _, event in batch]})
+                'channel': self.instance,
+                'events': [{'seq': seq, 'receivedAt': event['at'], 'execution': execution.identity(), 'event': event}
+                           for seq, execution, event in batch]})
             publications = answer.get('publications') if isinstance(answer, dict) else None
             if not (isinstance(publications, list) and len(publications) == len(batch)
                     and all(isinstance(each, dict) and each.get('seq') == seq and isinstance(each.get('frame'), str)
@@ -386,9 +390,9 @@ class Channel:
                 sys.stderr.write('[sfx-api channel] events %d..%d were not published: %s\n' % (
                     batch[0][0], batch[-1][0], json.dumps(answer)[:500]))
                 publications = [{'seq': seq, 'frame': ''} for seq, _, _ in batch]
-            execution_id = execution.run_id
             with self.changed:
-                for each in publications:
+                for each, (_, execution, _) in zip(publications, batch):
+                    execution_id = execution.run_id
                     length = len(each['frame'].encode('utf-8'))
                     self.frames.append((each['seq'], each['frame'], length, execution_id))
                     self.bytes += length
