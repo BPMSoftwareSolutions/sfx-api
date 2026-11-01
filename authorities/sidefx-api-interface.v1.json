@@ -523,6 +523,168 @@
       }
     },
     {
+      "operationId": "read-estate-scopes",
+      "method": "GET",
+      "path": "/estate-execution/scopes",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-api-estate-scopes",
+        "outputContractId": "estate-scopes.v1"
+      },
+      "input": {
+        "principalId": "$caller.principalId"
+      },
+      "meaning": "The estates the caller may open in Estate (the selected estate when its scope is readable), with how their retained and live activity are read. The legacy circuit host derived this from an admitted topology run; here the reader runs inside the read and no run is created.",
+      "telemetry": "estate.scopes",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "scopes"
+      }
+    },
+    {
+      "operationId": "read-estate-topology",
+      "method": "GET",
+      "path": "/estate-execution/topology",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-estate-execution-topology",
+        "outputContractId": "estate-topology-result.v1"
+      },
+      "input": {
+        "capabilityLimit": 500,
+        "relationshipLimit": 2000
+      },
+      "meaning": "The selected estate topology: capability identities with their selected-definition revisions and admitted capability-to-capability relationships, within the legacy bounds (500 capabilities, 2000 relationships).",
+      "telemetry": "estate.topology",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "topology"
+      }
+    },
+    {
+      "operationId": "read-estate-activity",
+      "method": "GET",
+      "path": "/estate-execution/activity",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-estate-execution-activity",
+        "outputContractId": "estate-activity-result.v1"
+      },
+      "input": {
+        "estate": "$query.estate",
+        "start": "$query.start",
+        "end": "$query.end",
+        "asOf": "$query.asOf",
+        "capabilityId": "$query.capabilityId",
+        "sourceId": "$query.sourceId"
+      },
+      "meaning": "Execution activity in an interval of at most 24 hours (start, end) as of an instant (asOf, the playback time or the interval end): admitted (runId, rootExecutionId) instances with their own-outcome states, counts, coverage and cursor. The reader refuses an empty, reversed or longer interval.",
+      "telemetry": "estate.activity",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "activity"
+      }
+    },
+    {
+      "operationId": "read-estate-coverage",
+      "method": "GET",
+      "path": "/estate-execution/coverage",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-estate-execution-coverage",
+        "outputContractId": "estate-coverage-result.v1"
+      },
+      "input": {},
+      "meaning": "Execution capture coverage: source states and watermarks, fact kinds, explicit gaps, withheld conflicts and admissions missing their ingress block.",
+      "telemetry": "estate.coverage",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "coverage"
+      }
+    },
+    {
+      "operationId": "read-estate-provenance",
+      "method": "GET",
+      "path": "/estate-execution/provenance",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-estate-execution-provenance",
+        "outputContractId": "estate-provenance-result.v1"
+      },
+      "input": {
+        "limit": 200,
+        "capabilityId": "$query.capabilityId"
+      },
+      "meaning": "Invocation provenance of up to 200 instances: captured ingress and its classification, parentage and correlation.",
+      "telemetry": "estate.provenance",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "provenance"
+      }
+    },
+    {
+      "operationId": "read-estate-revision",
+      "method": "GET",
+      "path": "/estate-execution/revision",
+      "callers": [
+        "machine",
+        "user"
+      ],
+      "resolves": {
+        "kind": "capability",
+        "capabilityId": "read-estate-execution-revision",
+        "outputContractId": "estate-revision-result.v1"
+      },
+      "input": {
+        "limit": 200,
+        "capabilityId": "$query.capabilityId"
+      },
+      "meaning": "The revision basis of up to 200 instances: the captured authority revision against the selected definition digest, with explicit mismatch states.",
+      "telemetry": "estate.revision",
+      "segments": {
+        "0": "",
+        "1": "sfx",
+        "2": "v1",
+        "3": "estate-execution",
+        "4": "revision"
+      }
+    },
+    {
       "operationId": "open-session",
       "method": "POST",
       "path": "/session",

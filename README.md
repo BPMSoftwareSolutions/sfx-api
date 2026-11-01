@@ -130,6 +130,29 @@ is not honored yet: the input template carries no headers.
 the kernel's `capability list` command. `read-capability-graph` still answers 501: compile is a kernel
 operation on the target's own graph, not a capability the dispatch can run.
 
+The Estate reads (2026-11-01) serve the Estate pane without creating runs, under
+`/sfx/v1/estate-execution/`:
+
+| Path | Capability | Input |
+| --- | --- | --- |
+| `scopes` | `read-api-estate-scopes` ([16](declarations/16-read-api-estate-scopes.dsl)) | the caller principal |
+| `topology` | `read-estate-execution-topology` | 500 capabilities, 2000 relationships |
+| `activity` | `read-estate-execution-activity` | `estate`, `start`, `end`, `asOf`, `capabilityId`, `sourceId` from the query |
+| `coverage` | `read-estate-execution-coverage` | none |
+| `provenance` | `read-estate-execution-provenance` | 200 instances, `capabilityId` from the query |
+| `revision` | `read-estate-execution-revision` | 200 instances, `capabilityId` from the query |
+
+`scopes` answers `estate-scopes.v1`: the principal, the estate the topology reader selects when its scope
+is readable (`{id: "estate:34", label, revision, scopeId: "sidefx:capabilities", read: true}`), and where
+retained and live activity are read. The other five are the estate's declared readers with the legacy
+circuit host's inputs, each answering its own `estate-*-result.v1`; the activity reader refuses an
+empty, reversed or longer than 24-hour interval itself. The circuit host admitted each reader as a run,
+polled it and composed the five into `estate-declared-readers.v1`; the client composes them now. One
+declared read cannot: a fan-out join carries a leg outcome only up to 16 KB (topology is about 110 KB
+and provenance 160 KB), and the activity, provenance and revision readers use INSERT...EXEC inside, so
+no statement can capture them. The activity reader reads `model.execution_fact`, which the legacy
+host's capture writes; runs this host executes are not captured there yet.
+
 ## The host
 
 [host/serve.py](host/serve.py) is a facade for hosting. The platform's HTTP server (Python's
