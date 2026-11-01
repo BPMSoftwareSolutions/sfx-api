@@ -4,7 +4,9 @@
 # subscribers' code, timing and topology probes, declaration generators, and a re-implemented CLI wrapper. That is tool
 # smuggling, and none of it counts. On approval, this feature replaces the scenario "The live observation scenarios
 # pass at every level" in estate-live-observation-declared.feature.
-# @decision marks a scenario that needs the owner's decision; its description holds the user stories.
+# Split on 2026-11-01 at the owner's request: how a capability reads the channel for a bounded time is
+# estate-live-observation-bounded-subscription.feature, and how the channel behaves when something fails is
+# estate-live-observation-failures.feature (paused).
 
 Feature: Estate live observation accepted through declared capabilities
   The approved scenarios of estate-live-observation.feature and estate-live-observation-declared.feature are accepted
@@ -33,31 +35,8 @@ Feature: Estate live observation accepted through declared capabilities
 
   # Reading the channel from the estate
 
-  @decision
-  Scenario: An acceptance capability reads the channel for a bounded time
-    User story (recommended): As an agent or a frontier model observing the estate through a capability, I want to
-    subscribe for a bounded time and receive what was published in it, so that I can watch the estate without holding
-    a connection open, and so that the estate can accept its own live observation.
-
-    How it emerged: an acceptance capability reaches the host through sda-governed-http-exchange-port.v1, the estate's
-    HTTP exchange. It makes one HTTPS exchange bounded by time and by size. A server-sent stream does not end on its
-    own, so the exchange ends timed-out and keeps none of what it received.
-
-    Benefit: the bound is declared in subscribe-estate-live-observation, and the facade only ends the stream when the
-    directive says, so the exchange completes with every frame published within the bound. No SDA change is needed.
-    It is the same subscription the observer offered, with an end the caller chooses.
-
-    The option kept open: SDA extends the governed exchange to keep a stream's bytes when its time bound ends. That is
-    SDA's workspace, and it would serve every streamed read in the estate. User story: As a capability author, I want
-    any HTTP stream the estate reads to return what arrived by its deadline, so that no host needs a bounded variant.
-
-    How it stays configurable: the bound is a selector subscribe-estate-live-observation declares, alongside since and
-    run, so its name, limits and default are re-declarations.
-
-    Given the declared bound selector
-    When an acceptance capability opens GET /events with a bound of 30 seconds
-    Then the stream ends after 30 seconds with every frame published in that time
-    And the exchange completes with them
+  Scenario: An acceptance capability reads the channel with a bounded subscription
+    Then it subscribes as estate-live-observation-bounded-subscription.feature describes
 
   # What is accepted
 
@@ -101,26 +80,3 @@ Feature: Estate live observation accepted through declared capabilities
     When publish-estate-live-observation is re-declared with a changed summary rule
     Then the next records an acceptance capability receives follow the new rule
     And the facade was not changed or redeployed
-
-  # Failures
-
-  @decision
-  Scenario: A failure is accepted only where the estate can produce it
-    User story (recommended): As the product owner, I want every accepted failure to be one the estate really
-    produced, and the failures it cannot produce listed as not accepted, so that "accepted" never rests on a stand-in.
-
-    How it emerged: the facade's failure handling was verified with a stand-in kernel that failed on purpose (a kernel
-    that exits before beginning an envelope, a publish that is refused). The estate cannot make a real kernel crash
-    or refuse on request.
-
-    Benefit: the evidence is real. A failing run, a refused selector, an ended session and a refused capability are
-    produced through the estate and accepted.
-
-    The option kept open: declare fault capabilities, for example a publish variant that refuses for one named
-    execution, so that more failures can be produced on purpose. User story: As the product owner, I want the
-    channel's gap handling shown on staging, so that I can trust it before it happens.
-
-    How it stays configurable: a fault capability is a declaration; adding one adds an accepted failure.
-
-    Then a run that fails, a refused selector, an ended session and a refused capability are accepted through declared capabilities
-    And a kernel crash and a publish the kernel does not answer are recorded on the tracker as not accepted
