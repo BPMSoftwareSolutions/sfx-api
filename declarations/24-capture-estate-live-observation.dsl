@@ -8,7 +8,7 @@ cli display outcome as json
 scenario capture-estate-live-observation root terminal
 given: a bound in seconds, the observer's optional selectors, and the vault reference of a signed-in session
 when: the channel is read for the bound through http-exchange
-then: the outcome is the records the stream carried, in order, with the replayed and live counts
+then: the outcome is the records the stream carried before its bound ended, in order, with the replayed and live counts
 operation capture-estate-live-observation.request kind invoke-port port capture-estate-live-observation-request
 operation capture-estate-live-observation.exchange kind invoke-port port capture-estate-live-observation-exchange
 operation capture-estate-live-observation.records kind invoke-port port capture-estate-live-observation-records

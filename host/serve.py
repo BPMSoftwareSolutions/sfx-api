@@ -593,7 +593,12 @@ class Drawings:
                     positions[0], positions[-1]))
                 time.sleep(interval)
                 continue
-            self.cursor = answer.get('cursor')
+            cursor = answer.get('cursor') or {}
+            if cursor.get('version') != (self.cursor or {}).get('version') or answer.get('reads'):
+                sys.stderr.write('[sfx-api drawings] %s version %s: %d drawings read, %d changes published, settled %s%s\n' % (
+                    'watching from' if self.cursor is None else 'read to', cursor.get('version'), answer.get('reads') or 0,
+                    len(positions), bool(answer.get('settled')), ', full pass' if answer.get('fullPass') else ''))
+            self.cursor = cursor
             if not answer.get('settled'):
                 continue
             time.sleep(interval)
