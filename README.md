@@ -311,11 +311,16 @@ exceeds the Windows path limit under a deep directory):
 
     az acr build --registry bpmaiengineacr --image sfx-api:<commit> --build-arg KERNEL_DIGEST=<digest> --file <context>\Dockerfile <context>
 
-The image holds no credential material. `start.sh` writes the sealed vault, its key record and its key
-from three App Service settings that reference Key Vault secrets (`sfx-api-credential-vault`,
-`sfx-api-credential-vault-key-record`, `sfx-api-credential-vault-key` in `aiengine-kv-20260406`), puts
-the key into a container-only gnome-keyring under the reference the declared vault providers read, and
-starts the host on port 8787 (`WEBSITES_PORT`). The test app is `sfx-api-test` on the plan
+The image holds no credential material. The host and the kernel live under `/opt/sfx`; `/home` is
+App Service's persistent storage (`WEBSITES_ENABLE_APP_SERVICE_STORAGE` true), where the sealed vault
+and the keyring stay across restarts, so a credential stored with `store-credential` survives every
+deploy, as on the legacy host. `start.sh` begins as root, establishes `/home/sjones` on that mount and
+drops to `sjones`. It writes the sealed vault only when `/home` has none, and the key record and the key
+at every start, from three App Service settings that reference Key Vault secrets
+(`sfx-api-credential-vault`, `sfx-api-credential-vault-key-record`, `sfx-api-credential-vault-key` in
+`aiengine-kv-20260406`). It puts the key into a gnome-keyring under the reference the declared vault
+providers read, with the session bus and the keyring's control socket under `/tmp` (a Unix socket cannot
+live on the storage share), and starts the host on port 8787 (`WEBSITES_PORT`). The test app is `sfx-api-test` on the plan
 `ASP-sidefxgroup-ad2e`; its system identity pulls from the registry (`AcrPull`) and reads the vault
 (`Key Vault Secrets User`).
 
@@ -538,8 +543,8 @@ there unchanged, so every capability runs locally as it does on Azure.
 
 - **Kernel:** built and installed from `C:\lab\repos\scenario-driven-architecture`
   (`ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody`) and placed at
-  `~/.local/share/sfx/kernel/<digest>/` with its entry executable. The digest is in
-  [sfx-api.config.json](sfx-api.config.json).
+  `/opt/sfx/kernel/<digest>/` with its entry executable, as in the container. The digest and that
+  root are in [sfx-api.config.json](sfx-api.config.json).
 - **Vault:** the vault file holds the estate's credentials, `SFX_ESTATE_DATABASE` and
   `SFX_IDENTITY_DATABASE` among them; the key record
   `~/.local/share/sfx/credential-vault-keys/0f2fb3b5….json` names its `vaultId`. A credential is

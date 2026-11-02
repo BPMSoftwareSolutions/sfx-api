@@ -3,7 +3,7 @@
   "kernel": {
     "digest": "1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
     "rid": "linux-x64",
-    "root": "/home/sjones/.local/share/sfx/kernel/1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
+    "root": "/opt/sfx/kernel/1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",

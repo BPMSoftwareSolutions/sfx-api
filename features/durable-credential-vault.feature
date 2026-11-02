@@ -1,4 +1,4 @@
-# DRAFT for owner approval, 2026-11-01. Nothing in this feature is built until it is approved.
+# Approved by the owner, 2026-11-01.
 # The legacy behaviour it restores: sfx-platform 094951f^, deploy/sda-kernel/README.md "Vault custody and restart",
 # deploy/sda-kernel/gateway.mjs (lines 39-45, 69-75) and deploy/sda-kernel/Dockerfile.
 
