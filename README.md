@@ -215,11 +215,16 @@ does what the directive says and decides nothing itself:
 
 - `execute-run` (from `admit-api-run-live`): answer the directive's response (202 with the run), then
   queue the run's `observe` envelope for a worker kernel. The workers are a second pool of resident
-  kernels, started with `SIDEFX_OBSERVE=1` on first use. Each `SFX_OBSERVATION` line the worker writes
-  while the run executes becomes the run's next event (`{eventId, cursor, at, kind, payload,
-  rootExecutionId?}`, kind the record's `observationType`, else `observation`) and reaches every
-  listener as it is written. Lifecycle events frame them: `run.admitted`, `run.started` and
-  `run.exited` with the state, exit code and failure. When the run ends, the worker retains its events
+  kernels, started on first use. The envelope asks the kernel for the run's observations
+  (`observation: {sample: true, ref: <runId>}`, delivery-observation.v1); nothing else a worker runs
+  is observed. Each `SFX_OBSERVATION` line the worker writes for the run becomes the run's next event
+  (`{eventId, cursor, at, kind, payload, rootExecutionId?}`, kind the record's `observationType`, else
+  `observation`) and reaches every listener as it is written. The kernel writes them from a queue of
+  its own, so they end at its `observation-stream-closed.v1` frame for the run, which can come after
+  its answer; the host waits for that frame, or for the kernel's stream to end, never for silence.
+  Lifecycle events frame them: `run.admitted`, `run.started` and `run.exited` with the state, exit
+  code, failure and `capture` (`{records, dropped}` from the closing frame, or `{complete: false}`
+  when the stream ended without one). When the run ends, the worker retains its events
   through the directive's trace capability (`append-api-run-trace`), contiguous chunk by chunk within
   `traceChunkBytes` and `traceChunkEvents`, then invokes its completion capability
   (`complete-api-run`) with the last retained cursor, and only then ends the run. A refused chunk stops

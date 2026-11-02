@@ -14,11 +14,14 @@ answers a host directive instead: a response of type application/vnd.sfx.host-di
 only by the declared capabilities the interface resolves to. The facade does what it says:
 
 - execute-run: answer the directive's response (202 with the run), then execute the run's observe
-  envelope on a worker kernel started with SIDEFX_OBSERVE=1. Each observation the kernel writes while
-  the run executes becomes the run's next event and reaches every listener as it is written. When the
-  run ends, the facade retains its events through the directive's trace capability, contiguous chunk
-  by chunk, invokes its completion capability with the last retained cursor, and only then publishes
-  the run's end to the channel and ends the run, so a subscriber that sees the end can read the output.
+  envelope on a worker kernel. The envelope asks the kernel for the run's observations
+  (delivery-observation.v1), and each one the kernel writes becomes the run's next event and reaches
+  every listener as it is written. The kernel writes them from a queue of its own, so the run's
+  observations end at the kernel's closing frame for the run, which can come after its answer; the
+  frame's count of observations the kernel dropped goes on the run's end. When the run ends, the facade
+  retains its events through the directive's trace capability, contiguous chunk by chunk, invokes its
+  completion capability with the last retained cursor, and only then publishes the run's end to the
+  channel and ends the run, so a subscriber that sees the end can read the output.
 - stream-run: answer server-sent events: the run's events after the cursor (or Last-Event-ID), then
   each new event as it arrives, then an end event once the run has ended. A session caller's stream
   ends instead at the session's expiry, or at the first recheck (the directive's capability, at its
@@ -57,18 +60,31 @@ import uuid
 host = json.load(open(sys.argv[1], encoding='utf-8'))
 DIRECTIVE = 'application/vnd.sfx.host-directive+json'
 OBSERVATION = 'SFX_OBSERVATION '
+FRAMES = ('observation-stream-opened.v1', 'observation-stream-closed.v1')
 
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
+class Stream:
+    """One kernel process's observation stream: the closing frame of each delivery it observed, by the delivery's
+    ref, and whether the stream is still open."""
+
+    def __init__(self):
+        self.changed = threading.Condition()
+        self.closed = {}
+        self.open = True
+
+
 class Kernel:
-    """One resident kernel, started on first use and again after it exits or overruns the bound. A worker
-    kernel's observation lines go to the run it is executing; its other diagnostics go to the host log."""
+    """One resident kernel, started on first use and again after it exits or overruns the bound. Its observation
+    lines go to the run it is executing and its closing frames to whoever waits for them; its other diagnostics go to
+    the host log."""
 
     process = None
     run = None
+    stream = None
 
     def __init__(self, settings):
         self.settings = settings
@@ -127,15 +143,13 @@ class Kernel:
         return delivery
 
     def start(self):
-        observed = 'environment' in self.settings
         self.process = subprocess.Popen(self.settings['command'], cwd=host['kernel']['root'],
                                         env=dict(os.environ, **self.settings.get('environment', {})),
-                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE if observed else None)
+                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.lines = queue.Queue()
+        self.stream = Stream()
         threading.Thread(target=self.read, args=(self.process.stdout, self.lines), daemon=True).start()
-        if observed:
-            threading.Thread(target=self.observe, args=(self.process.stderr,), daemon=True).start()
+        threading.Thread(target=self.observe, args=(self.process.stderr, self.stream), daemon=True).start()
 
     @staticmethod
     def read(stdout, lines):
@@ -143,25 +157,46 @@ class Kernel:
             lines.put(line)
         lines.put(b'')
 
-    def quiet(self, gap=0.05, bound=2.0):
-        """Wait until the kernel's diagnostics have been quiet for the gap since now, at most the bound. The kernel writes
-        its observations before its answer, but on another pipe, so they can still be on the way when the answer is read."""
-        started = time.monotonic()
-        while time.monotonic() - max(self.heard, started) < gap and time.monotonic() - started < bound:
-            time.sleep(gap / 5)
+    def capture(self, envelope):
+        """What the kernel wrote of the observations the envelope asked for, once it has written them all: its closing
+        frame's records and dropped, or complete false when its stream ended without one; None when the envelope asked
+        for none. The kernel writes them from its own queue, so the closing frame can come after the answer: the end is
+        that frame, never silence."""
+        observation = envelope.get('observation')
+        if not (isinstance(observation, dict) and observation.get('sample') is True):
+            return None
+        stream, ref = self.stream, observation.get('ref')
+        with stream.changed:
+            while ref not in stream.closed and stream.open:
+                stream.changed.wait()
+            frame = stream.closed.pop(ref, None)
+        return {'records': frame.get('records'), 'dropped': frame.get('dropped')} if frame else {'complete': False}
 
-    heard = 0.0
-
-    def observe(self, stderr):
+    def observe(self, stderr, stream):
         for line in stderr:
-            self.heard = time.monotonic()
             text = line.decode('utf-8', 'replace').rstrip('\r\n')
-            if text.startswith(OBSERVATION):
-                run = self.run
-                if run is not None:
-                    run.observe(text[len(OBSERVATION):])
-            elif text:
-                sys.stderr.write(text + '\n')
+            if not text.startswith(OBSERVATION):
+                if text:
+                    sys.stderr.write(text + '\n')
+                continue
+            text = text[len(OBSERVATION):]
+            if '"observation-stream-' in text:
+                try:
+                    frame = json.loads(text)
+                except ValueError:
+                    frame = None
+                if isinstance(frame, dict) and frame.get('observationType') in FRAMES:
+                    if frame['observationType'] == FRAMES[1]:
+                        with stream.changed:
+                            stream.closed[frame.get('ref')] = frame
+                            stream.changed.notify_all()
+                    continue
+            run = self.run
+            if run is not None:
+                run.observe(text)
+        with stream.changed:
+            stream.open = False
+            stream.changed.notify_all()
 
 
 class Execution:
@@ -267,15 +302,25 @@ def choose(select, started):
     return window if isinstance(window, dict) and isinstance(window.get('runId'), str) else None
 
 
-def release(kernel, execution, delivery):
+def captured(execution, capture):
+    """The run.exited member that records what the kernel captured of the execution's observations, and a dropped
+    count in the host log."""
+    if not capture:
+        return {}
+    if capture.get('dropped'):
+        sys.stderr.write('[sfx-api run %s] the kernel dropped %d observations\n' % (execution.run_id, capture['dropped']))
+    return {'capture': capture}
+
+
+def release(kernel, envelope, execution, delivery):
     """Return a request kernel to the pool. A request's execution is detached once the kernel's observations are in,
     and ends with its delivery's state."""
     if execution is not None:
-        kernel.quiet()
+        capture = kernel.capture(envelope)
         kernel.run = None
         state, exit_code, failure, _ = settle(delivery)
         execution.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': now(),
-                                        **({'failure': failure} if failure else {})})
+                                        **({'failure': failure} if failure else {}), **captured(execution, capture)})
     kernels.put(kernel)
 
 
@@ -467,13 +512,14 @@ class Runs:
                 delivery = kernel.deliver(run.directive['envelope'])
             except (ValueError, OSError) as error:
                 delivery = {'disposition': 'failed', 'error': {'code': 'RUN_KERNEL_FAILED', 'message': type(error).__name__}}
-            kernel.quiet()
+            capture = kernel.capture(run.directive['envelope'])
             kernel.run = None
             state, exit_code, failure, output = settle(delivery)
             ended = now()
             exited = run.append('run.exited', {'state': state, 'exitCode': exit_code, 'endedAt': ended,
                                                **({'failure': failure} if failure else {}),
-                                               **({'droppedEvents': run.dropped} if run.dropped else {})}, publish=False)
+                                               **({'droppedEvents': run.dropped} if run.dropped else {}),
+                                               **captured(run, capture)}, publish=False)
             completion = dict(run.directive['completion']['input'], state=state, exitCode=exit_code,
                               startedAt=started, endedAt=ended)
             if failure:
@@ -523,12 +569,12 @@ class Facade(http.server.BaseHTTPRequestHandler):
                 kernel.start()
             execution.append('run.started', {'startedAt': now(), 'pid': kernel.process.pid})
             kernel.run = execution
+        envelope = {'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke', 'request': dict(host['request'], input=raw)}
         try:
-            delivery = kernel.deliver({'deliveryType': 'sfx-command-delivery.v1', 'operation': 'invoke',
-                                       'request': dict(host['request'], input=raw)})
+            delivery = kernel.deliver(envelope)
         except (ValueError, OSError) as error:
             delivery = {'disposition': 'failed', 'error': {'code': 'REQUEST_KERNEL_FAILED', 'message': type(error).__name__}}
-        threading.Thread(target=release, args=(kernel, execution, delivery), daemon=True).start()
+        threading.Thread(target=release, args=(kernel, envelope, execution, delivery), daemon=True).start()
         response = ((delivery.get('outcome') or {}).get('result') or {}).get('outcome')
         if not isinstance(response, str):
             self.respond({'status': 502, 'contentType': 'application/json; charset=utf-8',

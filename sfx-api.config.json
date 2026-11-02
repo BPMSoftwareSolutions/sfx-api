@@ -1,9 +1,9 @@
 {
   "contractId": "sfx-api-config.v4",
   "kernel": {
-    "digest": "efd992349a820278d369022e01c1c6d4304ac2f02b0657b61b0c541b93a404cb",
+    "digest": "1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
     "rid": "linux-x64",
-    "root": "/home/sjones/.local/share/sfx/kernel/efd992349a820278d369022e01c1c6d4304ac2f02b0657b61b0c541b93a404cb",
+    "root": "/home/sjones/.local/share/sfx/kernel/1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -25,10 +25,7 @@
       "3600000"
     ],
     "instances": 1,
-    "answerTimeoutMs": 3605000,
-    "environment": {
-      "SIDEFX_OBSERVE": "1"
-    }
+    "answerTimeoutMs": 3605000
   },
   "observation": {
     "publish": "publish-estate-live-observation",

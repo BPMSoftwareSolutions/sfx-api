@@ -1,4 +1,4 @@
-# DRAFT for owner approval, 2026-11-01. Nothing in this feature is built until it is approved.
+# Approved by the owner, 2026-11-01.
 # Source: SDA aa32214, "Emit observations asynchronously so a slow reader never stops execution" (CI run 41369364916),
 # and its host binding in scenario-driven-architecture docs/request-delivery-observation-sampling.md, sections 5 and 12.
 
