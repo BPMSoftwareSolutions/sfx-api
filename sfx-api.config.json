@@ -24,12 +24,26 @@
       "--timeout",
       "3600000"
     ],
-    "instances": 1,
+    "instances": 2,
     "answerTimeoutMs": 3605000
   },
   "observation": {
     "publish": "publish-estate-live-observation",
     "requests": false,
+    "command": [
+      "./KernelEntry",
+      "--resident-envelopes",
+      "--config",
+      "kernel-host.json",
+      "--timeout",
+      "55000"
+    ],
+    "answerTimeoutMs": 58000
+  },
+  "drawings": {
+    "capabilityId": "read-estate-drawing-changes",
+    "intervalMilliseconds": 2000,
+    "limit": 20,
     "command": [
       "./KernelEntry",
       "--resident-envelopes",

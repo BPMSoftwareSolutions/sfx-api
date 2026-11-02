@@ -172,7 +172,28 @@ payload}`. The stream opens with `retry: 3000`, replays the published frames aft
 published, with `: keep-alive` while quiet. `run=current` (narrowed by `graphId`), `run=<n>` and
 `run=next` follow one run: the host keeps the run windows publish's window effects describe, and
 `select-estate-live-observation` ([20](declarations/20-select-estate-live-observation.dsl)) chooses the
-window whose frames the stream writes; a refused `run` or `since` answers 400. Each request this host
+window whose frames the stream writes; a refused `run`, `since` or `bound` answers 400. `bound=<seconds>`
+(1 to 999999) closes the stream that long after it opens, with every frame published in that time,
+unless the session ends first; without it the stream stays open until the session ends.
+
+A circuit drawing change is published on the same channel, with no run: on a kernel of its own, at the
+host data's interval (`drawings`, default 2 seconds), the host invokes `read-estate-drawing-changes`
+([23](declarations/23-read-estate-drawing-changes.dsl)) with the cursor it answered last. Its change
+check costs one read: the estate's change-tracking version and the fingerprint of the drawing procedure
+with every module it names. When neither moved, nothing is read. Otherwise the rows each commit changed
+map to the capabilities whose drawings read them and their callers, and each affected selection (the
+default and each other scenario) is read with the procedure the scenario GET runs. Each change is a
+`drawing-change` record whose payload is `estate-drawing-change.v1` `{estateId, namespaceId,
+capabilityId, scenarioId, defaultSelection, presentationDigest, generation}`. The host advances the
+cursor only once the channel has published every change the read answered. The read needs
+`VIEW CHANGE TRACKING` for the estate's reader identity
+([its grant](declarations/23-read-estate-drawing-changes.grant.sql)).
+
+`capture-estate-live-observation` ([24](declarations/24-capture-estate-live-observation.dsl)) reads the
+channel from inside the estate for a bound, as an acceptance capability: one bounded `GET /events`
+through `http-exchange`, signed in with the session the vault holds under the reference it is given.
+
+Each request this host
 answers is published as well, as an execution of `serve-http-request` with the capability it resolved
 to as its nested invocation (`observation.requests` in the host data). The `x-observer-instance` header names the channel: a host
 restart begins a new sequence. A run's `run-end` is published only once its completion stored its

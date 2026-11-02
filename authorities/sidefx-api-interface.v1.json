@@ -702,9 +702,10 @@
         "since": "$query.since",
         "run": "$query.run",
         "graphId": "$query.graphId",
+        "bound": "$query.bound",
         "recheckMilliseconds": 5000
       },
-      "meaning": "Watch the estate live: subscribe to the estate's live observation channel, every execution the host publishes, as server-sent events of the observer record ({seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text, payload}) framed by publish-estate-live-observation, through subscribe-estate-live-observation. since (or Last-Event-ID) replays the retained channel after that sequence; without it only new publications arrive; a refused selector answers 400 invalid_run or invalid_since. The x-observer-instance header names the channel; a new instance began a new sequence. The stream ends at the caller session expiry and at the first recheck that cannot confirm the session. The same subscription as GET /events.",
+      "meaning": "Watch the estate live: subscribe to the estate's live observation channel, every execution the host publishes and every circuit drawing change the estate reads (kind drawing-change, payload estate-drawing-change.v1), as server-sent events of the observer record ({seq, observationKey, receivedAt, kind, runId, api, glyph, cls, text, payload}) framed by publish-estate-live-observation, through subscribe-estate-live-observation. since (or Last-Event-ID) replays the retained channel after that sequence; without it only new publications arrive; a refused selector answers 400 invalid_run, invalid_since or invalid_bound. bound (whole seconds) ends the stream that long after it opens, unless the session ends first. The x-observer-instance header names the channel; a new instance began a new sequence. The stream ends at the caller session expiry and at the first recheck that cannot confirm the session. The same subscription as GET /events.",
       "segments": {
         "0": "",
         "1": "sfx",
@@ -731,6 +732,7 @@
         "since": "$query.since",
         "run": "$query.run",
         "graphId": "$query.graphId",
+        "bound": "$query.bound",
         "recheckMilliseconds": 5000
       },
       "meaning": "The legacy observer's subscription at its own path, outside the API prefix, for the subscribers built against it (the machine watchers and routers, the Explorer's live circuit, the Fractal Lab bridge): the same channel, selectors and record as /sfx/v1/estate-execution/stream, through subscribe-estate-live-observation.",

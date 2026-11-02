@@ -33,7 +33,8 @@ only by the declared capabilities the interface resolves to. The facade does wha
 - respond: answer the directive's response.
 
 Every event of every run, and of every request when the host data says so, is published to the channel in
-the order written, at the position the channel reserves for it. The publish capability frames each batch of
+the order written, at the position the channel reserves for it. So is every circuit drawing change the estate's
+declared drawing read answers, at the host data's interval, with no run. The publish capability frames each batch of
 queued events, whatever executions they belong to, on a kernel of its own; the channel keeps each frame
 exactly as answered, and every subscriber writes the same frames.
 
@@ -399,11 +400,23 @@ class Channel:
         threading.Thread(target=self.publish, daemon=True).start()
 
     def append(self, execution, event):
-        """Reserve the event's position and queue it for publishing."""
+        """Reserve the event's position and queue it for publishing; the position. An event of no execution, such as a
+        drawing change, has none."""
         with self.changed:
             self.reserved += 1
             self.pending.append((self.reserved, execution, event))
             self.changed.notify_all()
+            return self.reserved
+
+    def settled(self, positions, timeout):
+        """Whether the channel published every one of the positions with a frame, waiting up to the timeout for it to
+        publish them."""
+        deadline = time.monotonic() + timeout
+        with self.changed:
+            while self.published < max(positions) and time.monotonic() < deadline:
+                self.changed.wait(deadline - time.monotonic())
+            framed = {position for position, frame, _, _ in self.frames if position in positions and frame}
+            return framed == set(positions)
 
     def latest(self):
         with self.changed:
@@ -426,7 +439,8 @@ class Channel:
                     size += length
             answer = invoke(self.publisher, host['observation']['publish'], {
                 'channel': self.instance,
-                'events': [{'seq': seq, 'receivedAt': event['at'], 'execution': execution.identity(), 'event': event}
+                'events': [dict({'seq': seq, 'receivedAt': event['at'], 'event': event},
+                                **({'execution': execution.identity()} if execution else {}))
                            for seq, execution, event in batch]})
             publications = answer.get('publications') if isinstance(answer, dict) else None
             if not (isinstance(publications, list) and len(publications) == len(batch)
@@ -437,7 +451,7 @@ class Channel:
                 publications = [{'seq': seq, 'frame': ''} for seq, _, _ in batch]
             with self.changed:
                 for each, (_, execution, _) in zip(publications, batch):
-                    execution_id = execution.run_id
+                    execution_id = execution.run_id if execution else None
                     length = len(each['frame'].encode('utf-8'))
                     self.frames.append((each['seq'], each['frame'], length, execution_id))
                     self.bytes += length
@@ -545,6 +559,46 @@ class Runs:
             run.end(state)
 
 
+class Drawings:
+    """The estate's circuit drawing changes, on a kernel of its own: the declared read capability, invoked at the host
+    data's interval with the cursor it answered last, says which drawings changed and what to read from next, and each
+    change it answers is published to the channel. The cursor advances only once the channel has published every one
+    of those changes, so a failed publication is read again, and an unsettled pass is read on at once."""
+
+    def __init__(self, settings):
+        self.settings = settings
+        self.kernel = Kernel(settings)
+        self.cursor = None
+        self.failure = None
+        threading.Thread(target=self.watch, daemon=True).start()
+
+    def watch(self):
+        interval = self.settings['intervalMilliseconds'] / 1000
+        while True:
+            answer = invoke(self.kernel, self.settings['capabilityId'], {'cursor': self.cursor, 'limit': self.settings['limit']})
+            if not isinstance(answer, dict) or answer.get('status') != 'READ':
+                failure = json.dumps(answer)[:500]
+                if failure != self.failure:
+                    sys.stderr.write('[sfx-api drawings] %s answered %s\n' % (self.settings['capabilityId'], failure))
+                    self.failure = failure
+                time.sleep(interval)
+                continue
+            self.failure = None
+            positions = [channel.append(None, {
+                'eventId': 'urn:sfx-api:drawing-change:%s:%s:%s:%s' % (
+                    change.get('generation'), change.get('namespaceId'), change.get('capabilityId'), change.get('scenarioId')),
+                'at': now(), 'kind': 'drawing.changed', 'payload': change}) for change in answer.get('changes') or []]
+            if positions and not channel.settled(positions, self.settings['answerTimeoutMs'] / 1000):
+                sys.stderr.write('[sfx-api drawings] changes at %d..%d were not published; reading them again\n' % (
+                    positions[0], positions[-1]))
+                time.sleep(interval)
+                continue
+            self.cursor = answer.get('cursor')
+            if not answer.get('settled'):
+                continue
+            time.sleep(interval)
+
+
 kernels = queue.Queue()
 for _ in range(host['kernel']['instances']):
     kernels.put(Kernel(host['kernel']))
@@ -553,6 +607,8 @@ channel = Channel()
 runs = Runs()
 for _ in range(host['workers']['instances']):
     threading.Thread(target=runs.work, args=(Kernel(host['workers']),), daemon=True).start()
+if host.get('drawings'):
+    Drawings(host['drawings'])
 
 
 class Facade(http.server.BaseHTTPRequestHandler):
@@ -671,6 +727,8 @@ class Facade(http.server.BaseHTTPRequestHandler):
         frames, respond, select = directive.get('frames') or {}, directive['respond'], directive.get('select')
         session = directive.get('session') or {}
         expires, recheck = instant(session.get('expiresAt')), session.get('recheck')
+        bound = directive.get('bound')
+        ends = time.monotonic() + bound if isinstance(bound, int) and bound > 0 else None
         keepalive = host['runs']['keepaliveSeconds']
         window = choose(select, None) if select else None
 
@@ -708,6 +766,8 @@ class Facade(http.server.BaseHTTPRequestHandler):
                     wait = min(wait, recheck['intervalMilliseconds'] / 1000 - (time.monotonic() - checked))
                 if expires:
                     wait = min(wait, (expires - datetime.datetime.now(datetime.timezone.utc)).total_seconds())
+                if ends:
+                    wait = min(wait, ends - time.monotonic())
                 published = channel.after(cursor, max(0.05, wait))
                 text = selected(published) if published else ''
                 if published:
@@ -724,6 +784,8 @@ class Facade(http.server.BaseHTTPRequestHandler):
                         and not sessions.live(recheck)):
                     self.wfile.write(frames.get('sessionEnded', '').encode('utf-8'))
                     self.wfile.flush()
+                    return
+                if ends and time.monotonic() >= ends:
                     return
                 if recheck and time.monotonic() - checked >= recheck['intervalMilliseconds'] / 1000:
                     checked = time.monotonic()
