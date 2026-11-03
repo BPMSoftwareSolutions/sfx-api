@@ -34,3 +34,16 @@ Feature: An open stream ends when its session can no longer be confirmed
       # host/serve.py:357-379 share it on their own: one answer serves every stream with the same input until the
       # interval passes. The interface declares the interval, not the sharing. declarations/12 and 21 now declare
       # recheck.shared true with the recheck.
+
+  Rule: Rechecks keep their service levels
+
+    @status:probed
+    @slo:session-recheck
+    Scenario: A session's streams are rechecked every 5000 ms, once for all of them
+      Given the service level:
+        | SLI                                     | SLO target                                       | baseline                                 |
+        | interval of an open stream's recheck    | every 5000 ms, shared by the streams of a session | 3 rechecks, not 6, for two streams (stand-in) |
+      When a session caller holds two streams open
+      Then the session is rechecked once per 5000 ms for both
+      # README.md, Verified: "two streams ending at the first failed recheck with 3 rechecks, not 6". The interval is
+      # sidefx-api-interface.v1 callers.user.sessionRecheckMilliseconds.

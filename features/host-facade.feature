@@ -208,7 +208,7 @@ Feature: The host is a facade
     Scenario: Every kernel starts, and admits the host's bundle, before the facade listens
       When the host starts
       Then it starts every kind of kernel before it binds its port
-      And a kernel that refuses the host's bundle stops the host (host-declared-read-provider.feature)
+      And a kernel that refuses the host's bundle stops the host (answer-host-declared-read.feature)
       # Today the drawing reader starts with the host, and the request kernel, the workers and the publisher start on
       # their first use (host/serve.py:399, 575-578, 607-616).
 
@@ -292,3 +292,61 @@ Feature: The host is a facade
       Then the facade writes no log line for a request it answers
       # The platform's access log line is written only by send_response, which host/serve.py never calls. A request's
       # execution is observed on the channel: publish-estate-live-observation.feature.
+
+  Rule: The facade keeps the host's service levels
+
+    @status:not-built
+    @slo:request-answer-bound
+    Scenario: No request outlives App Service's 230 s bound
+      Given the service level:
+        | SLI                                          | SLA                                  | baseline                                                   |
+        | time from a request's receipt to its answer  | every request answered within 230 s  | each kernel's answer bound: 228000 ms for a request kernel |
+      When the facade receives a request
+      Then it writes the request's answer within 230 s of receiving it: its kernel's answer, the declared busy response or
+        the declared failure response
+      # The kernel's bound is installed ("Each kind of kernel has its answer bound"). The wait for a free kernel is not
+      # bounded today ("A request waits for a free request kernel within a declared bound"), so a queued request can reach
+      # App Service's own limit first.
+
+    @status:probed
+    @slo:no-kernel-start-on-request
+    Scenario: No request pays a kernel start once the host listens
+      Given the service level:
+        | SLI                                                  | SLO target | baseline                                                                       |
+        | kernel starts a request pays after the host listens  | none       | the first request after the f32450fa swap took 13.8 s, the kernel's start included |
+      When the host has started listening
+      Then no request waits for a kernel to start
+      # docs/azure-test-2026-10-31.md: on the 64f3a28 site, App Service's warm-up probe paid the kernel start. The facade
+      # starts every kernel before it listens ("Every kernel starts, and admits the host's bundle, before the facade
+      # listens").
+
+    @status:not-built
+    @slo:abandoned-request-release
+    Scenario: A request kernel is released when its client goes
+      Given the service level:
+        | SLI                                                     | SLO target                            | baseline                                                  |
+        | time a request kernel stays held after its client goes  | free when the client goes (proposed)  | 30 abandoned requests queued the next request 68 s (WSL)  |
+      When a client gives up on a request its kernel is still answering
+      Then that kernel is free for the next request at once
+      # README.md, Verified and Next 5: "a client that gives up still holds a kernel until it answers". Freeing a kernel
+      # mid-envelope means stopping it, which costs a kernel start: features/README.md, Q2.
+
+    @status:not-built
+    @slo:frontdoor-tail-explained
+    Scenario: Every slow warm request names where its time went
+      Given the service level:
+        | SLI                                                                | SLO target            | baseline                               |
+        | warm requests over 1.05 s whose delivery evidence names the cause  | every one (proposed)  | 5 of 30 took 1.2 to 4.0 s, cause open  |
+      When a warm request takes longer than 1.05 s
+      Then the delivery's evidence names the phase its time went to
+      # docs/azure-test-2026-10-31.md: "The facade does not record the kernel's evidence, so their cause is open."
+
+    @status:probed
+    @slo:plan-memory
+    Scenario: The host keeps the plan's memory within its objective
+      Given the service level:
+        | SLI                                                 | SLO target              | baseline                                         |
+        | memory of the App Service plan while the host runs  | at most 64% (proposed)  | 59% with one resident kernel, 64% during a swap  |
+      When the host runs its kernels on the shared plan
+      Then the plan's memory stays within the target
+      # docs/azure-test-2026-10-31.md. Each run worker adds about 350 MB (README.md, Next 2).

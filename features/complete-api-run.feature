@@ -72,10 +72,11 @@ Feature: A run's outcome is decided and stored by its declaration
     @finding:misaligned
     Scenario: A run whose completion fails does not publish its end as if it had completed
       When complete-api-run answers anything but COMPLETED
-      Then the run's run.exited is not published as a completed run's
+      Then the run's run.exited is not published
+      And its streams end when their session does
       And the host log names the run and the answer
-      # host/serve.py:555-558 log the answer and publish the run-end anyway. What a subscriber of that run receives
-      # instead is open question Q1 in features/README.md.
+      # host/serve.py:555-558 log the answer and publish the run-end anyway. Settled 2026-11-03 from the approved "A run's
+      # end is published only after its output is stored" (features/README.md, Q1).
 
   Rule: A run the host lost is completed, never left admitted
 

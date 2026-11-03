@@ -148,3 +148,15 @@ Feature: A circuit's drawing change is published on the channel
       And a subscription resumed from the cursor before the record receives the same record
       And the circuit identity, both digests, the cursor and the record's shape are attached to issue #7
       # From the draft. No acceptance run is cited in this repo.
+
+  Rule: Drawing changes keep their service levels
+
+    @status:installed
+    @slo:drawing-poll
+    Scenario: Drawing changes are read every 2000 ms, at most 20 at a time
+      Given the service level:
+        | SLI                                         | SLO target                           | baseline |
+        | interval and size of a drawing-change read  | every 2000 ms, at most 20 changes    | declared |
+      When the host reads drawing changes
+      Then it reads at most 20 changes every 2000 ms
+      # sfx-api.config.json drawings.intervalMilliseconds and drawings.limit today; declarations/25 drawings.

@@ -231,3 +231,16 @@ Feature: Every execution in the estate is published into one observation channel
       When a request is refused before any capability is resolved
       Then the subscriber receives the request's execution of serve-http-request, ended with the refusal
       # Word for word from estate-live-observation-failures.feature.
+
+  Rule: Publishing keeps its service levels
+
+    @status:installed
+    @slo:channel-batch
+    Scenario: A publish carries at most 200 events and 1 MiB
+      Given the service level:
+        | SLI                                  | SLO target                    | baseline |
+        | events and bytes per publish batch   | at most 200 events and 1 MiB  | declared |
+      When the channel publishes what the kernels observed
+      Then no batch it hands publish-estate-live-observation holds more than 200 events or 1048576 bytes
+      # sfx-api.config.json runs.feedBatchEvents and runs.feedBatchBytes today; declarations/25 channel.batchEvents and
+      # channel.batchBytes.

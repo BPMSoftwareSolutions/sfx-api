@@ -29,3 +29,16 @@ Feature: A run's trace is retained in the run store
       Then no later chunk is sent
       And the completion's latestCursor is the last cursor appended
       # host/serve.py:543-554.
+
+  Rule: The trace keeps its service levels
+
+    @status:proven
+    @slo:trace-chunk
+    Scenario: A run's trace is retained in chunks of at most 2000 events and 524288 bytes
+      Given the service level:
+        | SLI                               | SLO target                                          | baseline      |
+        | events and bytes per trace chunk  | at most 2000 events and 524288 bytes of their JSON  | run f8a01553  |
+      When a run's trace is retained
+      Then each chunk holds at most 2000 events, whose compact JSON totals at most 524288 bytes
+      # Run f8a01553: 4 chunks to cursor 43, read back by the legacy decoder identical to the stream (README.md, Verified).
+      # The encoding of each chunk: sfx-api-run-trace-encode.feature.

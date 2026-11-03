@@ -1,10 +1,13 @@
 # Canonical features of sfx-api
 
-Proposed for the owner's review, 2026-11-02. These seventeen files replace the twelve feature files that were here at
-`a57ebba`.
+Proposed for the owner's review, 2026-11-02. Seventeen files replaced the twelve feature files that were here at
+`a57ebba`. On 2026-11-03 the declared-read provider's feature became a provider capability's,
+answer-host-declared-read.feature, and five more were added for the host's other provider capabilities. Those six follow
+the owner's example (`.tmp/tmp_data.txt`): each file carries its own status tags and terms, and each scenario names the
+entry capability and every provider it invokes.
 
 What this is: the behaviour of the sfx-api host as Gherkin, with one canonical feature per capability the host
-declares or needs. The facade (`host/serve.py` with `deploy/`), the host's declared-read provider and the container's
+declares or needs, its provider capabilities included. The facade (`host/serve.py` with `deploy/`) and the container's
 vault each get one too. Each behaviour is stated once. Where the host does something different today, the scenario
 states what it must do. Its status says whether that is built, and a finding tag says how today's host departs from it.
 
@@ -25,8 +28,24 @@ Given on 2026-11-02 in the session that wrote these files. It is not yet retaine
    resolved by the kernel without being apart of the estate."
 4. "The features need to be canonicalized and written up like this."
 
+Given on 2026-11-03:
+
+5. "providers are declared capabilities as well."
+6. "You'll need to create feature files for the capability providers because they are capabilities as well with
+   scenarios"
+7. "Nothing ... dictates C# in the kernel. You decide by declaring up to the profile schema boundary."
+8. "that's why I gave you this ... example to follow accurately."
+9. "our canonical features need to call out the SLO targets (SLA, SLI, etc.) so we don't lose our ... performance
+   strategies"
+
 Approved on 2026-11-01 (estate-live-observation-declared.feature): "The hosting facade holds connections and the
 channel's buffer and does what the declared capabilities answer; it decides nothing itself."
+
+Approved to build on 2026-11-03: the owner committed these features in `4826b9f` and, given the plan to build on them,
+said "Let's proceed and get this work done." The same day, the host's declarations were settled as never declared into
+the estate: "The host's declarations shouldn't go into the estate at all. They ship inside the new image, from this
+repo, in the one deploy", answered "Okay, that's better." The provider's feature, now answer-host-declared-read.feature,
+was corrected to that.
 
 ## Tags
 
@@ -34,7 +53,8 @@ Status, one per scenario:
 
 | Tag | Meaning |
 | --- | --- |
-| `@status:proven` | ran on sfx-api-test or against the estate, and the run or measurement is cited (none yet) |
+| `@status:proven` | ran on sfx-api-test or against the estate, and the run is cited |
+| `@status:probed` | ran on its own against the estate or sfx-api-test; README.md, Verified, records it without a run id |
 | `@status:installed` | the host or its declarations do this today. Read from `host/serve.py`, `deploy/` or `declarations/` at `a57ebba`, or from SDA at `93a7a56`, not from a run |
 | `@status:unchecked` | showing it needs a run, and this repo cites none |
 | `@status:not-built` | the owner's direction or an approved scenario requires it, and nothing implements it yet |
@@ -62,15 +82,70 @@ Dependencies:
 
 | Tag | Meaning |
 | --- | --- |
-| `@capability:<id>` | the capability under test. On a Feature it applies to every scenario |
+| `@capability:<id>` | the entry capability under test. On a Feature it applies to every scenario |
 | `@component:<id>` | the part of the host under test, where that part is not a capability |
-| `@provider:<id>` | a capability the scenario depends on: one its capability's declaration invokes through `generic-capability-invocation.v1`, or one its directive has the facade invoke |
-| `@binding:<id>` | a provider module the capability's declaration binds to a port, by its `providerId` |
+| `@provider:<id>` | one required provider capability, case for case, by the identity its binding declares: a capability a step invokes through `generic-capability-invocation.v1`, a platform capability a port binds (such as `sfx-api-ingress-resolve-port.v1`), or a capability a directive has the facade invoke |
+| `@binding:<id>` | a provider module the capability's declaration binds to a port, by its `providerId` (2026-11-02 features only) |
 | `@issue:<n>` | the sfx-api issue the feature answers |
+| `@slo:<id>` | the service level the scenario states, by its id in "Service levels" below |
 
-The ids are as `declarations/` names them; they were not read from the estate for this write-up. On a Feature,
-`@provider` and `@binding` name what the capability's declaration binds; they were not narrowed to the scenarios
-whose runs invoke them.
+In the six provider features of 2026-11-03, as in the owner's example, `@capability` and `@provider` are on each
+scenario. Each provider's ids were read from the estate's compiled declarations (run `4d1c2e4f`). In the features of
+2026-11-02 they are still on the Feature, as `declarations/` names them, and were not narrowed to the scenarios whose
+runs invoke them.
+
+## Service levels
+
+Each feature calls out the service levels of what it covers, as scenarios tagged `@slo:<id>`, so that a later change
+cannot lose a performance strategy without failing one.
+
+| Term | Meaning |
+| --- | --- |
+| SLI | service level indicator: what is measured, where, and how |
+| SLO | service level objective: the target an SLI must meet |
+| SLA | service level agreement: a bound the API commits to its callers. Here, the bound App Service puts on every request and the answer the API gives at it |
+| baseline | the measurement a target was set from |
+
+Every target is set from the record. Each holds what a measurement showed after a performance change, and its baseline
+is cited. A target with no measurement behind it is marked proposed and is the owner's to confirm.
+
+The performance strategies the targets keep:
+
+| Strategy | What it bought | Evidence | Kept by |
+| --- | --- | --- | --- |
+| Resident kernels, started before the facade listens and serving one envelope per line | warm server time p50 from 4.74 s to 0.88 s, p95 from 7.00 s to 3.35 s | docs/azure-test-2026-10-31.md (image `dbe0814f`, a kernel per request, then `f32450fa`) | host-facade |
+| The declaration cache per declared generation (SDA `3296bc1`, the estate's `declaration_generation`) | a warm envelope resolves its 15 definitions with no read: 0.3 to 20 ms, where it took 2.8 to 3.0 s | README.md, Verified (WSL, kernel `39881693`) | serve-api-request, answer-host-declared-read |
+| Run workers apart from the request kernel | a request is answered while a run executes | README.md, Verified (the facade against a stand-in kernel, 22 checks) | host-facade, admit-api-run-live |
+| Shared session rechecks | one recheck per interval serves every stream of a session: 3 rechecks, not 6 | README.md, Verified (stand-in) | check-api-session |
+| Bounded channel batches and retention | a publish carries at most 200 events or 1 MiB; replay holds at most 20000 frames or 32 MiB | declarations/25 (today's values in sfx-api.config.json) | publish-, subscribe-estate-live-observation |
+| The trace in bounded chunks | a run's trace is retained in chunks of at most 2000 events or 524288 bytes | run `f8a01553`: 4 chunks to cursor 43 (README.md, Verified) | append-api-run-trace, sfx-api-run-trace-encode |
+
+The objectives:
+
+| SLO | SLI | Target | Baseline | Status | Feature |
+| --- | --- | --- | --- | --- | --- |
+| `frontdoor-warm-latency` | server time of a request answered by a warm request kernel on sfx-api-test: time to first byte minus the TLS handshake, nearest-rank percentiles over 30 sequential requests | p50 at most 0.88 s and p95 at most 3.35 s | p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image `f32450fa`, kernel `39881693`, 2026-10-31) | proven | serve-api-request |
+| `frontdoor-tail-explained` | warm requests over 1.05 s whose cause the delivery's evidence names | every one (proposed) | 5 of 30 took 1.2 to 4.0 s, cause open: the facade keeps no kernel evidence | not-built | host-facade |
+| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed | serve-api-request, answer-host-declared-read |
+| `request-answer-bound` (SLA) | time from a request's receipt to its answer | within App Service's 230 s: by its kernel within 228 s, a 503 after 2 s without a free kernel, or a 502 when the delivery fails | the kernel's answer bound, 228000 ms (sfx-api.config.json) | installed (228 s), not-built (2 s) | host-facade, read-api-host-configuration |
+| `no-kernel-start-on-request` | kernel starts a request pays once the host listens | none | the first request after the `f32450fa` swap took 13.8 s, including the kernel's start; the `64f3a28` site's warm-up probe paid it | probed | host-facade |
+| `abandoned-request-release` | time a kernel stays held after its client gives up | released when the client goes (proposed) | 30 abandoned requests queued the next request 68 s (WSL) | not-built | host-facade |
+| `session-setup` | the kernel's estate session setup per envelope | at most 0.34 s, until SDA's KV-001 | 0.25 to 0.34 s, the generation read included | probed | answer-host-declared-read |
+| `sign-in-refused-latency` | server time of a refused sign-in on sfx-api-test (`POST /sfx/v1/session`, empty identifier) | at most 0.47 s | 0.47 s and 0.46 s (2026-10-31) | proven | open-api-session (no feature yet) |
+| `sign-in-latency` | server time on sfx-api-test of a sign-in sfx-identity-login-open answers | none set: the record has no measurement | none | not-built | sfx-identity-login-open |
+| `run-event-delivery` | time from an observation to its run stream frame | written as observed; a quiet stream writes a keep-alive every 15 s | events delivered as written over 2 s (stand-in) | probed | open-api-run-stream |
+| `session-recheck` | interval of an open stream's session recheck | every 5000 ms, shared by the streams of one session | 3 rechecks, not 6 (stand-in) | probed | check-api-session |
+| `channel-batch` | events and bytes per publish batch | at most 200 events and 1 MiB | declared | installed | publish-estate-live-observation |
+| `channel-retention` | frames the channel keeps for replay | at most 20000 frames and 32 MiB | declared | installed | subscribe-estate-live-observation |
+| `trace-chunk` | events and bytes per trace chunk | at most 2000 events and 524288 bytes | run `f8a01553` | proven | append-api-run-trace, sfx-api-run-trace-encode |
+| `run-events-bound` | events a run keeps, and one observation's bytes | at most 50000 events, and 1 MiB per observation | declared | installed | project-api-run-events |
+| `run-capacity` | runs executing at once, and runs waiting | 2 executing, 64 waiting (64 proposed) | 2 workers, each about 350 MB on the shared plan (README.md, Next 2) | installed (2), not-built (64) | admit-api-run-live, read-api-host-configuration |
+| `plan-memory` | memory of the App Service plan while the host runs | at most 64% (proposed) | 59% with one resident kernel, 64% while two containers overlapped in a swap | probed | host-facade |
+| `drawing-poll` | interval and size of a drawing-change read | every 2000 ms, at most 20 changes | declared | installed | read-estate-drawing-changes |
+
+Performance debt the record names, with no target yet (README.md, Next 5): the frontdoor's two SQL reads each open the
+vault and a connection; each kernel's second request refreshes once more than it needs to; the declared read cache is
+not served.
 
 ## Terms
 
@@ -88,47 +163,57 @@ whose runs invoke them.
 | run window | the positions of one run on the channel, as publish-estate-live-observation answers them |
 | bookkeeping | the capabilities the facade executes around runs and streams: session rechecks, trace retention, completion, fact capture, and the channel's own publish, select and subscribe |
 | host's own authority | the declarations of this repo's capabilities and the API interface |
-| pinned bundle | the host's recorded declarations, pinned by the digest of their manifest |
+| provider capability | a declared capability that a step of another capability binds; it is declared up to the profile schema boundary, its program in a DEPENDENCY, one per runtime language |
+| pinned bundle | the host's own declarations in SEJ, kept in this repo and pinned by the digest of their manifest |
 | estate | the consumer's database of declarations and data. The host reaches it for the consumer's data and the consumer's capabilities |
 
 ## The features
 
-| Feature | Under test | Scenarios | Approved | Paused | Installed | Not built | Unchecked |
-| --- | --- | --: | --: | --: | --: | --: | --: |
-| [host-facade](host-facade.feature) | the facade | 32 | 2 | | 16 | 16 | |
-| [read-api-host-configuration](read-api-host-configuration.feature) | proposed capability | 4 | 1 | | 1 | 3 | |
-| [host-declared-read-provider](host-declared-read-provider.feature) | the host's provider | 19 | | | 3 | 16 | |
-| [serve-api-request](serve-api-request.feature) | serve-api-request | 2 | 1 | | 1 | 1 | |
-| [admit-api-run-live](admit-api-run-live.feature) | admit-api-run-live | 5 | 1 | | 2 | 3 | |
-| [project-api-run-events](project-api-run-events.feature) | proposed capability | 11 | 4 | | 3 | 7 | 1 |
-| [open-api-run-stream](open-api-run-stream.feature) | open-api-run-stream | 6 | | | 1 | 5 | |
-| [check-api-session](check-api-session.feature) | check-api-session | 3 | | | 2 | 1 | |
-| [complete-api-run](complete-api-run.feature) | complete-api-run | 7 | 2 | | 2 | 5 | |
-| [append-api-run-trace](append-api-run-trace.feature) | append-api-run-trace | 2 | | | 2 | | |
-| [publish-estate-live-observation](publish-estate-live-observation.feature) | publish-estate-live-observation | 22 | 14 | 5 | 7 | 10 | 5 |
-| [select-estate-live-observation](select-estate-live-observation.feature) | select-estate-live-observation | 4 | 2 | | 2 | 2 | |
-| [subscribe-estate-live-observation](subscribe-estate-live-observation.feature) | subscribe-estate-live-observation | 23 | 14 | | 16 | 3 | 4 |
-| [capture-estate-live-observation-facts](capture-estate-live-observation-facts.feature) | capture-estate-live-observation-facts | 2 | 2 | | | 2 | |
-| [read-estate-drawing-changes](read-estate-drawing-changes.feature) | read-estate-drawing-changes | 13 | | | 6 | 2 | 5 |
-| [capture-estate-live-observation](capture-estate-live-observation.feature) | capture-estate-live-observation | 13 | 2 | | 1 | 3 | 9 |
-| [durable-credential-vault](durable-credential-vault.feature) | the container's vault | 4 | 4 | | 2 | | 2 |
-| **Total** | | **172** | **49** | **5** | **67** | **79** | **26** |
+| Feature | Under test | Scenarios | Approved | Paused | Proven | Probed | Installed | Not built | Unchecked |
+| --- | --- | --: | --: | --: | --: | --: | --: | --: | --: |
+| [host-facade](host-facade.feature) | the facade | 37 | 2 | | | 2 | 16 | 19 | |
+| [read-api-host-configuration](read-api-host-configuration.feature) | proposed capability | 5 | 1 | | | | 1 | 4 | |
+| [answer-host-declared-read](answer-host-declared-read.feature) | proposed provider capability | 24 | | | | 1 | 3 | 20 | |
+| [sfx-api-ingress-resolve](sfx-api-ingress-resolve.feature) | provider capability | 18 | | | 1 | 8 | 5 | 4 | |
+| [sfx-api-ingress-compose](sfx-api-ingress-compose.feature) | provider capability | 9 | | | 1 | 1 | 4 | 3 | |
+| [sfx-api-run-trace-encode](sfx-api-run-trace-encode.feature) | provider capability | 8 | | | 2 | 1 | 1 | 4 | |
+| [sfx-identity-login-open](sfx-identity-login-open.feature) | provider capability | 14 | | | | 2 | 8 | 4 | |
+| [sfx-identity-login-derive](sfx-identity-login-derive.feature) | provider capability | 7 | | | 1 | | 3 | 3 | |
+| [serve-api-request](serve-api-request.feature) | serve-api-request | 4 | 1 | | 1 | 1 | 1 | 1 | |
+| [admit-api-run-live](admit-api-run-live.feature) | admit-api-run-live | 7 | 1 | | | | 3 | 4 | |
+| [project-api-run-events](project-api-run-events.feature) | proposed capability | 12 | 4 | | | | 4 | 7 | 1 |
+| [open-api-run-stream](open-api-run-stream.feature) | open-api-run-stream | 7 | | | | 1 | 1 | 5 | |
+| [check-api-session](check-api-session.feature) | check-api-session | 4 | | | | 1 | 2 | 1 | |
+| [complete-api-run](complete-api-run.feature) | complete-api-run | 7 | 2 | | | | 2 | 5 | |
+| [append-api-run-trace](append-api-run-trace.feature) | append-api-run-trace | 3 | | | 1 | | 2 | | |
+| [publish-estate-live-observation](publish-estate-live-observation.feature) | publish-estate-live-observation | 23 | 14 | 5 | | | 8 | 10 | 5 |
+| [select-estate-live-observation](select-estate-live-observation.feature) | select-estate-live-observation | 4 | 2 | | | | 2 | 2 | |
+| [subscribe-estate-live-observation](subscribe-estate-live-observation.feature) | subscribe-estate-live-observation | 25 | 14 | | | | 18 | 3 | 4 |
+| [capture-estate-live-observation-facts](capture-estate-live-observation-facts.feature) | capture-estate-live-observation-facts | 2 | 2 | | | | | 2 | |
+| [read-estate-drawing-changes](read-estate-drawing-changes.feature) | read-estate-drawing-changes | 14 | | | | | 7 | 2 | 5 |
+| [capture-estate-live-observation](capture-estate-live-observation.feature) | capture-estate-live-observation | 13 | 2 | | | | 1 | 3 | 9 |
+| [durable-credential-vault](durable-credential-vault.feature) | the container's vault | 4 | 4 | | | | 2 | | 2 |
+| **Total** | | **251** | **49** | **5** | **7** | **18** | **94** | **106** | **26** |
 
 Findings: 25 hidden authority, 15 fallbacks and 29 misaligned.
 
 Proposed capabilities these features name:
 - `read-api-host-configuration`: the facade's declared settings, read once at start (declarations/25);
 - `project-api-run-events`: the run event shape (declarations/26);
-- `record-api-host-authority`: the declared capability that drives a recording of the host's bundle. Not declared: it
-  records through the host's provider, which is not built.
+- `answer-host-declared-read`: the host's declared-read provider, declared in SEJ in the host's bundle and bound to
+  `sda-kernel-declared-read-port.v1` (answer-host-declared-read.feature). Not declared yet.
+
+The five provider capabilities of 2026-11-03 are declared today: their programs are this repo's `providers/`, and the
+estate holds each as a PROVIDER on its DEPENDENCY definition.
 
 ## The declarations
 
 Authored on 2026-11-02 to align with these features. They are files in this repo only:
-- none has been declared into the estate, recorded into the host's bundle or run;
+- none is declared into the estate, now or later: each goes into the host's bundle as its graph source, in SEJ
+  (answer-host-declared-read.feature), and none has been run;
 - each `config` line was checked only to parse as JSON;
 - the facade does not follow them yet, so every scenario they serve keeps its status;
-- they go out with the facade change, the provider, the bundle and the pin, in one deploy (host-declared-read-provider.feature).
+- they go out with the facade change, the provider, the bundle and the pin, in one deploy (answer-host-declared-read.feature).
 
 | Declaration | Feature | What it now declares |
 | --- | --- | --- |
@@ -158,9 +243,8 @@ Not declared, and why:
 - **An ended run's replay from the run store.** The trace is brotli-compressed, and the DEPENDENCY `sfx-api-run-trace` has only `encode-chunk`. A decode program must be declared first. Until then the facade keeps 64 ended runs, as declared.
 - **A run the host lost, completed at start.** Waits on sfx-dal (below).
 - **A scalar output stored.** Waits on sfx-dal (below).
-- **`record-api-host-authority`.** Waits on the host's provider.
 
-The frontdoor's live DSL, with its identify stage, was declared without being committed. declarations/27 is rebuilt from declarations/03 and README.md's stage list. Compare it with the live declaration before declaring it.
+The frontdoor's live DSL, with its identify stage, was declared without being committed. declarations/27 is rebuilt from declarations/03 and README.md's stage list. It is compared with the live declaration before its graph source goes into the bundle.
 
 ## Where the earlier features went
 
@@ -177,7 +261,7 @@ The frontdoor's live DSL, with its identify stage, was declared without being co
 | hosting-facade.feature | record, uncommitted | host-facade, read-api-host-configuration |
 | api-runs-hosted.feature | record, uncommitted | admit-api-run-live, project-api-run-events, open-api-run-stream, check-api-session, complete-api-run, append-api-run-trace, host-facade |
 | estate-live-observation-hosted.feature | record, uncommitted | publish-, select-, subscribe-estate-live-observation, capture-estate-live-observation-facts, read-estate-drawing-changes |
-| host-declared-read-provider.feature | draft, uncommitted | host-declared-read-provider |
+| host-declared-read-provider.feature | draft, uncommitted | answer-host-declared-read |
 
 Every approved, paused and draft scenario is in exactly one canonical feature. The three records described what the host
 did. Their scenarios now say what it must do, and the code they cited is in the comments.
@@ -201,13 +285,16 @@ behaviour is in their declarations and in the top-level README.md, not in a feat
 - the SEJ-pure overlay bindings (01);
 - read-api-session and revoke-api-session (sej/).
 
-Two more gaps:
-- **The provider programs.** `providers/sfx-api-ingress.dependency.json`, `sfx-api-run-trace.dependency.json` and `sfx-identity-login.dependency.json` (bearer digest, trace encoding, password derivation) are not accounted for either.
+One more gap:
 - **The retired capabilities.** open-api-estate-stream (17) and project-api-estate-events (18) were removed from declarations/ on 2026-11-02. Their estate rows are retired by a declared change (subscribe-estate-live-observation.feature).
 
 ## What waits on SDA
 
-- **The kernel's estate session behind a host-bound port.** This is SDA's next KV-001 step. Until it ships, every delivery needs the estate. SDA bcbdbec (rule D9) closed the other half: the provider now passes a read through `builtInRead`, in the delivery's own session, pin and impersonation, and needs no estate reader or credential of its own (host-declared-read-provider.feature).
+- **One delivery, two sources.** Every host delivery reads capabilities from the bundle and from the estate, but at
+  `bcbdbec` each kernel refuses a delivery whose capabilities carry different identities. Until SDA changes that, no
+  capability can be served from the bundle ([request](../docs/request-sda-one-delivery-two-sources.md);
+  answer-host-declared-read.feature).
+- **The kernel's estate session behind a host-bound port.** This is SDA's next KV-001 step. Until it ships, every delivery needs the estate. SDA bcbdbec (rule D9) closed the other half: the provider now passes a read through `builtInRead`, in the delivery's own session, pin and impersonation, and needs no estate reader or credential of its own (answer-host-declared-read.feature).
 - **A byte input.** Whether the kernel takes a byte input, so a request's bytes reach the ingress unchanged, has not been checked (host-facade.feature).
 
 ## What waits on sfx-dal
@@ -219,7 +306,12 @@ Two more gaps:
 
 Each is a place where the record is unclear or pulls two ways.
 
-**Q1.** What does a run's subscriber receive when complete-api-run fails?
-- The approved "A run's end is published only after its output is stored" holds run.exited back until completion succeeds.
-- Held back for good, every stream of that run stays open.
-- Today the facade publishes it anyway (host/serve.py:555-558), so subscribers see a run-end whose output is not stored.
+**Q1.** Settled 2026-11-03 from the approved scenarios. When complete-api-run fails, the run's run-end is not published,
+its streams end when their session does, and the host log names the run and the answer (complete-api-run.feature). The
+approved "A run's end is published only after its output is stored" and "A run's output is readable when its run-end
+arrives" leave no other answer. Today the facade publishes it anyway (host/serve.py:555-558).
+
+**Q2.** A client that gives up still holds its request kernel until the kernel answers: 30 abandoned requests queued the
+next request 68 s (abandoned-request-release). Freeing the kernel at once means stopping it in the middle of an
+envelope. That costs a kernel start (no-kernel-start-on-request), and the envelope is not retried, because an envelope
+a kernel may have begun is never delivered again (host-facade.feature). Which holds when the two service levels meet?

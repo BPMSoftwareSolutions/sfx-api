@@ -59,3 +59,14 @@ Feature: The facade's settings are declared
       When a setting is re-declared, and the host's bundle is recorded again, pinned and deployed
       Then the facade acts on the new setting
       And no facade code and no facade configuration changed
+
+  Rule: The configuration declares the bounds the service levels rest on
+
+    @status:not-built
+    @slo:request-answer-bound
+    @slo:run-capacity
+    Scenario: The bounds of request-answer-bound and run-capacity are declared values
+      Then read-api-host-configuration declares the wait for a free request kernel (2000 ms), the runs that may wait for a
+        worker (64) and the response the facade writes when either bound is reached
+      And each kernel's answer bound and the number of workers stay with the kernels in sfx-api.config.json
+      # declarations/25. 64 waiting runs is a proposed number with no record behind it (this feature's outline).

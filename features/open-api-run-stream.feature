@@ -83,3 +83,17 @@ Feature: A run's events stream as declared
       # host/serve.py:342-354, 677, 689 and 704 take it as no expiry, so the stream ends only at a recheck that fails,
       # and never on the session when the directive declares no recheck. The same holds for stream-estate (:734, 772,
       # 787): subscribe-estate-live-observation.feature.
+
+  Rule: A run stream keeps its service levels
+
+    @status:probed
+    @slo:run-event-delivery
+    Scenario: A run's events reach its stream as they are observed
+      Given the service level:
+        | SLI                                              | SLO target                                                     | baseline                                        |
+        | time from an observation to its run stream frame | written as observed; a quiet stream writes a keep-alive every 15 s | events delivered as written over 2 s (stand-in) |
+      When a run is observed while a caller streams it
+      Then each event's frame is written when the event is observed
+      And a stream with nothing to write writes a keep-alive every 15 s
+      # README.md, Verified: the facade against a stand-in kernel, 22 checks ("events delivered as written over 2 s",
+      # "keepalives"). keepaliveSeconds 15 in sfx-api.config.json today; declarations/25 streams.keepaliveMilliseconds.

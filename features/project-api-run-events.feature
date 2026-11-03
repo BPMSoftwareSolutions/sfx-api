@@ -119,3 +119,16 @@ Feature: A run's events are shaped by a declared projection
       And the run's run-end carries capture {"records": <n>, "dropped": 0}
       # Word for word from estate-live-observation-kernel-sampling.feature. No run of this acceptance is cited in this
       # repo.
+
+  Rule: A run's events keep their service levels
+
+    @status:installed
+    @slo:run-events-bound
+    Scenario: A run keeps at most 50000 events, and an observation at most 1 MiB whole
+      Given the service level:
+        | SLI                                              | SLO target                                | baseline |
+        | events a run keeps, and one observation's bytes  | at most 50000 events; 1048576 bytes whole | declared |
+      When a run is observed
+      Then it keeps no more than 50000 events, and an observation over 1048576 bytes is kept cut
+      # sfx-api.config.json runs.maxEvents and runs.eventPayloadBytes today; declarations/25 runs.events. What is kept of a
+      # cut observation and what a dropped event leaves are the scenarios above.

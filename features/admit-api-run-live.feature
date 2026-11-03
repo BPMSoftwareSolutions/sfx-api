@@ -68,3 +68,26 @@ Feature: A run is admitted with its whole plan declared
       # host/serve.py:508-510 also holds up to 64 ended runs (runs.retained), the oldest let go first. That stays until a
       # run's stream can replay the store's trace (open-api-run-stream.feature); meanwhile the number is declared, as
       # read-api-host-configuration's runs.retainedEnded.
+
+  Rule: Admission keeps its service levels
+
+    @status:installed
+    @slo:run-capacity
+    Scenario: Two runs execute at once
+      Given the service level:
+        | SLI                        | SLO target  | baseline                                                       |
+        | runs executing at once     | 2           | 2 workers, each about 350 MB on the shared plan (README.md, Next 2) |
+      When more than two runs are admitted
+      Then two execute and the rest wait for a worker
+      # sfx-api.config.json workers.instances 2.
+
+    @status:not-built
+    @slo:run-capacity
+    Scenario: At most 64 runs wait for a worker
+      Given the service level:
+        | SLI                     | SLO target            | baseline |
+        | runs waiting for a worker | at most 64 (proposed) | none   |
+      When runs are admitted faster than the workers end them
+      Then no more than 64 wait at once
+      # declarations/25 runs.queue. What a run admitted at the bound receives is "An admitted run is answered at once and
+      # waits for a worker within a declared bound". The number has no record behind it (read-api-host-configuration.feature).

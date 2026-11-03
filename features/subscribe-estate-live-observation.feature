@@ -233,3 +233,24 @@ Feature: Anyone signed in subscribes to the channel from any machine
       # Word for word from estate-live-observation-declared.feature. No operation of sidefx-api-interface.v1 resolves to
       # either. declarations/17 and 18 were removed from this repo on 2026-11-02, so the host's bundle will not hold
       # them; their rows stay in the estate until a declared retirement removes them.
+
+  Rule: The subscription keeps its service levels
+
+    @status:installed
+    @slo:channel-retention
+    Scenario: The channel keeps at most 20000 frames and 32 MiB for replay
+      Given the service level:
+        | SLI                                  | SLO target                         | baseline |
+        | frames the channel keeps for replay  | at most 20000 frames and 32 MiB    | declared |
+      When a subscriber resumes or replays
+      Then the frames it can receive again are at most the last 20000, totalling at most 33554432 bytes
+      # sfx-api.config.json runs.feedEvents and runs.feedBytes today; declarations/25 channel.retainedFrames and
+      # channel.retainedBytes. A cursor beyond what is retained: the scenarios above.
+
+    @status:installed
+    @slo:session-recheck
+    Scenario: A subscription's session is rechecked with the session's other streams
+      When a session caller holds a subscription and a run stream open
+      Then both share the recheck of session-recheck
+      # host/serve.py:357-379: one answer per recheck input serves every stream until the interval passes. The stand-in
+      # measurement of 3 rechecks, not 6, was of two run streams (check-api-session.feature).
