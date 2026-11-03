@@ -1,7 +1,9 @@
 # Review copy for the owner and the owner's team, 2026-11-03.
 #
-# What this file is: the behavior of the provider capability sfx-identity-login-derive-port.v1 (provider
-# sfx-identity-login-derive), written as Gherkin. It derives the Argon2id tag of a password and a salt under the sign-in's
+# What this file is: the behavior of the provider capability sfx-identity-login-derive-port.v2 (provider
+# sfx-identity-login-derive.v2), written as Gherkin. The host's bundle binds it under that identity through the host's own declared
+# providers (SDA D15); until the image that carries the bundle replaces the host now serving, the estate's copy
+# serves as sfx-identity-login-derive-port.v1 (provider sfx-identity-login-derive). It derives the Argon2id tag of a password and a salt under the sign-in's
 # parameters. The sources are the provider's declared program (providers/sfx-identity-login.dependency.json, operation
 # derive-tag), the estate's declaration of it (DEPENDENCY sidefx:dependencies/sfx-identity-login, definition c5d37b8d,
 # read on 2026-11-03 through sql-database-reader, run 4d1c2e4f-db9b-ae32-f716-377c0a781c08), the capability that binds
@@ -46,7 +48,7 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:proven
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: A known password and salt derive the known tag
       Given the password, the base64 salt and the expected tag verify-password-derivation declares
       When verify-password-derivation derives the tag
@@ -57,7 +59,7 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:installed
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: The parameters are the sign-in's
       When the provider derives a tag
       Then it uses these parameters, as sfx-identity-login-open does:
@@ -70,7 +72,7 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:installed
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: The libraries are loaded only when their digests are the declared ones
       When the provider derives a tag
       Then it fetches Konscious.Security.Cryptography.Blake2 1.1.1 and Konscious.Security.Cryptography.Argon2 1.3.1 from
@@ -82,11 +84,11 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:not-built
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: The step that derives the tag honors its binding, proved by the run
       Given this step depends on this provider binding:
         | calls                              | provider capability the step needs                                                                          | result it must produce here | run evidence that proves it                                              |
-        | verify-password-derivation.derive  | sfx-identity-login-derive-port.v1, provider sfx-identity-login-derive, port verify-password-derivation-derive | the tag                     | the delivery's testimony for the cell of verify-password-derivation.derive |
+        | verify-password-derivation.derive  | sfx-identity-login-derive-port.v2, provider sfx-identity-login-derive.v2, port verify-password-derivation-derive | the tag                     | the delivery's testimony for the cell of verify-password-derivation.derive |
       When verify-password-derivation runs
       Then the call produces the tag its binding requires
       And acceptance finds the invocation attributed to that step within the same delivery
@@ -96,9 +98,9 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:not-built
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario Outline: Provider acceptance fails when the evidence cannot prove a required call
-      Given the accepted binding of verify-password-derivation.derive to sfx-identity-login-derive-port.v1
+      Given the accepted binding of verify-password-derivation.derive to sfx-identity-login-derive-port.v2
       When acceptance checks a delivery with <defect>
       Then provider acceptance fails for verify-password-derivation.derive and identifies the missing or conflicting
         evidence
@@ -115,7 +117,7 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:installed
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: Its program is declared for each runtime the host declares
       Then providers/sfx-identity-login.dependency.json declares the derive-tag program for each runtime language the
         host's kernels run, and the host declares that language with its kernel in sfx-api.config.json
@@ -126,10 +128,13 @@ Feature: A password's Argon2id tag is derived by a declared provider, as sign-in
 
     @status:not-built
     @capability:verify-password-derivation
-    @provider:sfx-identity-login-derive-port.v1
+    @provider:sfx-identity-login-derive-port.v2
     Scenario: The host runs the program its own bundle carries
       When verify-password-derivation is answered from the host's bundle
       Then its port binding carries this repo's derive-tag program
       And no change to the estate's declaration of sfx-identity-login-derive changes what the host runs
       # Today the program comes with verify-password-derivation's declaration from the estate (definition c5d37b8d).
       # answer-host-declared-read.feature.
+      # The delivery's run capability, the estate's run-declared-graph, binds each mechanic through its execute port's
+      # overlayBindings and providers, which hold the estate's copy of this program (run c9be6b42). The host's own
+      # binding waits on SDA: docs/request-sda-host-provider-bindings.md.

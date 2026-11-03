@@ -1,0 +1,644 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "admit-api-run-live",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "admit-api-run-live",
+  "graphSource": {
+    "capabilityId": "admit-api-run-live",
+    "rootScenarioId": "admit-api-run-live",
+    "scenarios": [
+      {
+        "scenarioId": "admit-api-run-live",
+        "input": {
+          "inputId": "admit-api-run-live-request",
+          "contract": {
+            "contractId": "admit-api-run-live-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "admit-api-run-live-requested",
+          "executionAuthorityId": "admit-api-run-live.v1"
+        },
+        "outcome": {
+          "outcomeId": "admit-api-run-live-outcome",
+          "contract": {
+            "contractId": "admit-api-run-live-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "admit-api-run-live",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "admit-api-run-live.v1",
+        "owningScenarioId": "admit-api-run-live",
+        "operations": [
+          {
+            "operationId": "admit-api-run-live.register-prepare",
+            "kind": "invoke-port",
+            "portId": "admit-api-run-live-register-prepare"
+          },
+          {
+            "operationId": "admit-api-run-live.register",
+            "kind": "invoke-port",
+            "portId": "admit-api-run-live-register"
+          },
+          {
+            "operationId": "admit-api-run-live.answer",
+            "kind": "invoke-port",
+            "portId": "admit-api-run-live-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "admit-api-run-live-cli",
+          "kind": "cli",
+          "rootScenarioId": "admit-api-run-live",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "admit-api-run-live-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "admit-api-run-live-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "admit-api-run-live-transform.v1"
+          }
+        },
+        {
+          "portId": "admit-api-run-live-register-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "object",
+              "fields": {
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
+                "dispatchRequest": {
+                  "op": "object",
+                  "fields": {
+                    "dataSource": {
+                      "op": "literal",
+                      "value": "sfx-identity-database"
+                    },
+                    "statement": {
+                      "op": "literal",
+                      "value": "SET NOCOUNT ON; DECLARE @principal_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.principalId')); DECLARE @session_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.sessionId')); DECLARE @object nvarchar(64) = COALESCE(JSON_VALUE(@input, '$.admission.object'), N'capability'); DECLARE @operation nvarchar(64) = COALESCE(JSON_VALUE(@input, '$.admission.operation'), N'observe'); DECLARE @capability_id nvarchar(512) = JSON_VALUE(@input, '$.admission.subject'); DECLARE @namespace_id nvarchar(256) = COALESCE(JSON_VALUE(@input, '$.admission.namespace'), N'sidefx:capabilities'); DECLARE @header_key nvarchar(4000) = NULLIF(JSON_VALUE(@input, '$.idempotencyKey'), N''); DECLARE @body_key nvarchar(4000) = NULLIF(JSON_VALUE(@input, '$.admission.idempotencyKey'), N''); IF @header_key IS NOT NULL AND @body_key IS NOT NULL AND @header_key <> @body_key THROW 51000, 'IDEMPOTENCY_KEY_CONFLICT', 1; DECLARE @key nvarchar(4000) = COALESCE(@header_key, @body_key); IF @object <> N'capability' OR @operation NOT IN (N'observe', N'invoke') OR @capability_id IS NULL OR LEN(@capability_id) = 0 THROW 51000, 'ADMISSION_INVALID', 1; IF @key IS NOT NULL AND (LEN(@key) = 0 OR LEN(@key) > 200) THROW 51000, 'IDEMPOTENCY_KEY_INVALID', 1; DECLARE @run_id varchar(128) = CASE WHEN @key IS NULL THEN LOWER(CONVERT(varchar(36), NEWID())) ELSE LOWER(CONVERT(varchar(36), CONVERT(uniqueidentifier, SUBSTRING(HASHBYTES('SHA2_256', CONCAT(N'sfx-api-admission:', CONVERT(nvarchar(36), @principal_id), N':', @key)), 1, 16)))) END; DECLARE @before datetime2(7) = SYSUTCDATETIME(); DECLARE @r TABLE(run_id varchar(128), admitted_at datetime2(7)); BEGIN TRY INSERT @r EXEC evidence.register_run @run_id = @run_id, @principal_id = @principal_id, @session_id = @session_id, @capability_id = @capability_id, @namespace_id = @namespace_id, @writer_id = 'sfx-api'; END TRY BEGIN CATCH IF ERROR_MESSAGE() = 'EVIDENCE_CONFLICT' AND @key IS NOT NULL THROW 51000, 'IDEMPOTENCY_KEY_CONFLICT', 1; THROW; END CATCH; SELECT (SELECT r.run_id AS runId, CONVERT(datetimeoffset(7), r.admitted_at) AS admittedAt, CONVERT(bit, CASE WHEN r.admitted_at < @before THEN 1 ELSE 0 END) AS replayed, @operation AS operation, @namespace_id AS namespace, JSON_QUERY(@input, '$.admission') AS admission FROM @r r FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS value;"
+                    },
+                    "resultColumn": {
+                      "op": "literal",
+                      "value": "value"
+                    },
+                    "input": {
+                      "op": "path",
+                      "path": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "admit-api-run-live-register",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "admit-api-run-live-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "admitted": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "result.value"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "let",
+                    "bindings": {
+                      "parsed": {
+                        "op": "try-parse-json",
+                        "value": {
+                          "op": "path",
+                          "path": "result.value"
+                        },
+                        "stripBom": true
+                      }
+                    },
+                    "value": {
+                      "op": "path",
+                      "path": "value",
+                      "from": "parsed"
+                    }
+                  },
+                  "else": {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "type",
+                        "value": {
+                          "op": "path",
+                          "path": "result.value"
+                        }
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "object"
+                      }
+                    },
+                    "then": {
+                      "op": "path",
+                      "path": "result.value"
+                    },
+                    "else": {
+                      "op": "path",
+                      "path": "result"
+                    }
+                  }
+                },
+                "capability": {
+                  "op": "object",
+                  "fields": {
+                    "object": {
+                      "op": "literal",
+                      "value": "capability"
+                    },
+                    "operation": {
+                      "op": "path",
+                      "path": "operation",
+                      "from": "admitted"
+                    },
+                    "subject": {
+                      "op": "path",
+                      "path": "admission.subject",
+                      "from": "admitted"
+                    },
+                    "namespace": {
+                      "op": "path",
+                      "path": "namespace",
+                      "from": "admitted"
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "if",
+                "when": {
+                  "op": "equals",
+                  "left": {
+                    "op": "type",
+                    "value": {
+                      "op": "path",
+                      "path": "runId",
+                      "from": "admitted"
+                    }
+                  },
+                  "right": {
+                    "op": "literal",
+                    "value": "string"
+                  }
+                },
+                "then": {
+                  "op": "object",
+                  "fields": {
+                    "contractId": {
+                      "op": "literal",
+                      "value": "api-response.v1"
+                    },
+                    "disposition": {
+                      "op": "literal",
+                      "value": "RESPONDED"
+                    },
+                    "status": {
+                      "op": "literal",
+                      "value": 200
+                    },
+                    "headers": {
+                      "op": "literal",
+                      "value": {
+                        "content-type": "application/vnd.sfx.host-directive+json"
+                      }
+                    },
+                    "body": {
+                      "op": "merge",
+                      "values": [
+                        {
+                          "op": "object",
+                          "fields": {
+                            "contractId": {
+                              "op": "literal",
+                              "value": "sfx-api-host-directive.v1"
+                            },
+                            "directive": {
+                              "op": "if",
+                              "when": {
+                                "op": "path",
+                                "path": "replayed",
+                                "from": "admitted"
+                              },
+                              "then": {
+                                "op": "literal",
+                                "value": "respond"
+                              },
+                              "else": {
+                                "op": "literal",
+                                "value": "execute-run"
+                              }
+                            },
+                            "respond": {
+                              "op": "object",
+                              "fields": {
+                                "raw": {
+                                  "op": "format",
+                                  "template": "HTTP/1.1 202 Accepted\r\nContent-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{b}",
+                                  "values": {
+                                    "b": {
+                                      "op": "json-stringify",
+                                      "value": {
+                                        "op": "object",
+                                        "fields": {
+                                          "status": {
+                                            "op": "literal",
+                                            "value": "ADMITTED"
+                                          },
+                                          "runId": {
+                                            "op": "path",
+                                            "path": "runId",
+                                            "from": "admitted"
+                                          },
+                                          "state": {
+                                            "op": "literal",
+                                            "value": "admitted"
+                                          },
+                                          "admittedAt": {
+                                            "op": "path",
+                                            "path": "admittedAt",
+                                            "from": "admitted"
+                                          },
+                                          "capability": {
+                                            "op": "path",
+                                            "path": "",
+                                            "from": "capability"
+                                          },
+                                          "replayed": {
+                                            "op": "path",
+                                            "path": "replayed",
+                                            "from": "admitted"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "op": "if",
+                          "when": {
+                            "op": "path",
+                            "path": "replayed",
+                            "from": "admitted"
+                          },
+                          "then": {
+                            "op": "literal",
+                            "value": null
+                          },
+                          "else": {
+                            "op": "object",
+                            "fields": {
+                              "run": {
+                                "op": "object",
+                                "fields": {
+                                  "runId": {
+                                    "op": "path",
+                                    "path": "runId",
+                                    "from": "admitted"
+                                  },
+                                  "admittedAt": {
+                                    "op": "path",
+                                    "path": "admittedAt",
+                                    "from": "admitted"
+                                  },
+                                  "capability": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "capability"
+                                  },
+                                  "published": {
+                                    "op": "literal",
+                                    "value": true
+                                  },
+                                  "envelope": {
+                                    "op": "object",
+                                    "fields": {
+                                      "deliveryType": {
+                                        "op": "literal",
+                                        "value": "sfx-command-delivery.v1"
+                                      },
+                                      "operation": {
+                                        "op": "literal",
+                                        "value": "observe"
+                                      },
+                                      "observation": {
+                                        "op": "object",
+                                        "fields": {
+                                          "sample": {
+                                            "op": "literal",
+                                            "value": true
+                                          },
+                                          "ref": {
+                                            "op": "path",
+                                            "path": "runId",
+                                            "from": "admitted"
+                                          }
+                                        }
+                                      },
+                                      "request": {
+                                        "op": "object",
+                                        "fields": {
+                                          "object": {
+                                            "op": "literal",
+                                            "value": "capability"
+                                          },
+                                          "verb": {
+                                            "op": "literal",
+                                            "value": "observe"
+                                          },
+                                          "subject": {
+                                            "op": "path",
+                                            "path": "admission.subject",
+                                            "from": "admitted"
+                                          },
+                                          "namespace": {
+                                            "op": "path",
+                                            "path": "namespace",
+                                            "from": "admitted"
+                                          },
+                                          "input": {
+                                            "op": "if",
+                                            "when": {
+                                              "op": "equals",
+                                              "left": {
+                                                "op": "type",
+                                                "value": {
+                                                  "op": "path",
+                                                  "path": "admission.input",
+                                                  "from": "admitted"
+                                                }
+                                              },
+                                              "right": {
+                                                "op": "literal",
+                                                "value": "string"
+                                              }
+                                            },
+                                            "then": {
+                                              "op": "let",
+                                              "bindings": {
+                                                "parsedInput": {
+                                                  "op": "try-parse-json",
+                                                  "value": {
+                                                    "op": "path",
+                                                    "path": "admission.input",
+                                                    "from": "admitted"
+                                                  },
+                                                  "stripBom": true
+                                                }
+                                              },
+                                              "value": {
+                                                "op": "path",
+                                                "path": "value",
+                                                "from": "parsedInput"
+                                              }
+                                            },
+                                            "else": {
+                                              "op": "if",
+                                              "when": {
+                                                "op": "equals",
+                                                "left": {
+                                                  "op": "type",
+                                                  "value": {
+                                                    "op": "path",
+                                                    "path": "admission.input",
+                                                    "from": "admitted"
+                                                  }
+                                                },
+                                                "right": {
+                                                  "op": "literal",
+                                                  "value": "null"
+                                                }
+                                              },
+                                              "then": {
+                                                "op": "literal",
+                                                "value": {}
+                                              },
+                                              "else": {
+                                                "op": "path",
+                                                "path": "admission.input",
+                                                "from": "admitted"
+                                              }
+                                            }
+                                          },
+                                          "inputType": {
+                                            "op": "literal",
+                                            "value": "json"
+                                          },
+                                          "observationAltitudes": {
+                                            "op": "literal",
+                                            "value": [
+                                              "scenario",
+                                              "mechanic",
+                                              "provider",
+                                              "physical"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "events": {
+                                    "op": "literal",
+                                    "value": {
+                                      "capabilityId": "project-api-run-events",
+                                      "published": false
+                                    }
+                                  },
+                                  "trace": {
+                                    "op": "literal",
+                                    "value": {
+                                      "capabilityId": "append-api-run-trace",
+                                      "published": false
+                                    }
+                                  },
+                                  "completion": {
+                                    "op": "object",
+                                    "fields": {
+                                      "capabilityId": {
+                                        "op": "literal",
+                                        "value": "complete-api-run"
+                                      },
+                                      "input": {
+                                        "op": "object",
+                                        "fields": {
+                                          "runId": {
+                                            "op": "path",
+                                            "path": "runId",
+                                            "from": "admitted"
+                                          },
+                                          "admittedAt": {
+                                            "op": "path",
+                                            "path": "admittedAt",
+                                            "from": "admitted"
+                                          },
+                                          "capability": {
+                                            "op": "path",
+                                            "path": "",
+                                            "from": "capability"
+                                          }
+                                        }
+                                      },
+                                      "published": {
+                                        "op": "literal",
+                                        "value": false
+                                      }
+                                    }
+                                  },
+                                  "facts": {
+                                    "op": "literal",
+                                    "value": {
+                                      "capabilityId": "capture-estate-live-observation-facts",
+                                      "published": false
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "op": "path",
+                  "path": "",
+                  "from": "admitted"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "admit-api-run-live-request.v1": {
+          "schemaRef": "admit-api-run-live-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "admit-api-run-live-result.v1": {
+          "schemaRef": "admit-api-run-live-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "admit-api-run-live-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "admit-api-run-live",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "admit-api-run-live",
+      "input_id": "admit-api-run-live-request",
+      "event_id": "admit-api-run-live-requested",
+      "responsibility": "the run store registers the run",
+      "outcome_id": "admit-api-run-live-outcome",
+      "scenario_definition_digest": "8VA1EdGZ0oMGyc4QwmJWPMxxSU4SAe2fF04373FerEE="
+    }
+  ]
+}

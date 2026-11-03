@@ -1,0 +1,308 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "revoke-api-session",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "revoke-api-session",
+  "graphSource": {
+    "capabilityId": "revoke-api-session",
+    "rootScenarioId": "revoke-api-session",
+    "scenarios": [
+      {
+        "scenarioId": "revoke-api-session",
+        "input": {
+          "inputId": "revoke-api-session-request",
+          "contract": {
+            "contractId": "revoke-api-session-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "revoke-api-session-requested",
+          "executionAuthorityId": "revoke-api-session.v1"
+        },
+        "outcome": {
+          "outcomeId": "revoke-api-session-outcome",
+          "contract": {
+            "contractId": "revoke-api-session-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "revoke-api-session",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "revoke-api-session.v1",
+        "owningScenarioId": "revoke-api-session",
+        "operations": [
+          {
+            "operationId": "revoke-api-session.prepare",
+            "kind": "invoke-port",
+            "portId": "revoke-api-session-prepare"
+          },
+          {
+            "operationId": "revoke-api-session.revoke",
+            "kind": "invoke-port",
+            "portId": "revoke-api-session-revoke"
+          },
+          {
+            "operationId": "revoke-api-session.lift",
+            "kind": "invoke-port",
+            "portId": "revoke-api-session-lift"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "revoke-api-session-cli",
+          "kind": "cli",
+          "rootScenarioId": "revoke-api-session",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "revoke-api-session-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "revoke-api-session-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "revoke-api-session-transform.v1"
+          }
+        },
+        {
+          "portId": "revoke-api-session-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "revoke-api-session-prepare"
+          }
+        },
+        {
+          "portId": "revoke-api-session-revoke",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "sql-database-reader",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution",
+            "estateProvider": {
+              "providerId": "sql-database-reader",
+              "name": "SQL database reader (capability provider)",
+              "declarationProfile": "sfx-provider-catalog.v1",
+              "capabilityId": "sql-database-reader",
+              "candidateCapabilities": [
+                "sfx-sqlserver-read-port.v1"
+              ],
+              "operations": [
+                "read"
+              ],
+              "providerRole": "overlay"
+            }
+          }
+        },
+        {
+          "portId": "revoke-api-session-lift",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "revoke-api-session-lift"
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [
+      {
+        "id": "revoke-api-session-prepare",
+        "expression": {
+          "op": "object",
+          "fields": {
+            "executionTarget": {
+              "op": "literal",
+              "value": "sql-database-reader"
+            },
+            "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+            },
+            "executionScenario": {
+              "op": "literal",
+              "value": "sql-database-reader"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
+            "dispatchRequest": {
+              "op": "object",
+              "fields": {
+                "dataSource": {
+                  "op": "literal",
+                  "value": "sfx-identity-database"
+                },
+                "statement": {
+                  "op": "literal",
+                  "value": "SET NOCOUNT ON; EXEC [identity].revoke_api_session @input = @input;"
+                },
+                "resultColumn": {
+                  "op": "literal",
+                  "value": "value"
+                },
+                "input": {
+                  "op": "path",
+                  "path": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "revoke-api-session-lift",
+        "expression": {
+          "op": "if",
+          "when": {
+            "op": "equals",
+            "left": {
+              "op": "type",
+              "value": {
+                "op": "path",
+                "path": "result.value"
+              }
+            },
+            "right": {
+              "op": "literal",
+              "value": "string"
+            }
+          },
+          "then": {
+            "op": "let",
+            "bindings": {
+              "parsed": {
+                "op": "try-parse-json",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                },
+                "stripBom": true
+              }
+            },
+            "value": {
+              "op": "path",
+              "from": "parsed",
+              "path": "value"
+            }
+          },
+          "else": {
+            "op": "if",
+            "when": {
+              "op": "equals",
+              "left": {
+                "op": "type",
+                "value": {
+                  "op": "path",
+                  "path": "result.value"
+                }
+              },
+              "right": {
+                "op": "literal",
+                "value": "object"
+              }
+            },
+            "then": {
+              "op": "path",
+              "path": "result.value"
+            },
+            "else": {
+              "op": "path",
+              "path": "result"
+            }
+          }
+        }
+      }
+    ],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "revoke-api-session-request.v1": {
+          "schemaRef": "revoke-api-session-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "principalId",
+              "sessionId"
+            ],
+            "properties": {
+              "principalId": {
+                "type": "string"
+              },
+              "sessionId": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "revoke-api-session-result.v1": {
+          "schemaRef": "revoke-api-session-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "revoke-api-session-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "revoke-api-session",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "revoke-api-session",
+      "input_id": "revoke-api-session-request",
+      "event_id": "revoke-api-session-requested",
+      "responsibility": "sfx-identity revokes the session",
+      "outcome_id": "revoke-api-session-outcome",
+      "scenario_definition_digest": "XLEm4bmZ7TqRfgdgj1R1/rPTt6sM3oZ54mrOrKbh948="
+    }
+  ]
+}

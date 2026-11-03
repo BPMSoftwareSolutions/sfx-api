@@ -1,0 +1,174 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "answer-api-response",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "answer-api-response",
+  "graphSource": {
+    "capabilityId": "answer-api-response",
+    "rootScenarioId": "answer-api-response",
+    "scenarios": [
+      {
+        "scenarioId": "answer-api-response",
+        "input": {
+          "inputId": "answer-api-response-request",
+          "contract": {
+            "contractId": "answer-api-response-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "answer-api-response-requested",
+          "executionAuthorityId": "answer-api-response.v1"
+        },
+        "outcome": {
+          "outcomeId": "answer-api-response-outcome",
+          "contract": {
+            "contractId": "answer-api-response-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "answer-api-response",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "answer-api-response.v1",
+        "owningScenarioId": "answer-api-response",
+        "operations": [
+          {
+            "operationId": "answer-api-response.evaluate",
+            "kind": "invoke-port",
+            "portId": "answer-api-response-evaluate"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "answer-api-response-cli",
+          "kind": "cli",
+          "rootScenarioId": "answer-api-response",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "answer-api-response-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "answer-api-response-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "answer-api-response-transform.v1"
+          }
+        },
+        {
+          "portId": "answer-api-response-evaluate",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "answer-api-response"
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [
+      {
+        "id": "answer-api-response",
+        "expression": {
+          "op": "path",
+          "path": ""
+        }
+      }
+    ],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "answer-api-response-request.v1": {
+          "schemaRef": "answer-api-response-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "contractId",
+              "status"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "answer-api-response-result.v1": {
+          "schemaRef": "answer-api-response-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "contractId",
+              "status"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "answer-api-response-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "answer-api-response",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "answer-api-response",
+      "input_id": "answer-api-response-request",
+      "event_id": "answer-api-response-requested",
+      "responsibility": "the kernel evaluates the declared SEJ",
+      "outcome_id": "answer-api-response-outcome",
+      "scenario_definition_digest": "lXhKxiameCnPjp75ORAYQhKshvzAzEtVUHROzyzE00w="
+    }
+  ]
+}

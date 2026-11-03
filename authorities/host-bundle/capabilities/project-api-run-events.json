@@ -1,0 +1,1141 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "project-api-run-events",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "project-api-run-events",
+  "graphSource": {
+    "capabilityId": "project-api-run-events",
+    "rootScenarioId": "project-api-run-events",
+    "scenarios": [
+      {
+        "scenarioId": "project-api-run-events",
+        "input": {
+          "inputId": "project-api-run-events-request",
+          "contract": {
+            "contractId": "project-api-run-events-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "project-api-run-events-requested",
+          "executionAuthorityId": "project-api-run-events.v1"
+        },
+        "outcome": {
+          "outcomeId": "project-api-run-events-outcome",
+          "contract": {
+            "contractId": "api-run-events.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "project-api-run-events",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "project-api-run-events.v1",
+        "owningScenarioId": "project-api-run-events",
+        "operations": [
+          {
+            "operationId": "project-api-run-events.project",
+            "kind": "invoke-port",
+            "portId": "project-api-run-events-project"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "project-api-run-events-cli",
+          "kind": "cli",
+          "rootScenarioId": "project-api-run-events",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "project-api-run-events-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "project-api-run-events-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "project-api-run-events-transform.v1"
+          }
+        },
+        {
+          "portId": "project-api-run-events-project",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "room": {
+                  "op": "if",
+                  "when": {
+                    "op": "greater-than",
+                    "left": {
+                      "op": "path",
+                      "path": "bounds.maxEvents"
+                    },
+                    "right": {
+                      "op": "path",
+                      "path": "held"
+                    }
+                  },
+                  "then": {
+                    "op": "subtract",
+                    "left": {
+                      "op": "path",
+                      "path": "bounds.maxEvents"
+                    },
+                    "right": {
+                      "op": "path",
+                      "path": "held"
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": 0
+                  }
+                }
+              },
+              "value": {
+                "op": "object",
+                "fields": {
+                  "contractId": {
+                    "op": "literal",
+                    "value": "api-run-events.v1"
+                  },
+                  "answers": {
+                    "op": "map",
+                    "from": {
+                      "op": "path",
+                      "path": "observed"
+                    },
+                    "as": "x",
+                    "value": {
+                      "op": "let",
+                      "bindings": {
+                        "dropped": {
+                          "op": "if",
+                          "when": {
+                            "op": "structural-equals",
+                            "left": {
+                              "op": "path",
+                              "path": "kind",
+                              "from": "x"
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "line"
+                            }
+                          },
+                          "then": {
+                            "op": "if",
+                            "when": {
+                              "op": "greater-than",
+                              "left": {
+                                "op": "path",
+                                "path": "",
+                                "from": "room"
+                              },
+                              "right": {
+                                "op": "path",
+                                "path": "",
+                                "from": "xIndex"
+                              }
+                            },
+                            "then": {
+                              "op": "literal",
+                              "value": false
+                            },
+                            "else": {
+                              "op": "literal",
+                              "value": true
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": false
+                          }
+                        }
+                      },
+                      "value": {
+                        "op": "if",
+                        "when": {
+                          "op": "path",
+                          "path": "",
+                          "from": "dropped"
+                        },
+                        "then": {
+                          "op": "literal",
+                          "value": {
+                            "dropped": true
+                          }
+                        },
+                        "else": {
+                          "op": "let",
+                          "bindings": {
+                            "cursor": {
+                              "op": "add",
+                              "left": {
+                                "op": "add",
+                                "left": {
+                                  "op": "path",
+                                  "path": "held"
+                                },
+                                "right": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "greater-than",
+                                    "left": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "xIndex"
+                                    },
+                                    "right": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "room"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "room"
+                                  },
+                                  "else": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "xIndex"
+                                  }
+                                }
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": 1
+                              }
+                            },
+                            "shaped": {
+                              "op": "if",
+                              "when": {
+                                "op": "structural-equals",
+                                "left": {
+                                  "op": "path",
+                                  "path": "kind",
+                                  "from": "x"
+                                },
+                                "right": {
+                                  "op": "literal",
+                                  "value": "line"
+                                }
+                              },
+                              "then": {
+                                "op": "let",
+                                "bindings": {
+                                  "parsed": {
+                                    "op": "try-parse-json",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "line",
+                                      "from": "x"
+                                    }
+                                  },
+                                  "v": {
+                                    "op": "path",
+                                    "path": "value",
+                                    "from": "parsed"
+                                  }
+                                },
+                                "value": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "structural-equals",
+                                    "left": {
+                                      "op": "path",
+                                      "path": "disposition",
+                                      "from": "parsed"
+                                    },
+                                    "right": {
+                                      "op": "literal",
+                                      "value": "PARSED"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "object",
+                                    "fields": {
+                                      "kind": {
+                                        "op": "if",
+                                        "when": {
+                                          "op": "structural-equals",
+                                          "left": {
+                                            "op": "type",
+                                            "value": {
+                                              "op": "lookup",
+                                              "value": {
+                                                "op": "path",
+                                                "path": "",
+                                                "from": "v"
+                                              },
+                                              "path": {
+                                                "op": "literal",
+                                                "value": "observationType"
+                                              }
+                                            }
+                                          },
+                                          "right": {
+                                            "op": "literal",
+                                            "value": "string"
+                                          }
+                                        },
+                                        "then": {
+                                          "op": "lookup",
+                                          "value": {
+                                            "op": "path",
+                                            "path": "",
+                                            "from": "v"
+                                          },
+                                          "path": {
+                                            "op": "literal",
+                                            "value": "observationType"
+                                          }
+                                        },
+                                        "else": {
+                                          "op": "literal",
+                                          "value": "observation"
+                                        }
+                                      },
+                                      "payload": {
+                                        "op": "if",
+                                        "when": {
+                                          "op": "greater-than",
+                                          "left": {
+                                            "op": "path",
+                                            "path": "byteLength",
+                                            "from": "x"
+                                          },
+                                          "right": {
+                                            "op": "path",
+                                            "path": "bounds.wholeObservationBytes"
+                                          }
+                                        },
+                                        "then": {
+                                          "op": "merge",
+                                          "values": [
+                                            {
+                                              "op": "object",
+                                              "fields": {
+                                                "truncated": {
+                                                  "op": "literal",
+                                                  "value": true
+                                                },
+                                                "byteLength": {
+                                                  "op": "path",
+                                                  "path": "byteLength",
+                                                  "from": "x"
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "op": "object-from-entries",
+                                              "value": {
+                                                "op": "filter",
+                                                "from": {
+                                                  "op": "map",
+                                                  "from": {
+                                                    "op": "literal",
+                                                    "value": [
+                                                      "observationType",
+                                                      "testimonyType",
+                                                      "graphId",
+                                                      "rootExecutionId",
+                                                      "cellId",
+                                                      "phase",
+                                                      "status"
+                                                    ]
+                                                  },
+                                                  "as": "k",
+                                                  "value": {
+                                                    "op": "object",
+                                                    "fields": {
+                                                      "key": {
+                                                        "op": "path",
+                                                        "path": "",
+                                                        "from": "k"
+                                                      },
+                                                      "value": {
+                                                        "op": "lookup",
+                                                        "value": {
+                                                          "op": "path",
+                                                          "path": "",
+                                                          "from": "v"
+                                                        },
+                                                        "path": {
+                                                          "op": "path",
+                                                          "path": "",
+                                                          "from": "k"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "as": "m",
+                                                "where": {
+                                                  "op": "if",
+                                                  "when": {
+                                                    "op": "structural-equals",
+                                                    "left": {
+                                                      "op": "path",
+                                                      "path": "value",
+                                                      "from": "m"
+                                                    },
+                                                    "right": {
+                                                      "op": "literal",
+                                                      "value": null
+                                                    }
+                                                  },
+                                                  "then": {
+                                                    "op": "literal",
+                                                    "value": false
+                                                  },
+                                                  "else": {
+                                                    "op": "literal",
+                                                    "value": true
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        "else": {
+                                          "op": "path",
+                                          "path": "",
+                                          "from": "v"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "op": "object",
+                                    "fields": {
+                                      "kind": {
+                                        "op": "literal",
+                                        "value": "observation.malformed"
+                                      },
+                                      "payload": {
+                                        "op": "if",
+                                        "when": {
+                                          "op": "greater-than",
+                                          "left": {
+                                            "op": "length",
+                                            "value": {
+                                              "op": "path",
+                                              "path": "line",
+                                              "from": "x"
+                                            }
+                                          },
+                                          "right": {
+                                            "op": "literal",
+                                            "value": 1024
+                                          }
+                                        },
+                                        "then": {
+                                          "op": "object",
+                                          "fields": {
+                                            "truncated": {
+                                              "op": "literal",
+                                              "value": true
+                                            },
+                                            "byteLength": {
+                                              "op": "path",
+                                              "path": "byteLength",
+                                              "from": "x"
+                                            }
+                                          }
+                                        },
+                                        "else": {
+                                          "op": "object",
+                                          "fields": {
+                                            "line": {
+                                              "op": "path",
+                                              "path": "line",
+                                              "from": "x"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "else": {
+                                "op": "if",
+                                "when": {
+                                  "op": "structural-equals",
+                                  "left": {
+                                    "op": "path",
+                                    "path": "kind",
+                                    "from": "x"
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "admitted"
+                                  }
+                                },
+                                "then": {
+                                  "op": "object",
+                                  "fields": {
+                                    "kind": {
+                                      "op": "literal",
+                                      "value": "run.admitted"
+                                    },
+                                    "payload": {
+                                      "op": "object",
+                                      "fields": {
+                                        "capability": {
+                                          "op": "path",
+                                          "path": "run.capability"
+                                        },
+                                        "admittedAt": {
+                                          "op": "path",
+                                          "path": "run.admittedAt"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "structural-equals",
+                                    "left": {
+                                      "op": "path",
+                                      "path": "kind",
+                                      "from": "x"
+                                    },
+                                    "right": {
+                                      "op": "literal",
+                                      "value": "started"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "object",
+                                    "fields": {
+                                      "kind": {
+                                        "op": "literal",
+                                        "value": "run.started"
+                                      },
+                                      "payload": {
+                                        "op": "object",
+                                        "fields": {
+                                          "startedAt": {
+                                            "op": "path",
+                                            "path": "at",
+                                            "from": "x"
+                                          },
+                                          "pid": {
+                                            "op": "path",
+                                            "path": "pid",
+                                            "from": "x"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "op": "if",
+                                    "when": {
+                                      "op": "structural-equals",
+                                      "left": {
+                                        "op": "path",
+                                        "path": "kind",
+                                        "from": "x"
+                                      },
+                                      "right": {
+                                        "op": "literal",
+                                        "value": "ended"
+                                      }
+                                    },
+                                    "then": {
+                                      "op": "let",
+                                      "bindings": {
+                                        "d": {
+                                          "op": "path",
+                                          "path": "delivery",
+                                          "from": "x"
+                                        },
+                                        "completed": {
+                                          "op": "if",
+                                          "when": {
+                                            "op": "structural-equals",
+                                            "left": {
+                                              "op": "path",
+                                              "path": "disposition",
+                                              "from": "d"
+                                            },
+                                            "right": {
+                                              "op": "literal",
+                                              "value": "terminated"
+                                            }
+                                          },
+                                          "then": {
+                                            "op": "structural-equals",
+                                            "left": {
+                                              "op": "path",
+                                              "path": "outcome.result.disposition",
+                                              "from": "d"
+                                            },
+                                            "right": {
+                                              "op": "literal",
+                                              "value": "completed"
+                                            }
+                                          },
+                                          "else": {
+                                            "op": "literal",
+                                            "value": false
+                                          }
+                                        }
+                                      },
+                                      "value": {
+                                        "op": "object",
+                                        "fields": {
+                                          "kind": {
+                                            "op": "literal",
+                                            "value": "run.exited"
+                                          },
+                                          "payload": {
+                                            "op": "merge",
+                                            "values": [
+                                              {
+                                                "op": "object",
+                                                "fields": {
+                                                  "state": {
+                                                    "op": "if",
+                                                    "when": {
+                                                      "op": "path",
+                                                      "path": "",
+                                                      "from": "completed"
+                                                    },
+                                                    "then": {
+                                                      "op": "literal",
+                                                      "value": "completed"
+                                                    },
+                                                    "else": {
+                                                      "op": "literal",
+                                                      "value": "failed"
+                                                    }
+                                                  },
+                                                  "exitCode": {
+                                                    "op": "if",
+                                                    "when": {
+                                                      "op": "path",
+                                                      "path": "",
+                                                      "from": "completed"
+                                                    },
+                                                    "then": {
+                                                      "op": "literal",
+                                                      "value": 0
+                                                    },
+                                                    "else": {
+                                                      "op": "literal",
+                                                      "value": 1
+                                                    }
+                                                  },
+                                                  "endedAt": {
+                                                    "op": "path",
+                                                    "path": "at",
+                                                    "from": "x"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "op": "if",
+                                                "when": {
+                                                  "op": "path",
+                                                  "path": "",
+                                                  "from": "completed"
+                                                },
+                                                "then": {
+                                                  "op": "literal",
+                                                  "value": null
+                                                },
+                                                "else": {
+                                                  "op": "object",
+                                                  "fields": {
+                                                    "failure": {
+                                                      "op": "if",
+                                                      "when": {
+                                                        "op": "path",
+                                                        "path": "error",
+                                                        "from": "d"
+                                                      },
+                                                      "then": {
+                                                        "op": "path",
+                                                        "path": "error",
+                                                        "from": "d"
+                                                      },
+                                                      "else": {
+                                                        "op": "if",
+                                                        "when": {
+                                                          "op": "path",
+                                                          "path": "outcome.result.failure",
+                                                          "from": "d"
+                                                        },
+                                                        "then": {
+                                                          "op": "path",
+                                                          "path": "outcome.result.failure",
+                                                          "from": "d"
+                                                        },
+                                                        "else": {
+                                                          "op": "if",
+                                                          "when": {
+                                                            "op": "path",
+                                                            "path": "outcome.error",
+                                                            "from": "d"
+                                                          },
+                                                          "then": {
+                                                            "op": "path",
+                                                            "path": "outcome.error",
+                                                            "from": "d"
+                                                          },
+                                                          "else": {
+                                                            "op": "object",
+                                                            "fields": {
+                                                              "code": {
+                                                                "op": "literal",
+                                                                "value": "RUN_FAILED"
+                                                              },
+                                                              "message": {
+                                                                "op": "format",
+                                                                "template": "{d}",
+                                                                "values": {
+                                                                  "d": {
+                                                                    "op": "if",
+                                                                    "when": {
+                                                                      "op": "path",
+                                                                      "path": "outcome.result.disposition",
+                                                                      "from": "d"
+                                                                    },
+                                                                    "then": {
+                                                                      "op": "path",
+                                                                      "path": "outcome.result.disposition",
+                                                                      "from": "d"
+                                                                    },
+                                                                    "else": {
+                                                                      "op": "path",
+                                                                      "path": "disposition",
+                                                                      "from": "d"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "op": "if",
+                                                "when": {
+                                                  "op": "if",
+                                                  "when": {
+                                                    "op": "structural-equals",
+                                                    "left": {
+                                                      "op": "type",
+                                                      "value": {
+                                                        "op": "path",
+                                                        "path": "dropped",
+                                                        "from": "x"
+                                                      }
+                                                    },
+                                                    "right": {
+                                                      "op": "literal",
+                                                      "value": "number"
+                                                    }
+                                                  },
+                                                  "then": {
+                                                    "op": "greater-than",
+                                                    "left": {
+                                                      "op": "path",
+                                                      "path": "dropped",
+                                                      "from": "x"
+                                                    },
+                                                    "right": {
+                                                      "op": "literal",
+                                                      "value": 0
+                                                    }
+                                                  },
+                                                  "else": {
+                                                    "op": "literal",
+                                                    "value": false
+                                                  }
+                                                },
+                                                "then": {
+                                                  "op": "object",
+                                                  "fields": {
+                                                    "droppedEvents": {
+                                                      "op": "path",
+                                                      "path": "dropped",
+                                                      "from": "x"
+                                                    }
+                                                  }
+                                                },
+                                                "else": {
+                                                  "op": "literal",
+                                                  "value": null
+                                                }
+                                              },
+                                              {
+                                                "op": "object",
+                                                "fields": {
+                                                  "capture": {
+                                                    "op": "if",
+                                                    "when": {
+                                                      "op": "structural-equals",
+                                                      "left": {
+                                                        "op": "type",
+                                                        "value": {
+                                                          "op": "path",
+                                                          "path": "closing",
+                                                          "from": "x"
+                                                        }
+                                                      },
+                                                      "right": {
+                                                        "op": "literal",
+                                                        "value": "object"
+                                                      }
+                                                    },
+                                                    "then": {
+                                                      "op": "object",
+                                                      "fields": {
+                                                        "records": {
+                                                          "op": "path",
+                                                          "path": "closing.records",
+                                                          "from": "x"
+                                                        },
+                                                        "dropped": {
+                                                          "op": "path",
+                                                          "path": "closing.dropped",
+                                                          "from": "x"
+                                                        }
+                                                      }
+                                                    },
+                                                    "else": {
+                                                      "op": "literal",
+                                                      "value": {
+                                                        "complete": false
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "else": {
+                                      "op": "refuse",
+                                      "code": "RUN_OBSERVATION_KIND_UNKNOWN"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "event": {
+                              "op": "merge",
+                              "values": [
+                                {
+                                  "op": "object",
+                                  "fields": {
+                                    "eventId": {
+                                      "op": "format",
+                                      "template": "urn:sfx-api:run-event:{r}:{c}",
+                                      "values": {
+                                        "r": {
+                                          "op": "path",
+                                          "path": "run.runId"
+                                        },
+                                        "c": {
+                                          "op": "path",
+                                          "path": "",
+                                          "from": "cursor"
+                                        }
+                                      }
+                                    },
+                                    "cursor": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "cursor"
+                                    },
+                                    "at": {
+                                      "op": "path",
+                                      "path": "at",
+                                      "from": "x"
+                                    }
+                                  }
+                                },
+                                {
+                                  "op": "path",
+                                  "path": "",
+                                  "from": "shaped"
+                                },
+                                {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "structural-equals",
+                                    "left": {
+                                      "op": "type",
+                                      "value": {
+                                        "op": "lookup",
+                                        "value": {
+                                          "op": "path",
+                                          "path": "payload",
+                                          "from": "shaped"
+                                        },
+                                        "path": {
+                                          "op": "literal",
+                                          "value": "rootExecutionId"
+                                        }
+                                      }
+                                    },
+                                    "right": {
+                                      "op": "literal",
+                                      "value": "string"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "object",
+                                    "fields": {
+                                      "rootExecutionId": {
+                                        "op": "lookup",
+                                        "value": {
+                                          "op": "path",
+                                          "path": "payload",
+                                          "from": "shaped"
+                                        },
+                                        "path": {
+                                          "op": "literal",
+                                          "value": "rootExecutionId"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "op": "literal",
+                                    "value": null
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          "value": {
+                            "op": "merge",
+                            "values": [
+                              {
+                                "op": "object",
+                                "fields": {
+                                  "event": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "event"
+                                  },
+                                  "frame": {
+                                    "op": "format",
+                                    "template": "id: {c}\nevent: {k}\ndata: {d}\n\n",
+                                    "values": {
+                                      "c": {
+                                        "op": "path",
+                                        "path": "",
+                                        "from": "cursor"
+                                      },
+                                      "k": {
+                                        "op": "path",
+                                        "path": "kind",
+                                        "from": "event"
+                                      },
+                                      "d": {
+                                        "op": "json-stringify",
+                                        "value": {
+                                          "op": "path",
+                                          "path": "",
+                                          "from": "event"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "op": "if",
+                                "when": {
+                                  "op": "structural-equals",
+                                  "left": {
+                                    "op": "path",
+                                    "path": "kind",
+                                    "from": "x"
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "ended"
+                                  }
+                                },
+                                "then": {
+                                  "op": "object",
+                                  "fields": {
+                                    "end": {
+                                      "op": "format",
+                                      "template": "event: end\ndata: {d}\n\n",
+                                      "values": {
+                                        "d": {
+                                          "op": "json-stringify",
+                                          "value": {
+                                            "op": "object",
+                                            "fields": {
+                                              "runId": {
+                                                "op": "path",
+                                                "path": "run.runId"
+                                              },
+                                              "state": {
+                                                "op": "path",
+                                                "path": "payload.state",
+                                                "from": "event"
+                                              },
+                                              "cursor": {
+                                                "op": "path",
+                                                "path": "",
+                                                "from": "cursor"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "op": "literal",
+                                  "value": null
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "project-api-run-events-request.v1": {
+          "schemaRef": "project-api-run-events-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "run",
+              "bounds",
+              "held",
+              "observed"
+            ],
+            "properties": {
+              "run": {
+                "type": "object",
+                "required": [
+                  "runId"
+                ]
+              },
+              "bounds": {
+                "type": "object",
+                "required": [
+                  "maxEvents",
+                  "wholeObservationBytes"
+                ]
+              },
+              "held": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "at"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "api-run-events.v1": {
+          "schemaRef": "api-run-events.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "answers"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "project-api-run-events-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "project-api-run-events",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "project-api-run-events",
+      "input_id": "project-api-run-events-request",
+      "event_id": "project-api-run-events-requested",
+      "responsibility": "each observed item is shaped into the run's next event and its run stream frame, or dropped",
+      "outcome_id": "project-api-run-events-outcome",
+      "scenario_definition_digest": "UCswhHN2sKrAPHiOmQykfJHbazuwCLSK3YqgMgXJYHg="
+    }
+  ]
+}

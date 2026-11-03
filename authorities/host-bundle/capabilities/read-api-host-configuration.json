@@ -1,0 +1,210 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-host-configuration",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-host-configuration",
+  "graphSource": {
+    "capabilityId": "read-api-host-configuration",
+    "rootScenarioId": "read-api-host-configuration",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-host-configuration",
+        "input": {
+          "inputId": "read-api-host-configuration-request",
+          "contract": {
+            "contractId": "read-api-host-configuration-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-host-configuration-requested",
+          "executionAuthorityId": "read-api-host-configuration.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-host-configuration-outcome",
+          "contract": {
+            "contractId": "api-host-configuration.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-host-configuration",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-host-configuration.v1",
+        "owningScenarioId": "read-api-host-configuration",
+        "operations": [
+          {
+            "operationId": "read-api-host-configuration.answer",
+            "kind": "invoke-port",
+            "portId": "read-api-host-configuration-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-host-configuration-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-host-configuration",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-host-configuration-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-host-configuration-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-api-host-configuration-transform.v1"
+          }
+        },
+        {
+          "portId": "read-api-host-configuration-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "literal",
+              "value": {
+                "contractId": "api-host-configuration.v1",
+                "request": {
+                  "envelope": {
+                    "deliveryType": "sfx-command-delivery.v1",
+                    "operation": "invoke",
+                    "request": {
+                      "object": "capability",
+                      "verb": "invoke",
+                      "subject": "serve-http-request",
+                      "inputType": "text"
+                    }
+                  },
+                  "waitMilliseconds": 2000,
+                  "busy": "HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 40\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"REQUEST_KERNEL_BUSY\"}}",
+                  "failure": "HTTP/1.1 502 Bad Gateway\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 43\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"KERNEL_DELIVERY_FAILED\"}}"
+                },
+                "runs": {
+                  "events": {
+                    "maxEvents": 50000,
+                    "wholeObservationBytes": 1048576
+                  },
+                  "trace": {
+                    "chunkBytes": 524288,
+                    "chunkEvents": 2000
+                  },
+                  "queue": {
+                    "waiting": 64,
+                    "refusal": "HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 35\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"RUN_QUEUE_FULL\"}}",
+                    "delivery": {
+                      "disposition": "failed",
+                      "error": {
+                        "code": "RUN_QUEUE_FULL"
+                      }
+                    }
+                  },
+                  "retainedEnded": 64
+                },
+                "streams": {
+                  "keepaliveMilliseconds": 15000
+                },
+                "channel": {
+                  "publish": {
+                    "capabilityId": "publish-estate-live-observation"
+                  },
+                  "retainedFrames": 20000,
+                  "retainedBytes": 33554432,
+                  "batchEvents": 200,
+                  "batchBytes": 1048576,
+                  "requests": {
+                    "published": false
+                  }
+                },
+                "drawings": {
+                  "capabilityId": "read-estate-drawing-changes",
+                  "intervalMilliseconds": 2000,
+                  "limit": 20
+                },
+                "observationQueue": null
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-host-configuration-request.v1": {
+          "schemaRef": "read-api-host-configuration-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "api-host-configuration.v1": {
+          "schemaRef": "api-host-configuration.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "request",
+              "runs",
+              "streams",
+              "channel",
+              "drawings",
+              "observationQueue"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-host-configuration-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-host-configuration",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-host-configuration",
+      "input_id": "read-api-host-configuration-request",
+      "event_id": "read-api-host-configuration-requested",
+      "responsibility": "the declared settings are read",
+      "outcome_id": "read-api-host-configuration-outcome",
+      "scenario_definition_digest": "EOZDnfr8fMsDVfwAmTzv+zJHcSEOOHKTEOPFF7YamYQ="
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "check-api-session",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "check-api-session",
+  "graphSource": {
+    "capabilityId": "check-api-session",
+    "rootScenarioId": "check-api-session",
+    "scenarios": [
+      {
+        "scenarioId": "check-api-session",
+        "input": {
+          "inputId": "check-api-session-request",
+          "contract": {
+            "contractId": "check-api-session-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "check-api-session-requested",
+          "executionAuthorityId": "check-api-session.v1"
+        },
+        "outcome": {
+          "outcomeId": "check-api-session-outcome",
+          "contract": {
+            "contractId": "check-api-session-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "check-api-session",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "check-api-session.v1",
+        "owningScenarioId": "check-api-session",
+        "operations": [
+          {
+            "operationId": "check-api-session.check-prepare",
+            "kind": "invoke-port",
+            "portId": "check-api-session-check-prepare"
+          },
+          {
+            "operationId": "check-api-session.check",
+            "kind": "invoke-port",
+            "portId": "check-api-session-check"
+          },
+          {
+            "operationId": "check-api-session.answer",
+            "kind": "invoke-port",
+            "portId": "check-api-session-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "check-api-session-cli",
+          "kind": "cli",
+          "rootScenarioId": "check-api-session",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "check-api-session-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "check-api-session-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "check-api-session-transform.v1"
+          }
+        },
+        {
+          "portId": "check-api-session-check-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "object",
+              "fields": {
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
+                "dispatchRequest": {
+                  "op": "object",
+                  "fields": {
+                    "dataSource": {
+                      "op": "literal",
+                      "value": "sfx-identity-database"
+                    },
+                    "statement": {
+                      "op": "literal",
+                      "value": "SET NOCOUNT ON; DECLARE @principal_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.principalId')); DECLARE @session_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.sessionId')); DECLARE @expires datetimeoffset(7) = (SELECT s.expires_at FROM [identity].session s JOIN [identity].principal p ON p.principal_id = s.principal_id WHERE s.session_id = @session_id AND s.principal_id = @principal_id AND s.revoked_at IS NULL AND s.expires_at > SYSUTCDATETIME() AND p.active = 1); SELECT (SELECT CASE WHEN @expires IS NULL THEN N'ENDED' ELSE N'LIVE' END AS status, @expires AS sessionExpiresAt FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) AS value;"
+                    },
+                    "resultColumn": {
+                      "op": "literal",
+                      "value": "value"
+                    },
+                    "input": {
+                      "op": "path",
+                      "path": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "check-api-session-check",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "check-api-session-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "if",
+              "when": {
+                "op": "equals",
+                "left": {
+                  "op": "type",
+                  "value": {
+                    "op": "path",
+                    "path": "result.value"
+                  }
+                },
+                "right": {
+                  "op": "literal",
+                  "value": "string"
+                }
+              },
+              "then": {
+                "op": "let",
+                "bindings": {
+                  "parsed": {
+                    "op": "try-parse-json",
+                    "value": {
+                      "op": "path",
+                      "path": "result.value"
+                    },
+                    "stripBom": true
+                  }
+                },
+                "value": {
+                  "op": "path",
+                  "path": "value",
+                  "from": "parsed"
+                }
+              },
+              "else": {
+                "op": "if",
+                "when": {
+                  "op": "equals",
+                  "left": {
+                    "op": "type",
+                    "value": {
+                      "op": "path",
+                      "path": "result.value"
+                    }
+                  },
+                  "right": {
+                    "op": "literal",
+                    "value": "object"
+                  }
+                },
+                "then": {
+                  "op": "path",
+                  "path": "result.value"
+                },
+                "else": {
+                  "op": "path",
+                  "path": "result"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "check-api-session-request.v1": {
+          "schemaRef": "check-api-session-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "check-api-session-result.v1": {
+          "schemaRef": "check-api-session-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "check-api-session-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "check-api-session",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "check-api-session",
+      "input_id": "check-api-session-request",
+      "event_id": "check-api-session-requested",
+      "responsibility": "the identity store reads the session",
+      "outcome_id": "check-api-session-outcome",
+      "scenario_definition_digest": "EsG6UrZRXZzMSDCnOdujPEgaRIQPCSwKHkKsvR8H0tE="
+    }
+  ]
+}

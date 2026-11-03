@@ -1,0 +1,436 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "complete-api-run",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "complete-api-run",
+  "graphSource": {
+    "capabilityId": "complete-api-run",
+    "rootScenarioId": "complete-api-run",
+    "scenarios": [
+      {
+        "scenarioId": "complete-api-run",
+        "input": {
+          "inputId": "complete-api-run-request",
+          "contract": {
+            "contractId": "complete-api-run-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "complete-api-run-requested",
+          "executionAuthorityId": "complete-api-run.v1"
+        },
+        "outcome": {
+          "outcomeId": "complete-api-run-outcome",
+          "contract": {
+            "contractId": "complete-api-run-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "complete-api-run",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "complete-api-run.v1",
+        "owningScenarioId": "complete-api-run",
+        "operations": [
+          {
+            "operationId": "complete-api-run.prepare",
+            "kind": "invoke-port",
+            "portId": "complete-api-run-prepare"
+          },
+          {
+            "operationId": "complete-api-run.complete-prepare",
+            "kind": "invoke-port",
+            "portId": "complete-api-run-complete-prepare"
+          },
+          {
+            "operationId": "complete-api-run.complete",
+            "kind": "invoke-port",
+            "portId": "complete-api-run-complete"
+          },
+          {
+            "operationId": "complete-api-run.answer",
+            "kind": "invoke-port",
+            "portId": "complete-api-run-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "complete-api-run-cli",
+          "kind": "cli",
+          "rootScenarioId": "complete-api-run",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "complete-api-run-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "complete-api-run-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "complete-api-run-transform.v1"
+          }
+        },
+        {
+          "portId": "complete-api-run-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "p": {
+                  "op": "path",
+                  "path": "exited.payload"
+                },
+                "output": {
+                  "op": "path",
+                  "path": "delivery.outcome.result.outcome"
+                }
+              },
+              "value": {
+                "op": "merge",
+                "values": [
+                  {
+                    "op": "object",
+                    "fields": {
+                      "runId": {
+                        "op": "path",
+                        "path": "runId"
+                      },
+                      "admittedAt": {
+                        "op": "path",
+                        "path": "admittedAt"
+                      },
+                      "capability": {
+                        "op": "path",
+                        "path": "capability"
+                      },
+                      "state": {
+                        "op": "path",
+                        "path": "state",
+                        "from": "p"
+                      },
+                      "exitCode": {
+                        "op": "path",
+                        "path": "exitCode",
+                        "from": "p"
+                      },
+                      "startedAt": {
+                        "op": "path",
+                        "path": "startedAt"
+                      },
+                      "endedAt": {
+                        "op": "path",
+                        "path": "endedAt",
+                        "from": "p"
+                      }
+                    }
+                  },
+                  {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "type",
+                        "value": {
+                          "op": "path",
+                          "path": "failure",
+                          "from": "p"
+                        }
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "null"
+                      }
+                    },
+                    "then": {
+                      "op": "literal",
+                      "value": null
+                    },
+                    "else": {
+                      "op": "object",
+                      "fields": {
+                        "failure": {
+                          "op": "path",
+                          "path": "failure",
+                          "from": "p"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "op": "if",
+                    "when": {
+                      "op": "if",
+                      "when": {
+                        "op": "structural-equals",
+                        "left": {
+                          "op": "path",
+                          "path": "state",
+                          "from": "p"
+                        },
+                        "right": {
+                          "op": "literal",
+                          "value": "completed"
+                        }
+                      },
+                      "then": {
+                        "op": "includes",
+                        "in": {
+                          "op": "literal",
+                          "value": [
+                            "object",
+                            "array"
+                          ]
+                        },
+                        "value": {
+                          "op": "type",
+                          "value": {
+                            "op": "path",
+                            "path": "",
+                            "from": "output"
+                          }
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": false
+                      }
+                    },
+                    "then": {
+                      "op": "object",
+                      "fields": {
+                        "output": {
+                          "op": "path",
+                          "path": "",
+                          "from": "output"
+                        }
+                      }
+                    },
+                    "else": {
+                      "op": "literal",
+                      "value": null
+                    }
+                  },
+                  {
+                    "op": "object",
+                    "fields": {
+                      "latestCursor": {
+                        "op": "path",
+                        "path": "latestCursor"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "portId": "complete-api-run-complete-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "object",
+              "fields": {
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
+                "dispatchRequest": {
+                  "op": "object",
+                  "fields": {
+                    "dataSource": {
+                      "op": "literal",
+                      "value": "sfx-identity-database"
+                    },
+                    "statement": {
+                      "op": "literal",
+                      "value": "SET NOCOUNT ON; DECLARE @staged TABLE(value nvarchar(max)); DECLARE @digest varchar(64) = NULL; IF JSON_QUERY(@input, '$.output') IS NOT NULL BEGIN INSERT @staged EXEC evidence.stage_run_output @input = @input; SET @digest = (SELECT TOP (1) JSON_VALUE(value, '$.outputDigest') FROM @staged); END; DECLARE @run nvarchar(max) = (SELECT JSON_VALUE(@input, '$.runId') AS runId, JSON_VALUE(@input, '$.state') AS state, JSON_QUERY(@input, '$.capability') AS capability, TRY_CONVERT(int, JSON_VALUE(@input, '$.exitCode')) AS exitCode, JSON_QUERY(@input, '$.failure') AS failure, JSON_VALUE(@input, '$.startedAt') AS startedAt, JSON_VALUE(@input, '$.endedAt') AS endedAt, CONVERT(bit, 0) AS partial, JSON_QUERY((SELECT CONVERT(bit, CASE WHEN @digest IS NULL THEN 0 ELSE 1 END) AS available FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS output FOR JSON PATH, WITHOUT_ARRAY_WRAPPER); DECLARE @complete nvarchar(max) = (SELECT JSON_VALUE(@input, '$.runId') AS runId, N'sfx-api' AS writerId, JSON_VALUE(@input, '$.admittedAt') AS admittedAt, @digest AS outputDigest, COALESCE(TRY_CONVERT(bigint, JSON_VALUE(@input, '$.latestCursor')), 0) AS latestCursor, JSON_QUERY(@run) AS run FOR JSON PATH, WITHOUT_ARRAY_WRAPPER); EXEC evidence.complete_staged_run @input = @complete;"
+                    },
+                    "resultColumn": {
+                      "op": "literal",
+                      "value": "value"
+                    },
+                    "input": {
+                      "op": "path",
+                      "path": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "complete-api-run-complete",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "complete-api-run-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "if",
+              "when": {
+                "op": "equals",
+                "left": {
+                  "op": "type",
+                  "value": {
+                    "op": "path",
+                    "path": "result.value"
+                  }
+                },
+                "right": {
+                  "op": "literal",
+                  "value": "string"
+                }
+              },
+              "then": {
+                "op": "let",
+                "bindings": {
+                  "parsed": {
+                    "op": "try-parse-json",
+                    "value": {
+                      "op": "path",
+                      "path": "result.value"
+                    },
+                    "stripBom": true
+                  }
+                },
+                "value": {
+                  "op": "path",
+                  "path": "value",
+                  "from": "parsed"
+                }
+              },
+              "else": {
+                "op": "if",
+                "when": {
+                  "op": "equals",
+                  "left": {
+                    "op": "type",
+                    "value": {
+                      "op": "path",
+                      "path": "result.value"
+                    }
+                  },
+                  "right": {
+                    "op": "literal",
+                    "value": "object"
+                  }
+                },
+                "then": {
+                  "op": "path",
+                  "path": "result.value"
+                },
+                "else": {
+                  "op": "path",
+                  "path": "result"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "complete-api-run-request.v1": {
+          "schemaRef": "complete-api-run-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "runId",
+              "exited",
+              "delivery",
+              "latestCursor"
+            ]
+          }
+        },
+        "complete-api-run-result.v1": {
+          "schemaRef": "complete-api-run-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "complete-api-run-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "complete-api-run",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "complete-api-run",
+      "input_id": "complete-api-run-request",
+      "event_id": "complete-api-run-requested",
+      "responsibility": "the declaration composes what the run store keeps, and the run store stages the output and completes the run",
+      "outcome_id": "complete-api-run-outcome",
+      "scenario_definition_digest": "WtoKgK4RqVOKTo6Frkp+TJYtsaqZEwBfv6dPsapFf3E="
+    }
+  ]
+}

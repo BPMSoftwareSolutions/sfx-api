@@ -4,6 +4,11 @@ Date: 2026-11-03. From: sfx-api. To: SDA.
 
 Evidence: SDA source at `bcbdbec`, read in all three languages. Nothing was run.
 
+Status: answered by SDA `60aefbb` (2026-11-03), rules D10 and D11, with the same 11 conformance tests in all three
+languages. In C#, Python and Node, coherence is now per capability. Mechanics carried from another capability stand in
+only when they share its identity, and a delivery reports `outcome.evidence.authorities`. Under D11 the declaration
+cache serves a provider's earlier answers, keyed by generation and pin.
+
 ## What sfx-api is building
 
 The host binds a provider to `sda-kernel-declared-read-port.v1` (ADR-0020). It does what section 6, step 1 of

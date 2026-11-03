@@ -1,0 +1,1241 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "capture-estate-live-observation-facts",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "capture-estate-live-observation-facts",
+  "graphSource": {
+    "capabilityId": "capture-estate-live-observation-facts",
+    "rootScenarioId": "capture-estate-live-observation-facts",
+    "scenarios": [
+      {
+        "scenarioId": "capture-estate-live-observation-facts",
+        "input": {
+          "inputId": "capture-estate-live-observation-facts-request",
+          "contract": {
+            "contractId": "capture-estate-live-observation-facts-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "capture-estate-live-observation-facts-requested",
+          "executionAuthorityId": "capture-estate-live-observation-facts.v1"
+        },
+        "outcome": {
+          "outcomeId": "capture-estate-live-observation-facts-outcome",
+          "contract": {
+            "contractId": "capture-estate-live-observation-facts-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "capture-estate-live-observation-facts",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "capture-estate-live-observation-facts.v1",
+        "owningScenarioId": "capture-estate-live-observation-facts",
+        "operations": [
+          {
+            "operationId": "capture-estate-live-observation-facts.prepare",
+            "kind": "invoke-port",
+            "portId": "capture-estate-live-observation-facts-prepare"
+          },
+          {
+            "operationId": "capture-estate-live-observation-facts.ingest",
+            "kind": "invoke-port",
+            "portId": "capture-estate-live-observation-facts-ingest"
+          },
+          {
+            "operationId": "capture-estate-live-observation-facts.answer",
+            "kind": "invoke-port",
+            "portId": "capture-estate-live-observation-facts-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "capture-estate-live-observation-facts-cli",
+          "kind": "cli",
+          "rootScenarioId": "capture-estate-live-observation-facts",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "capture-estate-live-observation-facts-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "capture-estate-live-observation-facts-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "capture-estate-live-observation-facts-transform.v1"
+          }
+        },
+        {
+          "portId": "capture-estate-live-observation-facts-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "facts": {
+                  "op": "map",
+                  "as": "x",
+                  "value": {
+                    "op": "let",
+                    "bindings": {
+                      "p": {
+                        "op": "path",
+                        "path": "event.payload",
+                        "from": "x"
+                      },
+                      "fields": {
+                        "op": "object-from-entries",
+                        "value": {
+                          "op": "filter",
+                          "as": "m",
+                          "where": {
+                            "op": "if",
+                            "when": {
+                              "op": "equals",
+                              "left": {
+                                "op": "type",
+                                "value": {
+                                  "op": "path",
+                                  "path": "value",
+                                  "from": "m"
+                                }
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": "null"
+                              }
+                            },
+                            "then": {
+                              "op": "literal",
+                              "value": false
+                            },
+                            "else": {
+                              "op": "literal",
+                              "value": true
+                            }
+                          },
+                          "from": {
+                            "op": "map",
+                            "from": {
+                              "op": "literal",
+                              "value": [
+                                {
+                                  "key": "rootExecutionId",
+                                  "maximum": 200
+                                },
+                                {
+                                  "key": "parentRootExecutionId",
+                                  "maximum": 200
+                                },
+                                {
+                                  "key": "invokingCellId",
+                                  "maximum": 200
+                                },
+                                {
+                                  "key": "invokingCellExecutionId",
+                                  "maximum": 200
+                                },
+                                {
+                                  "key": "capabilityId",
+                                  "maximum": 400
+                                },
+                                {
+                                  "key": "admissionRef",
+                                  "maximum": 400
+                                },
+                                {
+                                  "key": "authorityRevision",
+                                  "maximum": 100
+                                },
+                                {
+                                  "key": "correlationRef",
+                                  "maximum": 400
+                                }
+                              ]
+                            },
+                            "as": "d",
+                            "value": {
+                              "op": "let",
+                              "bindings": {
+                                "v": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "equals",
+                                    "left": {
+                                      "op": "type",
+                                      "value": {
+                                        "op": "lookup",
+                                        "value": {
+                                          "op": "path",
+                                          "path": "event",
+                                          "from": "x"
+                                        },
+                                        "path": {
+                                          "op": "path",
+                                          "path": "key",
+                                          "from": "d"
+                                        }
+                                      }
+                                    },
+                                    "right": {
+                                      "op": "literal",
+                                      "value": "null"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "lookup",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "p"
+                                    },
+                                    "path": {
+                                      "op": "path",
+                                      "path": "key",
+                                      "from": "d"
+                                    }
+                                  },
+                                  "else": {
+                                    "op": "lookup",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "event",
+                                      "from": "x"
+                                    },
+                                    "path": {
+                                      "op": "path",
+                                      "path": "key",
+                                      "from": "d"
+                                    }
+                                  }
+                                }
+                              },
+                              "value": {
+                                "op": "if",
+                                "when": {
+                                  "op": "equals",
+                                  "left": {
+                                    "op": "type",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "v"
+                                    }
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "null"
+                                  }
+                                },
+                                "then": {
+                                  "op": "object",
+                                  "fields": {
+                                    "key": {
+                                      "op": "path",
+                                      "path": "key",
+                                      "from": "d"
+                                    },
+                                    "value": {
+                                      "op": "literal",
+                                      "value": null
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "if",
+                                    "when": {
+                                      "op": "equals",
+                                      "left": {
+                                        "op": "type",
+                                        "value": {
+                                          "op": "path",
+                                          "path": "",
+                                          "from": "v"
+                                        }
+                                      },
+                                      "right": {
+                                        "op": "literal",
+                                        "value": "string"
+                                      }
+                                    },
+                                    "then": {
+                                      "op": "if",
+                                      "when": {
+                                        "op": "path",
+                                        "path": "",
+                                        "from": "v"
+                                      },
+                                      "then": {
+                                        "op": "greater-than",
+                                        "left": {
+                                          "op": "add",
+                                          "left": {
+                                            "op": "path",
+                                            "path": "maximum",
+                                            "from": "d"
+                                          },
+                                          "right": {
+                                            "op": "literal",
+                                            "value": 1
+                                          }
+                                        },
+                                        "right": {
+                                          "op": "length",
+                                          "value": {
+                                            "op": "path",
+                                            "path": "",
+                                            "from": "v"
+                                          }
+                                        }
+                                      },
+                                      "else": {
+                                        "op": "literal",
+                                        "value": false
+                                      }
+                                    },
+                                    "else": {
+                                      "op": "literal",
+                                      "value": false
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "object",
+                                    "fields": {
+                                      "key": {
+                                        "op": "path",
+                                        "path": "key",
+                                        "from": "d"
+                                      },
+                                      "value": {
+                                        "op": "path",
+                                        "path": "",
+                                        "from": "v"
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "op": "refuse",
+                                    "code": "ESTATE_FACT_FIELD_INVALID"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "occurredAt": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "path",
+                              "path": "occurredAt",
+                              "from": "p"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "string"
+                          }
+                        },
+                        "then": {
+                          "op": "path",
+                          "path": "occurredAt",
+                          "from": "p"
+                        },
+                        "else": {
+                          "op": "path",
+                          "path": "observedAt",
+                          "from": "p"
+                        }
+                      },
+                      "capability": {
+                        "op": "if",
+                        "when": {
+                          "op": "if",
+                          "when": {
+                            "op": "structural-equals",
+                            "left": {
+                              "op": "path",
+                              "path": "event.kind",
+                              "from": "x"
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "execution-ingress-capture.v1"
+                            }
+                          },
+                          "then": {
+                            "op": "structural-equals",
+                            "left": {
+                              "op": "path",
+                              "path": "kind",
+                              "from": "p"
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "admission"
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": false
+                          }
+                        },
+                        "then": {
+                          "op": "if",
+                          "when": {
+                            "op": "if",
+                            "when": {
+                              "op": "equals",
+                              "left": {
+                                "op": "type",
+                                "value": {
+                                  "op": "path",
+                                  "path": "parentRootExecutionId",
+                                  "from": "fields"
+                                }
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": "null"
+                              }
+                            },
+                            "then": {
+                              "op": "if",
+                              "when": {
+                                "op": "equals",
+                                "left": {
+                                  "op": "type",
+                                  "value": {
+                                    "op": "path",
+                                    "path": "capabilityId",
+                                    "from": "fields"
+                                  }
+                                },
+                                "right": {
+                                  "op": "literal",
+                                  "value": "null"
+                                }
+                              },
+                              "then": {
+                                "op": "literal",
+                                "value": false
+                              },
+                              "else": {
+                                "op": "if",
+                                "when": {
+                                  "op": "structural-equals",
+                                  "left": {
+                                    "op": "path",
+                                    "path": "capabilityId",
+                                    "from": "fields"
+                                  },
+                                  "right": {
+                                    "op": "path",
+                                    "path": "execution.capability.subject"
+                                  }
+                                },
+                                "then": {
+                                  "op": "literal",
+                                  "value": false
+                                },
+                                "else": {
+                                  "op": "literal",
+                                  "value": true
+                                }
+                              }
+                            },
+                            "else": {
+                              "op": "literal",
+                              "value": true
+                            }
+                          },
+                          "then": {
+                            "op": "refuse",
+                            "code": "ESTATE_ROOT_BINDING_CONFLICT"
+                          },
+                          "else": {
+                            "op": "path",
+                            "path": "execution.capability.subject"
+                          }
+                        },
+                        "else": {
+                          "op": "path",
+                          "path": "capabilityId",
+                          "from": "fields"
+                        }
+                      }
+                    },
+                    "value": {
+                      "op": "if",
+                      "when": {
+                        "op": "if",
+                        "when": {
+                          "op": "structural-equals",
+                          "left": {
+                            "op": "path",
+                            "path": "kind",
+                            "from": "p"
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "admission"
+                          }
+                        },
+                        "then": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "path",
+                              "path": "",
+                              "from": "capability"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "null"
+                          }
+                        },
+                        "else": {
+                          "op": "literal",
+                          "value": false
+                        }
+                      },
+                      "then": {
+                        "op": "refuse",
+                        "code": "ESTATE_ADMISSION_CAPABILITY_REQUIRED"
+                      },
+                      "else": {
+                        "op": "if",
+                        "when": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "type",
+                              "value": {
+                                "op": "path",
+                                "path": "",
+                                "from": "occurredAt"
+                              }
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "string"
+                            }
+                          },
+                          "then": {
+                            "op": "equals",
+                            "left": {
+                              "op": "type",
+                              "value": {
+                                "op": "path",
+                                "path": "event.at",
+                                "from": "x"
+                              }
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "string"
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": false
+                          }
+                        },
+                        "then": {
+                          "op": "merge",
+                          "values": [
+                            {
+                              "op": "object",
+                              "fields": {
+                                "eventId": {
+                                  "op": "path",
+                                  "path": "event.eventId",
+                                  "from": "x"
+                                },
+                                "kind": {
+                                  "op": "path",
+                                  "path": "kind",
+                                  "from": "p"
+                                },
+                                "runId": {
+                                  "op": "path",
+                                  "path": "execution.executionId"
+                                }
+                              }
+                            },
+                            {
+                              "op": "path",
+                              "path": "",
+                              "from": "fields"
+                            },
+                            {
+                              "op": "if",
+                              "when": {
+                                "op": "equals",
+                                "left": {
+                                  "op": "type",
+                                  "value": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "capability"
+                                  }
+                                },
+                                "right": {
+                                  "op": "literal",
+                                  "value": "null"
+                                }
+                              },
+                              "then": {
+                                "op": "literal",
+                                "value": null
+                              },
+                              "else": {
+                                "op": "object",
+                                "fields": {
+                                  "capabilityId": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "capability"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "op": "object",
+                              "fields": {
+                                "occurredAt": {
+                                  "op": "path",
+                                  "path": "",
+                                  "from": "occurredAt"
+                                },
+                                "recordedAt": {
+                                  "op": "path",
+                                  "path": "event.at",
+                                  "from": "x"
+                                },
+                                "evidenceRef": {
+                                  "op": "path",
+                                  "path": "event.eventId",
+                                  "from": "x"
+                                }
+                              }
+                            },
+                            {
+                              "op": "if",
+                              "when": {
+                                "op": "equals",
+                                "left": {
+                                  "op": "type",
+                                  "value": {
+                                    "op": "path",
+                                    "path": "surface",
+                                    "from": "p"
+                                  }
+                                },
+                                "right": {
+                                  "op": "literal",
+                                  "value": "string"
+                                }
+                              },
+                              "then": {
+                                "op": "object",
+                                "fields": {
+                                  "ingress": {
+                                    "op": "object-from-entries",
+                                    "value": {
+                                      "op": "filter",
+                                      "as": "m",
+                                      "where": {
+                                        "op": "literal",
+                                        "value": true
+                                      },
+                                      "from": {
+                                        "op": "flat-map",
+                                        "from": {
+                                          "op": "literal",
+                                          "value": [
+                                            "surface",
+                                            "receiptRef",
+                                            "authenticatedClientRef",
+                                            "classification",
+                                            "classificationBasis",
+                                            "callerSuppliedLabel"
+                                          ]
+                                        },
+                                        "as": "k",
+                                        "value": {
+                                          "op": "if",
+                                          "when": {
+                                            "op": "includes",
+                                            "in": {
+                                              "op": "literal",
+                                              "value": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            },
+                                            "value": {
+                                              "op": "type",
+                                              "value": {
+                                                "op": "lookup",
+                                                "value": {
+                                                  "op": "path",
+                                                  "path": "",
+                                                  "from": "p"
+                                                },
+                                                "path": {
+                                                  "op": "path",
+                                                  "path": "",
+                                                  "from": "k"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "then": {
+                                            "op": "array",
+                                            "items": [
+                                              {
+                                                "op": "object",
+                                                "fields": {
+                                                  "key": {
+                                                    "op": "path",
+                                                    "path": "",
+                                                    "from": "k"
+                                                  },
+                                                  "value": {
+                                                    "op": "lookup",
+                                                    "value": {
+                                                      "op": "path",
+                                                      "path": "",
+                                                      "from": "p"
+                                                    },
+                                                    "path": {
+                                                      "op": "path",
+                                                      "path": "",
+                                                      "from": "k"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          },
+                                          "else": {
+                                            "op": "literal",
+                                            "value": []
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "else": {
+                                "op": "literal",
+                                "value": null
+                              }
+                            }
+                          ]
+                        },
+                        "else": {
+                          "op": "refuse",
+                          "code": "ESTATE_FACT_TIME_REQUIRED"
+                        }
+                      }
+                    }
+                  },
+                  "from": {
+                    "op": "filter",
+                    "from": {
+                      "op": "map",
+                      "from": {
+                        "op": "path",
+                        "path": "events"
+                      },
+                      "as": "ev",
+                      "value": {
+                        "op": "object",
+                        "fields": {
+                          "event": {
+                            "op": "path",
+                            "path": "",
+                            "from": "ev"
+                          }
+                        }
+                      }
+                    },
+                    "as": "x",
+                    "where": {
+                      "op": "if",
+                      "when": {
+                        "op": "includes",
+                        "in": {
+                          "op": "literal",
+                          "value": [
+                            "admission",
+                            "return",
+                            "failure",
+                            "correlation",
+                            "interaction",
+                            "gap"
+                          ]
+                        },
+                        "value": {
+                          "op": "lookup",
+                          "value": {
+                            "op": "path",
+                            "path": "event.payload",
+                            "from": "x"
+                          },
+                          "path": {
+                            "op": "literal",
+                            "value": "kind"
+                          }
+                        }
+                      },
+                      "then": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "path",
+                              "path": "event.rootExecutionId",
+                              "from": "x"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "string"
+                          }
+                        },
+                        "then": {
+                          "op": "literal",
+                          "value": true
+                        },
+                        "else": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "lookup",
+                              "value": {
+                                "op": "path",
+                                "path": "event.payload",
+                                "from": "x"
+                              },
+                              "path": {
+                                "op": "literal",
+                                "value": "rootExecutionId"
+                              }
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "string"
+                          }
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": false
+                      }
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "if",
+                "when": {
+                  "op": "length",
+                  "value": {
+                    "op": "path",
+                    "path": "",
+                    "from": "facts"
+                  }
+                },
+                "then": {
+                  "op": "object",
+                  "fields": {
+                    "executionTarget": {
+                      "op": "literal",
+                      "value": "apply-declared-change"
+                    },
+                    "executionNamespace": {
+                      "op": "literal",
+                      "value": "sidefx:capabilities"
+                    },
+                    "executionScenario": {
+                      "op": "literal",
+                      "value": "apply-declared-change"
+                    },
+                    "inputType": {
+                      "op": "literal",
+                      "value": "json"
+                    },
+                    "dispatchRequest": {
+                      "op": "object",
+                      "fields": {
+                        "contractId": {
+                          "op": "literal",
+                          "value": "declared-change.v1"
+                        },
+                        "changeKind": {
+                          "op": "literal",
+                          "value": "execution-fact-ingestion"
+                        },
+                        "payload": {
+                          "op": "object",
+                          "fields": {
+                            "contractId": {
+                              "op": "literal",
+                              "value": "execution-fact-ingestion-change.v1"
+                            },
+                            "source": {
+                              "op": "literal",
+                              "value": {
+                                "sourceId": "platform-hosted-execution-v1",
+                                "label": "Hosted execution admissions and outcomes",
+                                "state": "partial"
+                              }
+                            },
+                            "facts": {
+                              "op": "path",
+                              "path": "",
+                              "from": "facts"
+                            },
+                            "verificationCapabilityId": {
+                              "op": "literal",
+                              "value": "read-estate-execution-coverage"
+                            },
+                            "preflight": {
+                              "op": "literal",
+                              "value": {
+                                "input": {},
+                                "expected": {
+                                  "status": "READ"
+                                }
+                              }
+                            },
+                            "route": {
+                              "op": "literal",
+                              "value": {
+                                "resolvedDisposition": "RETURNED"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "op": "refuse",
+                  "code": "ESTATE_FACTS_NONE"
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "capture-estate-live-observation-facts-ingest",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "capture-estate-live-observation-facts-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "receipt": {
+                  "op": "find",
+                  "as": "v",
+                  "where": {
+                    "op": "structural-equals",
+                    "left": {
+                      "op": "lookup",
+                      "value": {
+                        "op": "path",
+                        "path": "",
+                        "from": "v"
+                      },
+                      "path": {
+                        "op": "literal",
+                        "value": "contractId"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "execution-fact-ingestion-receipt.v1"
+                    }
+                  },
+                  "from": {
+                    "op": "map",
+                    "as": "row",
+                    "from": {
+                      "op": "flat-map",
+                      "from": {
+                        "op": "path",
+                        "path": "result.result"
+                      },
+                      "as": "set",
+                      "value": {
+                        "op": "path",
+                        "path": "",
+                        "from": "set"
+                      }
+                    },
+                    "value": {
+                      "op": "if",
+                      "when": {
+                        "op": "equals",
+                        "left": {
+                          "op": "type",
+                          "value": {
+                            "op": "path",
+                            "path": "value",
+                            "from": "row"
+                          }
+                        },
+                        "right": {
+                          "op": "literal",
+                          "value": "string"
+                        }
+                      },
+                      "then": {
+                        "op": "let",
+                        "bindings": {
+                          "parsed": {
+                            "op": "try-parse-json",
+                            "value": {
+                              "op": "path",
+                              "path": "value",
+                              "from": "row"
+                            }
+                          }
+                        },
+                        "value": {
+                          "op": "path",
+                          "path": "value",
+                          "from": "parsed"
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": null
+                      }
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "if",
+                "when": {
+                  "op": "if",
+                  "when": {
+                    "op": "structural-equals",
+                    "left": {
+                      "op": "path",
+                      "path": "result.contractId"
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "declared-change-receipt.v1"
+                    }
+                  },
+                  "then": {
+                    "op": "if",
+                    "when": {
+                      "op": "structural-equals",
+                      "left": {
+                        "op": "path",
+                        "path": "result.disposition"
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "COMMITTED"
+                      }
+                    },
+                    "then": {
+                      "op": "if",
+                      "when": {
+                        "op": "structural-equals",
+                        "left": {
+                          "op": "path",
+                          "path": "status",
+                          "from": "receipt"
+                        },
+                        "right": {
+                          "op": "literal",
+                          "value": "INGESTED"
+                        }
+                      },
+                      "then": {
+                        "op": "structural-equals",
+                        "left": {
+                          "op": "path",
+                          "path": "summary.conflictsWithheld",
+                          "from": "receipt"
+                        },
+                        "right": {
+                          "op": "literal",
+                          "value": 0
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": false
+                      }
+                    },
+                    "else": {
+                      "op": "literal",
+                      "value": false
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": false
+                  }
+                },
+                "then": {
+                  "op": "object",
+                  "fields": {
+                    "contractId": {
+                      "op": "literal",
+                      "value": "capture-estate-live-observation-facts-result.v1"
+                    },
+                    "status": {
+                      "op": "literal",
+                      "value": "CAPTURED"
+                    },
+                    "summary": {
+                      "op": "path",
+                      "path": "summary",
+                      "from": "receipt"
+                    }
+                  }
+                },
+                "else": {
+                  "op": "object",
+                  "fields": {
+                    "code": {
+                      "op": "literal",
+                      "value": "CELL_EXECUTION_FAILED"
+                    },
+                    "message": {
+                      "op": "literal",
+                      "value": "ESTATE_INGESTION_OUTCOME_UNCONFIRMED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "capture-estate-live-observation-facts-request.v1": {
+          "schemaRef": "capture-estate-live-observation-facts-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "execution",
+              "events"
+            ],
+            "properties": {
+              "execution": {
+                "type": "object"
+              },
+              "events": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        "capture-estate-live-observation-facts-result.v1": {
+          "schemaRef": "capture-estate-live-observation-facts-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "capture-estate-live-observation-facts-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "capture-estate-live-observation-facts",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "capture-estate-live-observation-facts",
+      "input_id": "capture-estate-live-observation-facts-request",
+      "event_id": "capture-estate-live-observation-facts-requested",
+      "responsibility": "its facts are derived and ingested through apply-declared-change",
+      "outcome_id": "capture-estate-live-observation-facts-outcome",
+      "scenario_definition_digest": "KVEq65tzE84sX2QRtacoTpflAH5Zj7eoRxtgd86WLu8="
+    }
+  ]
+}

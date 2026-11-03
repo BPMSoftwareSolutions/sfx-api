@@ -2,9 +2,10 @@
 
 Proposed for the owner's review, 2026-11-02. Seventeen files replaced the twelve feature files that were here at
 `a57ebba`. On 2026-11-03 the declared-read provider's feature became a provider capability's,
-answer-host-declared-read.feature, and five more were added for the host's other provider capabilities. Those six follow
-the owner's example (`.tmp/tmp_data.txt`): each file carries its own status tags and terms, and each scenario names the
-entry capability and every provider it invokes.
+answer-host-declared-read.feature. Five more were added for the host's other provider capabilities, eleven for the
+capabilities the ingress and the frontdoor invoke that had none, and one for the bundle-read provider. Those eighteen follow the owner's example
+(`.tmp/tmp_data.txt`): each file carries its own status tags and terms, and each scenario names the entry capability and
+every provider it invokes.
 
 What this is: the behaviour of the sfx-api host as Gherkin, with one canonical feature per capability the host
 declares or needs, its provider capabilities included. The facade (`host/serve.py` with `deploy/`) and the container's
@@ -124,15 +125,16 @@ The objectives:
 
 | SLO | SLI | Target | Baseline | Status | Feature |
 | --- | --- | --- | --- | --- | --- |
-| `frontdoor-warm-latency` | server time of a request answered by a warm request kernel on sfx-api-test: time to first byte minus the TLS handshake, nearest-rank percentiles over 30 sequential requests | p50 at most 0.88 s and p95 at most 3.35 s | p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image `f32450fa`, kernel `39881693`, 2026-10-31) | proven | serve-api-request |
+| `frontdoor-warm-latency` | server time of a request answered by a warm request kernel on sfx-api-test: time to first byte minus the TLS handshake, nearest-rank percentiles over 30 sequential requests | p50 at most 0.88 s and p95 at most 3.35 s | p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image `f32450fa`, kernel `39881693`, 2026-10-31) | proven | serve-http-request, serve-api-request, the two ingress providers, answer-host-declared-read |
 | `frontdoor-tail-explained` | warm requests over 1.05 s whose cause the delivery's evidence names | every one (proposed) | 5 of 30 took 1.2 to 4.0 s, cause open: the facade keeps no kernel evidence | not-built | host-facade |
-| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed | serve-api-request, answer-host-declared-read |
+| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed with the port unbound; not met with it bound: 6 queries, not 2, per warm envelope (SDA `05ff751`, WSL; [request](../docs/request-sda-warm-envelope-round-trips.md)) | serve-api-request, answer-api-response, answer-host-declared-read |
 | `request-answer-bound` (SLA) | time from a request's receipt to its answer | within App Service's 230 s: by its kernel within 228 s, a 503 after 2 s without a free kernel, or a 502 when the delivery fails | the kernel's answer bound, 228000 ms (sfx-api.config.json) | installed (228 s), not-built (2 s) | host-facade, read-api-host-configuration |
 | `no-kernel-start-on-request` | kernel starts a request pays once the host listens | none | the first request after the `f32450fa` swap took 13.8 s, including the kernel's start; the `64f3a28` site's warm-up probe paid it | probed | host-facade |
 | `abandoned-request-release` | time a kernel stays held after its client gives up | released when the client goes (proposed) | 30 abandoned requests queued the next request 68 s (WSL) | not-built | host-facade |
 | `session-setup` | the kernel's estate session setup per envelope | at most 0.34 s, until SDA's KV-001 | 0.25 to 0.34 s, the generation read included | probed | answer-host-declared-read |
-| `sign-in-refused-latency` | server time of a refused sign-in on sfx-api-test (`POST /sfx/v1/session`, empty identifier) | at most 0.47 s | 0.47 s and 0.46 s (2026-10-31) | proven | open-api-session (no feature yet) |
-| `sign-in-latency` | server time on sfx-api-test of a sign-in sfx-identity-login-open answers | none set: the record has no measurement | none | not-built | sfx-identity-login-open |
+| `dispatched-request-latency` | server time on sfx-api-test of a request the frontdoor dispatches to a capability, per operation | set from its first baseline | none: frontdoor-warm-latency measured refusals only (404, and 401 without a credential), for which nothing is dispatched | not-built | read-run-state, read-run-output, read-run-graphs, read-api-session, revoke-api-session, read-api-estate-scopes |
+| `sign-in-refused-latency` | server time of a refused sign-in on sfx-api-test (`POST /sfx/v1/session`, empty identifier) | at most 0.47 s | 0.47 s and 0.46 s (2026-10-31) | proven | serve-http-request |
+| `sign-in-latency` | server time on sfx-api-test of a sign-in sfx-identity-login-open answers | none set: the record has no measurement | none | not-built | open-api-session, sfx-identity-login-open |
 | `run-event-delivery` | time from an observation to its run stream frame | written as observed; a quiet stream writes a keep-alive every 15 s | events delivered as written over 2 s (stand-in) | probed | open-api-run-stream |
 | `session-recheck` | interval of an open stream's session recheck | every 5000 ms, shared by the streams of one session | 3 rechecks, not 6 (stand-in) | probed | check-api-session |
 | `channel-batch` | events and bytes per publish batch | at most 200 events and 1 MiB | declared | installed | publish-estate-live-observation |
@@ -173,13 +175,25 @@ not served.
 | --- | --- | --: | --: | --: | --: | --: | --: | --: | --: |
 | [host-facade](host-facade.feature) | the facade | 37 | 2 | | | 2 | 16 | 19 | |
 | [read-api-host-configuration](read-api-host-configuration.feature) | proposed capability | 5 | 1 | | | | 1 | 4 | |
-| [answer-host-declared-read](answer-host-declared-read.feature) | proposed provider capability | 24 | | | | 1 | 3 | 20 | |
+| [answer-host-declared-read](answer-host-declared-read.feature) | proposed provider capability | 25 | | | | 1 | 3 | 21 | |
+| [sfx-api-host-bundle-read](sfx-api-host-bundle-read.feature) | proposed provider capability | 8 | | | | | | 8 | |
 | [sfx-api-ingress-resolve](sfx-api-ingress-resolve.feature) | provider capability | 18 | | | 1 | 8 | 5 | 4 | |
 | [sfx-api-ingress-compose](sfx-api-ingress-compose.feature) | provider capability | 9 | | | 1 | 1 | 4 | 3 | |
 | [sfx-api-run-trace-encode](sfx-api-run-trace-encode.feature) | provider capability | 8 | | | 2 | 1 | 1 | 4 | |
 | [sfx-identity-login-open](sfx-identity-login-open.feature) | provider capability | 14 | | | | 2 | 8 | 4 | |
 | [sfx-identity-login-derive](sfx-identity-login-derive.feature) | provider capability | 7 | | | 1 | | 3 | 3 | |
+| [serve-http-request](serve-http-request.feature) | serve-http-request | 6 | | | 2 | 2 | 1 | 1 | |
+| [resolve-http-request](resolve-http-request.feature) | resolve-http-request | 3 | | | | 1 | 1 | 1 | |
 | [serve-api-request](serve-api-request.feature) | serve-api-request | 4 | 1 | | 1 | 1 | 1 | 1 | |
+| [answer-api-response](answer-api-response.feature) | answer-api-response | 3 | | | | 1 | 2 | | |
+| [open-api-session](open-api-session.feature) | open-api-session | 6 | | | | 1 | 3 | 2 | |
+| [verify-password-derivation](verify-password-derivation.feature) | verify-password-derivation | 4 | | | 1 | | 2 | 1 | |
+| [read-api-session](read-api-session.feature) | read-api-session | 3 | | | | 1 | 1 | 1 | |
+| [revoke-api-session](revoke-api-session.feature) | revoke-api-session | 6 | | | | 1 | 3 | 2 | |
+| [read-api-estate-scopes](read-api-estate-scopes.feature) | read-api-estate-scopes | 3 | | | | | 2 | 1 | |
+| [read-run-state](read-run-state.feature) | read-run-state | 5 | | | | 1 | 2 | 2 | |
+| [read-run-output](read-run-output.feature) | read-run-output | 5 | | | 1 | | 2 | 2 | |
+| [read-run-graphs](read-run-graphs.feature) | read-run-graphs | 5 | | | | | 3 | 2 | |
 | [admit-api-run-live](admit-api-run-live.feature) | admit-api-run-live | 7 | 1 | | | | 3 | 4 | |
 | [project-api-run-events](project-api-run-events.feature) | proposed capability | 12 | 4 | | | | 4 | 7 | 1 |
 | [open-api-run-stream](open-api-run-stream.feature) | open-api-run-stream | 7 | | | | 1 | 1 | 5 | |
@@ -193,7 +207,7 @@ not served.
 | [read-estate-drawing-changes](read-estate-drawing-changes.feature) | read-estate-drawing-changes | 14 | | | | | 7 | 2 | 5 |
 | [capture-estate-live-observation](capture-estate-live-observation.feature) | capture-estate-live-observation | 13 | 2 | | | | 1 | 3 | 9 |
 | [durable-credential-vault](durable-credential-vault.feature) | the container's vault | 4 | 4 | | | | 2 | | 2 |
-| **Total** | | **251** | **49** | **5** | **7** | **18** | **94** | **106** | **26** |
+| **Total** | | **309** | **49** | **5** | **11** | **26** | **116** | **130** | **26** |
 
 Findings: 25 hidden authority, 15 fallbacks and 29 misaligned.
 
@@ -202,6 +216,8 @@ Proposed capabilities these features name:
 - `project-api-run-events`: the run event shape (declarations/26);
 - `answer-host-declared-read`: the host's declared-read provider, declared in SEJ in the host's bundle and bound to
   `sda-kernel-declared-read-port.v1` (answer-host-declared-read.feature). Not declared yet.
+- `sfx-api-host-bundle-read`: the provider that reads a bundle document only under the digest the manifest names
+  (sfx-api-host-bundle-read.feature). Not declared yet.
 
 The five provider capabilities of 2026-11-03 are declared today: their programs are this repo's `providers/`, and the
 estate holds each as a PROVIDER on its DEPENDENCY definition.
@@ -268,32 +284,52 @@ did. Their scenarios now say what it must do, and the code they cited is in the 
 
 ## Not yet accounted for
 
-These capabilities are declared in this repo, or have their SEJ here, but have no canonical feature yet. Their
-behaviour is in their declarations and in the top-level README.md, not in a feature:
-- serve-http-request (07), apart from what host-facade.feature says the facade hands it;
-- resolve-http-request (08);
-- open-api-session (09);
-- verify-password-derivation (10);
-- read-api-estate-scopes (16);
-- serve-api-request (03; now declarations/27 and sej/serve-api-request.sej.json), apart from its interface and the
-  legacy output path;
-- answer-api-response (03);
-- resolve-api-request and compose-api-response (02);
-- read-run-state, read-run-output and read-run-graphs (04);
-- admit-api-run (05, 06);
+These are declared in this repo, or have their SEJ here, but no canonical feature states their behaviour yet:
+- serve-api-request's stages (declarations/27 and sej/serve-api-request.sej.json), apart from its interface, the legacy
+  output path and its service levels;
 - admit-api-run-live's idempotency (11);
-- the SEJ-pure overlay bindings (01);
-- read-api-session and revoke-api-session (sej/).
+- the SEJ-pure overlay bindings (01).
+
+These three are declared but nothing the host serves invokes them: no operation of the interface resolves to them and
+no live capability names them (the estate's compiled declarations, run `4d1c2e4f`). They need either a feature or a
+declared retirement:
+- resolve-api-request and compose-api-response (02);
+- admit-api-run (05, 06), the synchronous admission that admit-run resolved to before admit-api-run-live (definition
+  `253230`, its rollback).
 
 One more gap:
 - **The retired capabilities.** open-api-estate-stream (17) and project-api-estate-events (18) were removed from declarations/ on 2026-11-02. Their estate rows are retired by a declared change (subscribe-estate-live-observation.feature).
 
 ## What waits on SDA
 
-- **One delivery, two sources.** Every host delivery reads capabilities from the bundle and from the estate, but at
-  `bcbdbec` each kernel refuses a delivery whose capabilities carry different identities. Until SDA changes that, no
-  capability can be served from the bundle ([request](../docs/request-sda-one-delivery-two-sources.md);
-  answer-host-declared-read.feature).
+- **One delivery, two sources.** Answered by SDA `60aefbb` (2026-11-03, D10 and D11): coherence is per capability, a
+  delivery reports `outcome.evidence.authorities`, and the declaration cache serves a provider's answers by generation
+  and pin ([request](../docs/request-sda-one-delivery-two-sources.md); answer-host-declared-read.feature).
+- **A declared capability bound to the declared-read port.** Answered by SDA `1bd400e` (2026-11-03, D12 to D14): the
+  binding's configuration carries the capability's graph source, the configured generic invocation runs it on the
+  delivery's session, and `sda-kernel-built-in-read.v1` is the built-in read step. The kernel checks no digest; the
+  bundle's pin and its check are the host's ([request](../docs/request-sda-declared-provider-at-the-port.md);
+  answer-host-declared-read.feature, sfx-api-host-bundle-read.feature).
+- **The configured provider's runner and the host's own bindings.** Answered by SDA `05ff751` (2026-11-03, D13 to
+  D15):
+  - D13 runs the bound capability through `run-declared-graph`.
+  - D14's step is realized from SDA's registry.
+  - D15 lets the host declare its own overlay rules and providers, and every place a delivery realizes an overlay uses
+    them.
+
+  On the kernel built from `05ff751` (artifact `eb800401`), the new facade ran all six kernels on WSL against the
+  estate. It answered every request as the host now serving answers it: 404 `OPERATION_NOT_DECLARED`, 401
+  `CALLER_REQUIRED`, and 400 `LOGIN_INPUT_INVALID`. Every bundle capability was read under the pin.
+
+  The host declares the bundle reader and its five providers under `.v2` identities
+  (`providers/host-provider-authority.json`). The estate's `.v1` copies serve the host now running until the new image
+  replaces it, then a declared change retires them ([request](../docs/request-sda-host-provider-bindings.md)).
+- **Warm envelopes with a provider at the port.** Open, not blocking. With the port bound, a warm envelope makes 6
+  database queries, against 2 unbound, on the same kernel. The kernel's CPU is the same. The four round trips add about
+  0.34 s to each request from WSL, and should add tens of milliseconds on `sfx-api-test`. Two causes appear in the
+  source: the resident loop reads the command vocabulary on every envelope, and the port's configured capability reads
+  its execution delivery and runner on a data access the declaration cache does not serve. Until they are fixed,
+  `warm-definitions` is not met on the bundle path ([request](../docs/request-sda-warm-envelope-round-trips.md)).
 - **The kernel's estate session behind a host-bound port.** This is SDA's next KV-001 step. Until it ships, every delivery needs the estate. SDA bcbdbec (rule D9) closed the other half: the provider now passes a read through `builtInRead`, in the delivery's own session, pin and impersonation, and needs no estate reader or credential of its own (answer-host-declared-read.feature).
 - **A byte input.** Whether the kernel takes a byte input, so a request's bytes reach the ingress unchanged, has not been checked (host-facade.feature).
 

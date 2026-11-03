@@ -1,0 +1,3643 @@
+{
+  "meaning": "The host's provider authority (answer-host-declared-read.feature). It binds SDA's declared-read port to answer-host-declared-read through SDA's generic capability-invocation provider in its configured form (SDA 1bd400e, D12 and D13): the capability's graph source is this entry's configuration, so it goes out with the image and the kernel reads no document for it. The capability reads the bundle's manifest against the pin, answers every read of a capability the manifest owns from that capability's document under the pin, and passes every other read to the built-in read step (D14). Paths are relative to the kernel's install root, where the facade starts every kernel. The host's own overlay rules and declared providers (SDA D15) bind the bundle reader and the host's five providers under their v2 identities, from this repo's providers/ programs, so no host program is taken from the estate's run capability; the estate's v1 copies stay until the image that carries this replaces the host now serving.",
+  "eventPorts": [
+    {
+      "platformCapabilityId": "sda-kernel-declared-read-port.v1",
+      "kind": "direct",
+      "invocation": "configuration",
+      "providerModule": "bootstrap/RequestNamedCapabilityInvocationProvider.cs",
+      "providerExport": "InvokeConfiguredCapability",
+      "configuration": {
+        "graphSource": {
+          "capabilityId": "answer-host-declared-read",
+          "rootScenarioId": "answer-host-declared-read",
+          "scenarios": [
+            {
+              "scenarioId": "answer-host-declared-read",
+              "input": {
+                "inputId": "answer-host-declared-read-request",
+                "contract": {
+                  "contractId": "declared-read-request.v1"
+                }
+              },
+              "event": {
+                "eventId": "answer-host-declared-read-requested",
+                "executionAuthorityId": "answer-host-declared-read.v1"
+              },
+              "outcome": {
+                "outcomeId": "answer-host-declared-read-routed",
+                "contract": {
+                  "contractId": "host-declared-read-route.v1"
+                },
+                "terminal": false
+              }
+            },
+            {
+              "scenarioId": "answer-host-declared-read-bundle",
+              "input": {
+                "inputId": "answer-host-declared-read-bundle-request",
+                "contract": {
+                  "contractId": "host-declared-read-route.v1"
+                }
+              },
+              "event": {
+                "eventId": "answer-host-declared-read-bundle-requested",
+                "executionAuthorityId": "answer-host-declared-read-bundle.v1"
+              },
+              "outcome": {
+                "outcomeId": "answer-host-declared-read-bundle-outcome",
+                "contract": {
+                  "contractId": "declared-read-result.v1"
+                },
+                "terminal": true
+              }
+            },
+            {
+              "scenarioId": "answer-host-declared-read-session",
+              "input": {
+                "inputId": "answer-host-declared-read-session-request",
+                "contract": {
+                  "contractId": "host-declared-read-route.v1"
+                }
+              },
+              "event": {
+                "eventId": "answer-host-declared-read-session-requested",
+                "executionAuthorityId": "answer-host-declared-read-session.v1"
+              },
+              "outcome": {
+                "outcomeId": "answer-host-declared-read-session-outcome",
+                "contract": {
+                  "contractId": "declared-read-result.v1"
+                },
+                "terminal": true
+              }
+            }
+          ],
+          "scenarioOutcomes": [
+            {
+              "scenarioId": "answer-host-declared-read",
+              "variants": [
+                {
+                  "variantId": "HELD",
+                  "classification": "success"
+                },
+                {
+                  "variantId": "PASSED",
+                  "classification": "success"
+                }
+              ]
+            },
+            {
+              "scenarioId": "answer-host-declared-read-bundle",
+              "variants": [
+                {
+                  "variantId": "RETURNED",
+                  "classification": "success"
+                }
+              ]
+            },
+            {
+              "scenarioId": "answer-host-declared-read-session",
+              "variants": [
+                {
+                  "variantId": "RETURNED",
+                  "classification": "success"
+                }
+              ]
+            }
+          ],
+          "transitions": [
+            {
+              "transitionId": "answer-host-declared-read.held",
+              "from": {
+                "scenarioId": "answer-host-declared-read",
+                "outcomeId": "answer-host-declared-read-routed",
+                "contractId": "host-declared-read-route.v1"
+              },
+              "to": {
+                "scenarioId": "answer-host-declared-read-bundle",
+                "inputId": "answer-host-declared-read-bundle-request",
+                "contractId": "host-declared-read-route.v1"
+              },
+              "topologyKind": "selection",
+              "selectsVariant": "HELD",
+              "edgeGroupId": "answer-host-declared-read.route"
+            },
+            {
+              "transitionId": "answer-host-declared-read.passed",
+              "from": {
+                "scenarioId": "answer-host-declared-read",
+                "outcomeId": "answer-host-declared-read-routed",
+                "contractId": "host-declared-read-route.v1"
+              },
+              "to": {
+                "scenarioId": "answer-host-declared-read-session",
+                "inputId": "answer-host-declared-read-session-request",
+                "contractId": "host-declared-read-route.v1"
+              },
+              "topologyKind": "selection",
+              "selectsVariant": "PASSED",
+              "edgeGroupId": "answer-host-declared-read.route"
+            }
+          ],
+          "edgeGroups": [
+            {
+              "groupId": "answer-host-declared-read.route",
+              "kind": "selection",
+              "edgeIds": [
+                "edge:answer-host-declared-read.held",
+                "edge:answer-host-declared-read.passed"
+              ],
+              "policy": "exactly-one",
+              "exhaustive": true,
+              "exclusive": true
+            }
+          ],
+          "executionAuthorities": [
+            {
+              "id": "answer-host-declared-read.v1",
+              "owningScenarioId": "answer-host-declared-read",
+              "operations": [
+                {
+                  "operationId": "answer-host-declared-read.manifest-request",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-manifest-request"
+                },
+                {
+                  "operationId": "answer-host-declared-read.manifest",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-manifest"
+                },
+                {
+                  "operationId": "answer-host-declared-read.route",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-route"
+                }
+              ]
+            },
+            {
+              "id": "answer-host-declared-read-bundle.v1",
+              "owningScenarioId": "answer-host-declared-read-bundle",
+              "operations": [
+                {
+                  "operationId": "answer-host-declared-read-bundle.document",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-document"
+                },
+                {
+                  "operationId": "answer-host-declared-read-bundle.answer",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-answer"
+                }
+              ]
+            },
+            {
+              "id": "answer-host-declared-read-session.v1",
+              "owningScenarioId": "answer-host-declared-read-session",
+              "operations": [
+                {
+                  "operationId": "answer-host-declared-read-session.request",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-request"
+                },
+                {
+                  "operationId": "answer-host-declared-read-session.read",
+                  "kind": "invoke-port",
+                  "portId": "answer-host-declared-read-session"
+                }
+              ]
+            }
+          ],
+          "interfaceAuthority": {
+            "interfaceAuthorityType": "consumer-interface-authority.v1",
+            "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+            "contractCatalog": "contracts/contract-catalog.json",
+            "interfaces": [],
+            "portBindings": [
+              {
+                "portId": "answer-host-declared-read-manifest-request",
+                "platformCapabilityId": "sda-authority-transformation-port.v1",
+                "configuration": {
+                  "expression": {
+                    "op": "object",
+                    "fields": {
+                      "path": {
+                        "op": "literal",
+                        "value": "../../authorities/host-bundle/manifest.json"
+                      },
+                      "sha256Base64": {
+                        "op": "literal",
+                        "value": "1SOc/FEhT0S012t7URdaOIBCzkbTPdqi7q9S6igzV/8="
+                      },
+                      "carry": {
+                        "op": "path",
+                        "path": ""
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-manifest",
+                "platformCapabilityId": "sfx-api-host-bundle-read-port.v1",
+                "configuration": {
+                  "providerId": "sfx-api-host-bundle-read",
+                  "dependency": {
+                    "objectKind": "DEPENDENCY",
+                    "namespace": "sidefx:dependencies",
+                    "id": "sfx-api-host-bundle"
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-route",
+                "platformCapabilityId": "sda-authority-transformation-port.v1",
+                "configuration": {
+                  "expression": {
+                    "op": "let",
+                    "bindings": {
+                      "request": {
+                        "op": "path",
+                        "path": "carry"
+                      },
+                      "manifest": {
+                        "op": "parse-json",
+                        "value": {
+                          "op": "path",
+                          "path": "text"
+                        }
+                      },
+                      "capabilityId": {
+                        "op": "path",
+                        "path": "carry.input.capabilityId"
+                      }
+                    },
+                    "value": {
+                      "op": "let",
+                      "bindings": {
+                        "held": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "type",
+                              "value": {
+                                "op": "path",
+                                "path": "",
+                                "from": "capabilityId"
+                              }
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "string"
+                            }
+                          },
+                          "then": {
+                            "op": "find",
+                            "from": {
+                              "op": "path",
+                              "path": "capabilities",
+                              "from": "manifest"
+                            },
+                            "as": "c",
+                            "where": {
+                              "op": "equals",
+                              "left": {
+                                "op": "path",
+                                "path": "capabilityId",
+                                "from": "c"
+                              },
+                              "right": {
+                                "op": "path",
+                                "path": "",
+                                "from": "capabilityId"
+                              }
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": null
+                          }
+                        }
+                      },
+                      "value": {
+                        "op": "if",
+                        "when": {
+                          "op": "path",
+                          "path": "",
+                          "from": "held"
+                        },
+                        "then": {
+                          "op": "object",
+                          "fields": {
+                            "route": {
+                              "op": "literal",
+                              "value": "HELD"
+                            },
+                            "path": {
+                              "op": "format",
+                              "template": "../../authorities/host-bundle/{d}",
+                              "values": {
+                                "d": {
+                                  "op": "path",
+                                  "path": "document",
+                                  "from": "held"
+                                }
+                              }
+                            },
+                            "sha256Base64": {
+                              "op": "path",
+                              "path": "sha256Base64",
+                              "from": "held"
+                            },
+                            "carry": {
+                              "op": "object",
+                              "fields": {
+                                "readId": {
+                                  "op": "path",
+                                  "path": "readId",
+                                  "from": "request"
+                                },
+                                "selection": {
+                                  "op": "path",
+                                  "path": "input",
+                                  "from": "request"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "else": {
+                          "op": "object",
+                          "fields": {
+                            "route": {
+                              "op": "literal",
+                              "value": "PASSED"
+                            },
+                            "request": {
+                              "op": "path",
+                              "path": "",
+                              "from": "request"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-document",
+                "platformCapabilityId": "sfx-api-host-bundle-read-port.v1",
+                "configuration": {
+                  "providerId": "sfx-api-host-bundle-read",
+                  "dependency": {
+                    "objectKind": "DEPENDENCY",
+                    "namespace": "sidefx:dependencies",
+                    "id": "sfx-api-host-bundle"
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-answer",
+                "platformCapabilityId": "sda-authority-transformation-port.v1",
+                "configuration": {
+                  "expression": {
+                    "op": "let",
+                    "bindings": {
+                      "doc": {
+                        "op": "parse-json",
+                        "value": {
+                          "op": "path",
+                          "path": "text"
+                        }
+                      },
+                      "readId": {
+                        "op": "path",
+                        "path": "carry.readId"
+                      },
+                      "selection": {
+                        "op": "path",
+                        "path": "carry.selection"
+                      },
+                      "pin": {
+                        "op": "literal",
+                        "value": "sha256-base64:1SOc/FEhT0S012t7URdaOIBCzkbTPdqi7q9S6igzV/8="
+                      }
+                    },
+                    "value": {
+                      "op": "let",
+                      "bindings": {
+                        "scenarioHeld": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "type",
+                              "value": {
+                                "op": "path",
+                                "path": "scenarioId",
+                                "from": "selection"
+                              }
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "string"
+                            }
+                          },
+                          "then": {
+                            "op": "equals",
+                            "left": {
+                              "op": "path",
+                              "path": "scenarioId",
+                              "from": "selection"
+                            },
+                            "right": {
+                              "op": "path",
+                              "path": "rootScenarioId",
+                              "from": "doc"
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": true
+                          }
+                        },
+                        "namespaceHeld": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "type",
+                              "value": {
+                                "op": "path",
+                                "path": "namespaceId",
+                                "from": "selection"
+                              }
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "string"
+                            }
+                          },
+                          "then": {
+                            "op": "equals",
+                            "left": {
+                              "op": "path",
+                              "path": "namespaceId",
+                              "from": "selection"
+                            },
+                            "right": {
+                              "op": "path",
+                              "path": "namespaceId",
+                              "from": "doc"
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": true
+                          }
+                        }
+                      },
+                      "value": {
+                        "op": "if",
+                        "when": {
+                          "op": "path",
+                          "path": "",
+                          "from": "scenarioHeld"
+                        },
+                        "then": {
+                          "op": "if",
+                          "when": {
+                            "op": "path",
+                            "path": "",
+                            "from": "namespaceHeld"
+                          },
+                          "then": {
+                            "op": "object",
+                            "fields": {
+                              "recordsets": {
+                                "op": "if",
+                                "when": {
+                                  "op": "equals",
+                                  "left": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "readId"
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "capability-authority"
+                                  }
+                                },
+                                "then": {
+                                  "op": "array",
+                                  "items": [
+                                    {
+                                      "op": "array",
+                                      "items": [
+                                        {
+                                          "op": "object",
+                                          "fields": {
+                                            "capability_id": {
+                                              "op": "path",
+                                              "path": "capabilityId",
+                                              "from": "doc"
+                                            },
+                                            "scenario_id": {
+                                              "op": "path",
+                                              "path": "rootScenarioId",
+                                              "from": "doc"
+                                            },
+                                            "namespace_id": {
+                                              "op": "path",
+                                              "path": "namespaceId",
+                                              "from": "doc"
+                                            },
+                                            "graph_source": {
+                                              "op": "json-stringify",
+                                              "value": {
+                                                "op": "path",
+                                                "path": "graphSource",
+                                                "from": "doc"
+                                              }
+                                            },
+                                            "cli_configuration": {
+                                              "op": "json-stringify",
+                                              "value": {
+                                                "op": "path",
+                                                "path": "cliConfiguration",
+                                                "from": "doc"
+                                              }
+                                            },
+                                            "documents": {
+                                              "op": "literal",
+                                              "value": null
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "else": {
+                                  "op": "if",
+                                  "when": {
+                                    "op": "equals",
+                                    "left": {
+                                      "op": "path",
+                                      "path": "",
+                                      "from": "readId"
+                                    },
+                                    "right": {
+                                      "op": "literal",
+                                      "value": "capability-closure"
+                                    }
+                                  },
+                                  "then": {
+                                    "op": "array",
+                                    "items": [
+                                      {
+                                        "op": "path",
+                                        "path": "closure",
+                                        "from": "doc"
+                                      }
+                                    ]
+                                  },
+                                  "else": {
+                                    "op": "if",
+                                    "when": {
+                                      "op": "equals",
+                                      "left": {
+                                        "op": "path",
+                                        "path": "",
+                                        "from": "readId"
+                                      },
+                                      "right": {
+                                        "op": "literal",
+                                        "value": "mechanic-definitions"
+                                      }
+                                    },
+                                    "then": {
+                                      "op": "literal",
+                                      "value": [
+                                        []
+                                      ]
+                                    },
+                                    "else": {
+                                      "op": "refuse",
+                                      "code": "HOST_BUNDLE_READ_NOT_HELD"
+                                    }
+                                  }
+                                }
+                              },
+                              "snapshotId": {
+                                "op": "path",
+                                "path": "",
+                                "from": "pin"
+                              },
+                              "projectionDigest": {
+                                "op": "path",
+                                "path": "",
+                                "from": "pin"
+                              },
+                              "viewDefinitionDigest": {
+                                "op": "path",
+                                "path": "",
+                                "from": "pin"
+                              }
+                            }
+                          },
+                          "else": {
+                            "op": "refuse",
+                            "code": "HOST_BUNDLE_NAMESPACE_NOT_HELD"
+                          }
+                        },
+                        "else": {
+                          "op": "refuse",
+                          "code": "HOST_BUNDLE_SCENARIO_NOT_HELD"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-request",
+                "platformCapabilityId": "sda-authority-transformation-port.v1",
+                "configuration": {
+                  "expression": {
+                    "op": "path",
+                    "path": "request"
+                  }
+                }
+              },
+              {
+                "portId": "answer-host-declared-read-session",
+                "platformCapabilityId": "sda-kernel-built-in-read.v1",
+                "configuration": {}
+              }
+            ],
+            "projectionBindings": []
+          },
+          "semanticTransformations": [],
+          "contractAuthorities": {
+            "authorityType": "consumer-contract-authorities.v1",
+            "contracts": {
+              "declared-read-request.v1": {
+                "schemaRef": "declared-read-request.v1.schema.json",
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "readId"
+                  ]
+                }
+              },
+              "host-declared-read-route.v1": {
+                "schemaRef": "host-declared-read-route.v1.schema.json",
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "route"
+                  ]
+                }
+              },
+              "declared-read-result.v1": {
+                "schemaRef": "declared-read-result.v1.schema.json",
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "recordsets"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "overlayBindings": [
+    {
+      "mechanicId": "sfx-api-host-bundle-read-port.v1",
+      "providerProfileId": "sfx-api-host-bundle-read",
+      "providerProfileDigest": "sha256:2e6b2b5d27f62d9d6ce647630f21c8795ea02fee392ccdbf687c2159ae67eb0f",
+      "implementationRef": "sidefx:dependencies/sfx-api-host-bundle"
+    },
+    {
+      "mechanicId": "sfx-api-ingress-resolve-port.v2",
+      "providerProfileId": "sfx-api-ingress-resolve.v2",
+      "providerProfileDigest": "sha256:f0c909ea63679f5624ac1aad9943f6b56d4ea28b717c623247c277c6ba8d586b",
+      "implementationRef": "sidefx:dependencies/sfx-api-ingress"
+    },
+    {
+      "mechanicId": "sfx-api-ingress-compose-port.v2",
+      "providerProfileId": "sfx-api-ingress-compose.v2",
+      "providerProfileDigest": "sha256:c12e9dc117fbf20b7c914bfe9d48554a2e7f05aca195f6b52f0dfc83f766c5ea",
+      "implementationRef": "sidefx:dependencies/sfx-api-ingress"
+    },
+    {
+      "mechanicId": "sfx-api-run-trace-encode-port.v2",
+      "providerProfileId": "sfx-api-run-trace-encode.v2",
+      "providerProfileDigest": "sha256:cb0517ab4107ebbbeb191a84eb7a83d998c946c62a9d85608fcd2f7d2f7152dc",
+      "implementationRef": "sidefx:dependencies/sfx-api-run-trace"
+    },
+    {
+      "mechanicId": "sfx-identity-login-open-port.v2",
+      "providerProfileId": "sfx-identity-login-open.v2",
+      "providerProfileDigest": "sha256:502b5025db479e0fbd55c770df70912878403ce5b6963a3f531ff65627776d70",
+      "implementationRef": "sidefx:dependencies/sfx-identity-login"
+    },
+    {
+      "mechanicId": "sfx-identity-login-derive-port.v2",
+      "providerProfileId": "sfx-identity-login-derive.v2",
+      "providerProfileDigest": "sha256:55ea3bcc1ed327102727c44d5f94e33cb8d64000cb9abf6eca7a48789a50cc11",
+      "implementationRef": "sidefx:dependencies/sfx-identity-login"
+    }
+  ],
+  "declaredProviders": [
+    {
+      "providerProfileId": "sfx-api-host-bundle-read",
+      "language": "csharp",
+      "type": "System.IO.FileStream",
+      "method": ".ctor",
+      "assembly": "System.Private.CoreLib",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "read-document",
+          "parameters": [
+            {
+              "name": "path",
+              "source": "input",
+              "path": "path"
+            },
+            {
+              "name": "expected",
+              "source": "input",
+              "path": "sha256Base64"
+            },
+            {
+              "name": "carry",
+              "source": "input",
+              "path": "carry"
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "stream",
+              "invocation": "new System.IO.FileStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "path"
+                },
+                {
+                  "op": "literal",
+                  "value": 3
+                },
+                {
+                  "op": "literal",
+                  "value": 1
+                }
+              ],
+              "release": {
+                "invocation": "stream.Dispose"
+              }
+            },
+            {
+              "bind": "buffer",
+              "invocation": "new System.IO.MemoryStream",
+              "release": {
+                "invocation": "buffer.Dispose"
+              }
+            },
+            {
+              "invocation": "stream.CopyTo",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "buffer"
+                }
+              ]
+            },
+            {
+              "bind": "content",
+              "invocation": "buffer.ToArray"
+            },
+            {
+              "bind": "hasher",
+              "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+              "release": {
+                "invocation": "hasher.Dispose"
+              }
+            },
+            {
+              "bind": "digest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "content"
+                }
+              ]
+            },
+            {
+              "bind": "digests",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "digests.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "actual"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "digest"
+                }
+              ]
+            },
+            {
+              "bind": "actual",
+              "invocation": "digests.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "actual"
+              }
+            },
+            {
+              "bind": "pinned",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "pinned.Add",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "expected"
+                },
+                {
+                  "op": "literal",
+                  "value": "pinned"
+                }
+              ]
+            },
+            {
+              "bind": "match",
+              "invocation": "pinned.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "actual"
+              }
+            },
+            {
+              "bind": "matched",
+              "invocation": "match.ToString"
+            },
+            {
+              "bind": "decoder",
+              "invocation": "new System.Text.UTF8Encoding",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": false
+                },
+                {
+                  "op": "literal",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "bind": "text",
+              "invocation": "decoder.GetString",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "content"
+                }
+              ]
+            },
+            {
+              "bind": "value",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "carry"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "carry"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "text"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:1a09af359d5b4785e838db5fa6ba7b01675043b705a1c5b615fbb5d5ecd6b28f"
+    },
+    {
+      "providerProfileId": "sfx-api-ingress-resolve.v2",
+      "language": "csharp",
+      "type": "System.Text.RegularExpressions.Regex",
+      "method": ".ctor",
+      "assembly": "System.Text.RegularExpressions",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "resolve-request",
+          "parameters": [
+            {
+              "name": "raw",
+              "source": "input",
+              "path": ""
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "requestPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "\\A([A-Z]+) (/[^ \\r\\n]*) [^\\r\\n]*\\r?\\n((?:[^\\r\\n]+\\r?\\n)*)\\r?\\n([\\s\\S]*)\\z"
+                }
+              ]
+            },
+            {
+              "bind": "request",
+              "invocation": "requestPattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "raw"
+                }
+              ]
+            },
+            {
+              "bind": "requestGroups",
+              "invocation": "request.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "methodGroup",
+              "invocation": "requestGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "method",
+              "invocation": "methodGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "targetGroup",
+              "invocation": "requestGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 2
+              }
+            },
+            {
+              "bind": "target",
+              "invocation": "targetGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "headGroup",
+              "invocation": "requestGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 3
+              }
+            },
+            {
+              "bind": "head",
+              "invocation": "headGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "bodyGroup",
+              "invocation": "requestGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 4
+              }
+            },
+            {
+              "bind": "body",
+              "invocation": "bodyGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "uri",
+              "invocation": "new System.Uri, System.Private.Uri",
+              "arguments": [
+                {
+                  "op": "join",
+                  "value": {
+                    "op": "array",
+                    "items": [
+                      {
+                        "op": "literal",
+                        "value": "http://sfx-api.local"
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "target"
+                      }
+                    ]
+                  },
+                  "separator": ""
+                }
+              ]
+            },
+            {
+              "bind": "path",
+              "invocation": "uri.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "LocalPath"
+              }
+            },
+            {
+              "bind": "slash",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "/"
+                }
+              ]
+            },
+            {
+              "bind": "segments",
+              "invocation": "slash.Split",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "path"
+                }
+              ]
+            },
+            {
+              "bind": "query",
+              "invocation": "uri.GetComponents",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 32
+                },
+                {
+                  "op": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "bind": "querySpaced",
+              "invocation": "query.Replace",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "+"
+                },
+                {
+                  "op": "literal",
+                  "value": "%20"
+                }
+              ]
+            },
+            {
+              "bind": "quotePattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "%(22|5[Cc])"
+                }
+              ]
+            },
+            {
+              "bind": "queryQuoted",
+              "invocation": "quotePattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "querySpaced"
+                },
+                {
+                  "op": "literal",
+                  "value": "%5C%$1"
+                }
+              ]
+            },
+            {
+              "bind": "controlPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "%([01][0-9A-Fa-f])"
+                }
+              ]
+            },
+            {
+              "bind": "queryControlled",
+              "invocation": "controlPattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryQuoted"
+                },
+                {
+                  "op": "literal",
+                  "value": "%5Cu00$1"
+                }
+              ]
+            },
+            {
+              "bind": "keylessPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?:\\A|(?<=&))=[^&]*"
+                }
+              ]
+            },
+            {
+              "bind": "queryKeyed",
+              "invocation": "keylessPattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryControlled"
+                },
+                {
+                  "op": "literal",
+                  "value": ""
+                }
+              ]
+            },
+            {
+              "bind": "runPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "&+"
+                }
+              ]
+            },
+            {
+              "bind": "queryCollapsed",
+              "invocation": "runPattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryKeyed"
+                },
+                {
+                  "op": "literal",
+                  "value": "&"
+                }
+              ]
+            },
+            {
+              "bind": "edgePattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "\\A&|&\\z"
+                }
+              ]
+            },
+            {
+              "bind": "queryTrimmed",
+              "invocation": "edgePattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryCollapsed"
+                },
+                {
+                  "op": "literal",
+                  "value": ""
+                }
+              ]
+            },
+            {
+              "bind": "pairPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "([^=&]+)(?:=([^&]*))?"
+                }
+              ]
+            },
+            {
+              "bind": "queryMembers",
+              "invocation": "pairPattern.Replace",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryTrimmed"
+                },
+                {
+                  "op": "literal",
+                  "value": "\"$1\":\"$2\""
+                }
+              ]
+            },
+            {
+              "bind": "queryJoined",
+              "invocation": "queryMembers.Replace",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "&"
+                },
+                {
+                  "op": "literal",
+                  "value": ","
+                }
+              ]
+            },
+            {
+              "bind": "queryUri",
+              "invocation": "new System.Uri, System.Private.Uri",
+              "arguments": [
+                {
+                  "op": "join",
+                  "value": {
+                    "op": "array",
+                    "items": [
+                      {
+                        "op": "literal",
+                        "value": "http://sfx-api.local/?{"
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "queryJoined"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "}"
+                      }
+                    ]
+                  },
+                  "separator": ""
+                }
+              ]
+            },
+            {
+              "bind": "queryJson",
+              "invocation": "queryUri.GetComponents",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 32
+                },
+                {
+                  "op": "literal",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "bind": "carrierPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)\\A(?:(?=[\\s\\S]*?^authorization:[ \\t]*bearer[ \\t]+((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*\\r?$)|(?=[\\s\\S]*?^cookie:(?:[^\\r\\n]*?;)?[ \\t]*(?-i:__Host-sfx-session)=((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*(?:;|\\r?$)))"
+                }
+              ]
+            },
+            {
+              "bind": "carrier",
+              "invocation": "carrierPattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "carried",
+              "invocation": "carrier.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Success"
+              }
+            },
+            {
+              "bind": "carrierGroups",
+              "invocation": "carrier.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "bearerGroup",
+              "invocation": "carrierGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "bearer",
+              "invocation": "bearerGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "cookieGroup",
+              "invocation": "carrierGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 2
+              }
+            },
+            {
+              "bind": "cookieToken",
+              "invocation": "cookieGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "hasher",
+              "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+              "release": {
+                "invocation": "hasher.Dispose"
+              }
+            },
+            {
+              "bind": "verifier",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "join",
+                  "value": {
+                    "op": "array",
+                    "items": [
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "bearer"
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "cookieToken"
+                      }
+                    ]
+                  },
+                  "separator": ""
+                }
+              ]
+            },
+            {
+              "bind": "sessionDigest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "verifier"
+                }
+              ]
+            },
+            {
+              "bind": "sourcePattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)\\A(?:(?=[\\s\\S]*?^x-client-ip:[ \\t]*([^\\s,]+))|(?=[\\s\\S]*?^x-forwarded-for:[ \\t]*([^\\s,]+)))"
+                }
+              ]
+            },
+            {
+              "bind": "sourceMatch",
+              "invocation": "sourcePattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "sourceGroups",
+              "invocation": "sourceMatch.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "clientIpGroup",
+              "invocation": "sourceGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "clientIp",
+              "invocation": "clientIpGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "forwardedGroup",
+              "invocation": "sourceGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 2
+              }
+            },
+            {
+              "bind": "forwarded",
+              "invocation": "forwardedGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "keyPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)^idempotency-key:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+                }
+              ]
+            },
+            {
+              "bind": "keyMatch",
+              "invocation": "keyPattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "keyGroups",
+              "invocation": "keyMatch.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "keyGroup",
+              "invocation": "keyGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "idempotencyKey",
+              "invocation": "keyGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "lastEventPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)^last-event-id:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+                }
+              ]
+            },
+            {
+              "bind": "lastEventMatch",
+              "invocation": "lastEventPattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "lastEventGroups",
+              "invocation": "lastEventMatch.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "lastEventGroup",
+              "invocation": "lastEventGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "lastEventId",
+              "invocation": "lastEventGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "bind": "headers",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "headers.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "idempotency-key"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "idempotencyKey"
+                }
+              ]
+            },
+            {
+              "invocation": "headers.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "last-event-id"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "lastEventId"
+                }
+              ]
+            },
+            {
+              "bind": "value",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "method"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "method"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "segments"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "segments"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "queryJson"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "queryJson"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "body"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "body"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "carried"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "carried"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "sessionDigest"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "sessionDigest"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "source"
+                },
+                {
+                  "op": "join",
+                  "value": {
+                    "op": "array",
+                    "items": [
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "clientIp"
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "forwarded"
+                      }
+                    ]
+                  },
+                  "separator": ""
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "headers"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "headers"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:02cc0d921e570a96dbf2c3b8044fd3a1a3d3560e2a0c4dc69944df821867c422"
+    },
+    {
+      "providerProfileId": "sfx-api-ingress-compose.v2",
+      "language": "csharp",
+      "type": "System.Text.RegularExpressions.Regex",
+      "method": ".ctor",
+      "assembly": "System.Text.RegularExpressions",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "compose-response",
+          "parameters": [
+            {
+              "name": "status",
+              "source": "input",
+              "path": "status"
+            },
+            {
+              "name": "reasons",
+              "source": "input",
+              "path": "reasons"
+            },
+            {
+              "name": "contentType",
+              "source": "input",
+              "path": "contentType"
+            },
+            {
+              "name": "body",
+              "source": "input",
+              "path": "body",
+              "encoding": "json-text"
+            }
+          ],
+          "result": {
+            "from": "raw"
+          },
+          "program": [
+            {
+              "bind": "statusText",
+              "invocation": "status.ToString"
+            },
+            {
+              "bind": "reason",
+              "invocation": "reasons.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "statusText"
+              }
+            },
+            {
+              "bind": "encoding",
+              "invocation": "new System.Text.UTF8Encoding"
+            },
+            {
+              "bind": "length",
+              "invocation": "encoding.GetByteCount",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "body"
+                }
+              ]
+            },
+            {
+              "bind": "lengthText",
+              "invocation": "length.ToString"
+            },
+            {
+              "bind": "builder",
+              "invocation": "new System.Text.StringBuilder",
+              "arguments": [
+                {
+                  "op": "join",
+                  "value": {
+                    "op": "array",
+                    "items": [
+                      {
+                        "op": "literal",
+                        "value": "HTTP/1.1 "
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "statusText"
+                      },
+                      {
+                        "op": "literal",
+                        "value": " "
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "reason"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "\r\nContent-Type: "
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "contentType"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "\r\nContent-Length: "
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "lengthText"
+                      },
+                      {
+                        "op": "literal",
+                        "value": "\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n"
+                      },
+                      {
+                        "op": "path",
+                        "from": "scope",
+                        "path": "body"
+                      }
+                    ]
+                  },
+                  "separator": ""
+                }
+              ]
+            },
+            {
+              "bind": "raw",
+              "invocation": "builder.ToString"
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:02cc0d921e570a96dbf2c3b8044fd3a1a3d3560e2a0c4dc69944df821867c422"
+    },
+    {
+      "providerProfileId": "sfx-api-run-trace-encode.v2",
+      "language": "csharp",
+      "type": "System.IO.Compression.BrotliStream",
+      "method": ".ctor",
+      "assembly": "System.IO.Compression.Brotli",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "encode-chunk",
+          "parameters": [
+            {
+              "name": "events",
+              "source": "input",
+              "path": "events",
+              "encoding": "json-text"
+            },
+            {
+              "name": "runId",
+              "source": "input",
+              "path": "runId"
+            },
+            {
+              "name": "firstCursor",
+              "source": "input",
+              "path": "firstCursor"
+            },
+            {
+              "name": "lastCursor",
+              "source": "input",
+              "path": "lastCursor"
+            },
+            {
+              "name": "recordCount",
+              "source": "input",
+              "path": "recordCount"
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "encoding",
+              "invocation": "new System.Text.UTF8Encoding"
+            },
+            {
+              "bind": "plain",
+              "invocation": "encoding.GetBytes",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "events"
+                }
+              ]
+            },
+            {
+              "bind": "plainLength",
+              "invocation": "plain.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Length"
+              }
+            },
+            {
+              "bind": "buffer",
+              "invocation": "new System.IO.MemoryStream"
+            },
+            {
+              "bind": "compressor",
+              "invocation": "new System.IO.Compression.BrotliStream, System.IO.Compression.Brotli",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "buffer"
+                },
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "invocation": "compressor.Write",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "plain"
+                },
+                {
+                  "op": "literal",
+                  "value": 0
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "plainLength"
+                }
+              ]
+            },
+            {
+              "invocation": "compressor.Dispose"
+            },
+            {
+              "bind": "content",
+              "invocation": "buffer.ToArray"
+            },
+            {
+              "bind": "hasher",
+              "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography"
+            },
+            {
+              "bind": "digest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "content"
+                }
+              ]
+            },
+            {
+              "bind": "value",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "runId"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "runId"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "firstCursor"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "firstCursor"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "lastCursor"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "lastCursor"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "recordCount"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "recordCount"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "content"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "content"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "digest"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "digest"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:fb82863d6dac2a8add1752d5ea8f24eab641135f9af2a5fc775953d07a4ecc0f"
+    },
+    {
+      "providerProfileId": "sfx-identity-login-open.v2",
+      "language": "csharp",
+      "type": "Microsoft.Data.SqlClient.SqlConnection",
+      "method": ".ctor",
+      "assembly": "Microsoft.Data.SqlClient",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "open-session",
+          "parameters": [
+            {
+              "name": "connectionString",
+              "source": "input",
+              "path": "value"
+            },
+            {
+              "name": "login",
+              "source": "input",
+              "path": "context.login",
+              "encoding": "json-text"
+            },
+            {
+              "name": "password",
+              "source": "input",
+              "path": "context.password"
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "connection",
+              "invocation": "new SqlConnection",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "connectionString"
+                }
+              ],
+              "release": {
+                "invocation": "connection.DisposeAsync",
+                "await": true
+              }
+            },
+            {
+              "invocation": "connection.OpenAsync",
+              "await": true
+            },
+            {
+              "bind": "begin",
+              "invocation": "connection.CreateCommand",
+              "release": {
+                "invocation": "begin.DisposeAsync",
+                "await": true
+              }
+            },
+            {
+              "invocation": "begin.CommandText.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "SET NOCOUNT ON; EXEC [identity].begin_api_login @input=@input;"
+                }
+              ]
+            },
+            {
+              "invocation": "begin.Parameters.AddWithValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "@input"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "login"
+                }
+              ]
+            },
+            {
+              "bind": "beginReader",
+              "invocation": "begin.ExecuteReaderAsync",
+              "await": true,
+              "release": {
+                "invocation": "beginReader.DisposeAsync",
+                "await": true
+              }
+            },
+            {
+              "invocation": "beginReader.ReadAsync",
+              "await": true
+            },
+            {
+              "bind": "attemptId",
+              "invocation": "beginReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "attemptId"
+              }
+            },
+            {
+              "bind": "allowed",
+              "invocation": "beginReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "allowed"
+              }
+            },
+            {
+              "bind": "salt",
+              "invocation": "beginReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "salt"
+              }
+            },
+            {
+              "bind": "expected",
+              "invocation": "beginReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "expected"
+              }
+            },
+            {
+              "invocation": "beginReader.Close"
+            },
+            {
+              "bind": "http",
+              "invocation": "new System.Net.Http.HttpClient, System.Net.Http",
+              "release": {
+                "invocation": "http.Dispose"
+              }
+            },
+            {
+              "bind": "blakePackage",
+              "invocation": "http.GetByteArrayAsync",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.blake2/1.1.1/konscious.security.cryptography.blake2.1.1.1.nupkg"
+                }
+              ],
+              "await": true
+            },
+            {
+              "bind": "argonPackage",
+              "invocation": "http.GetByteArrayAsync",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.argon2/1.3.1/konscious.security.cryptography.argon2.1.3.1.nupkg"
+                }
+              ],
+              "await": true
+            },
+            {
+              "bind": "hasher",
+              "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+              "release": {
+                "invocation": "hasher.Dispose"
+              }
+            },
+            {
+              "bind": "blakeDigest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakePackage"
+                }
+              ]
+            },
+            {
+              "bind": "argonDigest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonPackage"
+                }
+              ]
+            },
+            {
+              "bind": "digests",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "digests.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "blake"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeDigest"
+                }
+              ]
+            },
+            {
+              "invocation": "digests.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "argon"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonDigest"
+                }
+              ]
+            },
+            {
+              "bind": "blakeDigestText",
+              "invocation": "digests.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "blake"
+              }
+            },
+            {
+              "bind": "argonDigestText",
+              "invocation": "digests.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "argon"
+              }
+            },
+            {
+              "bind": "trusted",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "trusted.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "11hhi0zt984k0mVN6DD177PNVss7/IntkC1pq6VKUY8="
+                },
+                {
+                  "op": "literal",
+                  "value": "lib/net8.0/Konscious.Security.Cryptography.Blake2.dll"
+                }
+              ]
+            },
+            {
+              "invocation": "trusted.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "nhocunCPEKTaY1MoTkfRlrPaIDxUSLZKx4NWMNcxhVA="
+                },
+                {
+                  "op": "literal",
+                  "value": "lib/net8.0/Konscious.Security.Cryptography.Argon2.dll"
+                }
+              ]
+            },
+            {
+              "bind": "blakeEntryName",
+              "invocation": "trusted.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeDigestText"
+              }
+            },
+            {
+              "bind": "argonEntryName",
+              "invocation": "trusted.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "argonDigestText"
+              }
+            },
+            {
+              "bind": "blakeMemory",
+              "invocation": "new System.IO.MemoryStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakePackage"
+                }
+              ],
+              "release": {
+                "invocation": "blakeMemory.Dispose"
+              }
+            },
+            {
+              "bind": "blakeArchive",
+              "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeMemory"
+                }
+              ],
+              "release": {
+                "invocation": "blakeArchive.Dispose"
+              }
+            },
+            {
+              "bind": "blakeEntry",
+              "invocation": "blakeArchive.GetEntry",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeEntryName"
+                }
+              ]
+            },
+            {
+              "bind": "blakeEntryStream",
+              "invocation": "blakeEntry.Open",
+              "release": {
+                "invocation": "blakeEntryStream.Dispose"
+              }
+            },
+            {
+              "bind": "blakeAssembly",
+              "invocation": "new System.IO.MemoryStream",
+              "release": {
+                "invocation": "blakeAssembly.Dispose"
+              }
+            },
+            {
+              "invocation": "blakeEntryStream.CopyTo",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeAssembly"
+                }
+              ]
+            },
+            {
+              "invocation": "blakeAssembly.Position.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "argonMemory",
+              "invocation": "new System.IO.MemoryStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonPackage"
+                }
+              ],
+              "release": {
+                "invocation": "argonMemory.Dispose"
+              }
+            },
+            {
+              "bind": "argonArchive",
+              "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonMemory"
+                }
+              ],
+              "release": {
+                "invocation": "argonArchive.Dispose"
+              }
+            },
+            {
+              "bind": "argonEntry",
+              "invocation": "argonArchive.GetEntry",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonEntryName"
+                }
+              ]
+            },
+            {
+              "bind": "argonEntryStream",
+              "invocation": "argonEntry.Open",
+              "release": {
+                "invocation": "argonEntryStream.Dispose"
+              }
+            },
+            {
+              "bind": "argonAssembly",
+              "invocation": "new System.IO.MemoryStream",
+              "release": {
+                "invocation": "argonAssembly.Dispose"
+              }
+            },
+            {
+              "invocation": "argonEntryStream.CopyTo",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonAssembly"
+                }
+              ]
+            },
+            {
+              "invocation": "argonAssembly.Position.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "loader",
+              "invocation": "new System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "sfx-identity-login"
+                },
+                {
+                  "op": "literal",
+                  "value": false
+                }
+              ]
+            },
+            {
+              "invocation": "loader.LoadFromStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeAssembly"
+                }
+              ]
+            },
+            {
+              "bind": "argonLibrary",
+              "invocation": "loader.LoadFromStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonAssembly"
+                }
+              ]
+            },
+            {
+              "bind": "argonType",
+              "invocation": "argonLibrary.GetType",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "Konscious.Security.Cryptography.Argon2id"
+                }
+              ]
+            },
+            {
+              "bind": "argonConstructors",
+              "invocation": "argonType.GetConstructors"
+            },
+            {
+              "bind": "argonConstructor",
+              "invocation": "argonConstructors.GetValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "utf8",
+              "invocation": "new System.Text.UTF8Encoding"
+            },
+            {
+              "bind": "passwordBytes",
+              "invocation": "utf8.GetBytes",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "password"
+                }
+              ]
+            },
+            {
+              "bind": "argonArguments",
+              "invocation": "new System.Collections.ArrayList"
+            },
+            {
+              "invocation": "argonArguments.Add",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "passwordBytes"
+                }
+              ]
+            },
+            {
+              "bind": "argonArgumentArray",
+              "invocation": "argonArguments.ToArray"
+            },
+            {
+              "bind": "argon",
+              "invocation": "argonConstructor.Invoke",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonArgumentArray"
+                }
+              ],
+              "release": {
+                "invocation": "argon.Dispose"
+              }
+            },
+            {
+              "invocation": "argon.Salt.$write",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "salt"
+                }
+              ]
+            },
+            {
+              "invocation": "argon.MemorySize.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 19456
+                }
+              ]
+            },
+            {
+              "invocation": "argon.Iterations.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "invocation": "argon.DegreeOfParallelism.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "bind": "tag",
+              "invocation": "argon.GetBytes",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 32
+                }
+              ]
+            },
+            {
+              "bind": "derived",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "derived.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "tag"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "tag"
+                }
+              ]
+            },
+            {
+              "bind": "tagText",
+              "invocation": "derived.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "tag"
+              }
+            },
+            {
+              "bind": "equals",
+              "invocation": "expected.Equals",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "tagText"
+                }
+              ]
+            },
+            {
+              "bind": "random",
+              "invocation": "new System.Security.Cryptography.RNGCryptoServiceProvider, System.Security.Cryptography",
+              "release": {
+                "invocation": "random.Dispose"
+              }
+            },
+            {
+              "bind": "token",
+              "invocation": "tag.Clone"
+            },
+            {
+              "invocation": "random.GetBytes",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "token"
+                }
+              ]
+            },
+            {
+              "bind": "verifierHash",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "token"
+                }
+              ]
+            },
+            {
+              "invocation": "derived.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "token"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "token"
+                }
+              ]
+            },
+            {
+              "bind": "tokenText",
+              "invocation": "derived.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "token"
+              }
+            },
+            {
+              "bind": "complete",
+              "invocation": "connection.CreateCommand",
+              "release": {
+                "invocation": "complete.DisposeAsync",
+                "await": true
+              }
+            },
+            {
+              "invocation": "complete.CommandText.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "SET NOCOUNT ON; EXEC [identity].complete_api_login @attempt_id=@attempt_id,@allowed=@allowed,@equals=@equals,@verifier_hash=@verifier_hash;"
+                }
+              ]
+            },
+            {
+              "invocation": "complete.Parameters.AddWithValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "@attempt_id"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "attemptId"
+                }
+              ]
+            },
+            {
+              "invocation": "complete.Parameters.AddWithValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "@allowed"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "allowed"
+                }
+              ]
+            },
+            {
+              "invocation": "complete.Parameters.AddWithValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "@equals"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "equals"
+                }
+              ]
+            },
+            {
+              "invocation": "complete.Parameters.AddWithValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "@verifier_hash"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "verifierHash"
+                }
+              ]
+            },
+            {
+              "bind": "completeReader",
+              "invocation": "complete.ExecuteReaderAsync",
+              "await": true,
+              "release": {
+                "invocation": "completeReader.DisposeAsync",
+                "await": true
+              }
+            },
+            {
+              "invocation": "completeReader.ReadAsync",
+              "await": true
+            },
+            {
+              "bind": "disposition",
+              "invocation": "completeReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "disposition"
+              }
+            },
+            {
+              "bind": "sessionId",
+              "invocation": "completeReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "sessionId"
+              }
+            },
+            {
+              "bind": "principalId",
+              "invocation": "completeReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "principalId"
+              }
+            },
+            {
+              "bind": "expiresAt",
+              "invocation": "completeReader.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "expiresAt"
+              }
+            },
+            {
+              "bind": "value",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "disposition"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "disposition"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "sessionId"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "sessionId"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "principalId"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "principalId"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "expiresAt"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "expiresAt"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "token"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "tokenText"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:d96129e4e176840370075f8ad25a6200c42551fcf4f4b203e9946dbf11f670ba"
+    },
+    {
+      "providerProfileId": "sfx-identity-login-derive.v2",
+      "language": "csharp",
+      "type": "Microsoft.Data.SqlClient.SqlConnection",
+      "method": ".ctor",
+      "assembly": "Microsoft.Data.SqlClient",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "derive-tag",
+          "parameters": [
+            {
+              "name": "password",
+              "source": "input",
+              "path": "password"
+            },
+            {
+              "name": "salt",
+              "source": "input",
+              "path": "salt"
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "http",
+              "invocation": "new System.Net.Http.HttpClient, System.Net.Http",
+              "release": {
+                "invocation": "http.Dispose"
+              }
+            },
+            {
+              "bind": "blakePackage",
+              "invocation": "http.GetByteArrayAsync",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.blake2/1.1.1/konscious.security.cryptography.blake2.1.1.1.nupkg"
+                }
+              ],
+              "await": true
+            },
+            {
+              "bind": "argonPackage",
+              "invocation": "http.GetByteArrayAsync",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "https://api.nuget.org/v3-flatcontainer/konscious.security.cryptography.argon2/1.3.1/konscious.security.cryptography.argon2.1.3.1.nupkg"
+                }
+              ],
+              "await": true
+            },
+            {
+              "bind": "hasher",
+              "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+              "release": {
+                "invocation": "hasher.Dispose"
+              }
+            },
+            {
+              "bind": "blakeDigest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakePackage"
+                }
+              ]
+            },
+            {
+              "bind": "argonDigest",
+              "invocation": "hasher.ComputeHash",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonPackage"
+                }
+              ]
+            },
+            {
+              "bind": "digests",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "digests.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "blake"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeDigest"
+                }
+              ]
+            },
+            {
+              "invocation": "digests.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "argon"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonDigest"
+                }
+              ]
+            },
+            {
+              "bind": "blakeDigestText",
+              "invocation": "digests.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "blake"
+              }
+            },
+            {
+              "bind": "argonDigestText",
+              "invocation": "digests.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "argon"
+              }
+            },
+            {
+              "bind": "trusted",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "trusted.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "11hhi0zt984k0mVN6DD177PNVss7/IntkC1pq6VKUY8="
+                },
+                {
+                  "op": "literal",
+                  "value": "lib/net8.0/Konscious.Security.Cryptography.Blake2.dll"
+                }
+              ]
+            },
+            {
+              "invocation": "trusted.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "nhocunCPEKTaY1MoTkfRlrPaIDxUSLZKx4NWMNcxhVA="
+                },
+                {
+                  "op": "literal",
+                  "value": "lib/net8.0/Konscious.Security.Cryptography.Argon2.dll"
+                }
+              ]
+            },
+            {
+              "bind": "blakeEntryName",
+              "invocation": "trusted.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "blakeDigestText"
+              }
+            },
+            {
+              "bind": "argonEntryName",
+              "invocation": "trusted.$computed.$read",
+              "selector": {
+                "op": "path",
+                "from": "scope",
+                "path": "argonDigestText"
+              }
+            },
+            {
+              "bind": "blakeMemory",
+              "invocation": "new System.IO.MemoryStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakePackage"
+                }
+              ],
+              "release": {
+                "invocation": "blakeMemory.Dispose"
+              }
+            },
+            {
+              "bind": "blakeArchive",
+              "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeMemory"
+                }
+              ],
+              "release": {
+                "invocation": "blakeArchive.Dispose"
+              }
+            },
+            {
+              "bind": "blakeEntry",
+              "invocation": "blakeArchive.GetEntry",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeEntryName"
+                }
+              ]
+            },
+            {
+              "bind": "blakeEntryStream",
+              "invocation": "blakeEntry.Open",
+              "release": {
+                "invocation": "blakeEntryStream.Dispose"
+              }
+            },
+            {
+              "bind": "blakeAssembly",
+              "invocation": "new System.IO.MemoryStream",
+              "release": {
+                "invocation": "blakeAssembly.Dispose"
+              }
+            },
+            {
+              "invocation": "blakeEntryStream.CopyTo",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeAssembly"
+                }
+              ]
+            },
+            {
+              "invocation": "blakeAssembly.Position.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "argonMemory",
+              "invocation": "new System.IO.MemoryStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonPackage"
+                }
+              ],
+              "release": {
+                "invocation": "argonMemory.Dispose"
+              }
+            },
+            {
+              "bind": "argonArchive",
+              "invocation": "new System.IO.Compression.ZipArchive, System.IO.Compression",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonMemory"
+                }
+              ],
+              "release": {
+                "invocation": "argonArchive.Dispose"
+              }
+            },
+            {
+              "bind": "argonEntry",
+              "invocation": "argonArchive.GetEntry",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonEntryName"
+                }
+              ]
+            },
+            {
+              "bind": "argonEntryStream",
+              "invocation": "argonEntry.Open",
+              "release": {
+                "invocation": "argonEntryStream.Dispose"
+              }
+            },
+            {
+              "bind": "argonAssembly",
+              "invocation": "new System.IO.MemoryStream",
+              "release": {
+                "invocation": "argonAssembly.Dispose"
+              }
+            },
+            {
+              "invocation": "argonEntryStream.CopyTo",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonAssembly"
+                }
+              ]
+            },
+            {
+              "invocation": "argonAssembly.Position.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "loader",
+              "invocation": "new System.Runtime.Loader.AssemblyLoadContext, System.Runtime.Loader",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "sfx-identity-login"
+                },
+                {
+                  "op": "literal",
+                  "value": false
+                }
+              ]
+            },
+            {
+              "invocation": "loader.LoadFromStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "blakeAssembly"
+                }
+              ]
+            },
+            {
+              "bind": "argonLibrary",
+              "invocation": "loader.LoadFromStream",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonAssembly"
+                }
+              ]
+            },
+            {
+              "bind": "argonType",
+              "invocation": "argonLibrary.GetType",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "Konscious.Security.Cryptography.Argon2id"
+                }
+              ]
+            },
+            {
+              "bind": "argonConstructors",
+              "invocation": "argonType.GetConstructors"
+            },
+            {
+              "bind": "argonConstructor",
+              "invocation": "argonConstructors.GetValue",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "bind": "utf8",
+              "invocation": "new System.Text.UTF8Encoding"
+            },
+            {
+              "bind": "passwordBytes",
+              "invocation": "utf8.GetBytes",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "password"
+                }
+              ]
+            },
+            {
+              "bind": "argonArguments",
+              "invocation": "new System.Collections.ArrayList"
+            },
+            {
+              "invocation": "argonArguments.Add",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "passwordBytes"
+                }
+              ]
+            },
+            {
+              "bind": "argonArgumentArray",
+              "invocation": "argonArguments.ToArray"
+            },
+            {
+              "bind": "argon",
+              "invocation": "argonConstructor.Invoke",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "argonArgumentArray"
+                }
+              ],
+              "release": {
+                "invocation": "argon.Dispose"
+              }
+            },
+            {
+              "invocation": "argon.Salt.$write",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "salt"
+                }
+              ]
+            },
+            {
+              "invocation": "argon.MemorySize.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 19456
+                }
+              ]
+            },
+            {
+              "invocation": "argon.Iterations.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "invocation": "argon.DegreeOfParallelism.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "bind": "tag",
+              "invocation": "argon.GetBytes",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": 32
+                }
+              ]
+            },
+            {
+              "bind": "derived",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "derived.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "tag"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "tag"
+                }
+              ]
+            },
+            {
+              "bind": "tagText",
+              "invocation": "derived.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "tag"
+              }
+            },
+            {
+              "bind": "value",
+              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "tag"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "tagText"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:d96129e4e176840370075f8ad25a6200c42551fcf4f4b203e9946dbf11f670ba"
+    }
+  ]
+}

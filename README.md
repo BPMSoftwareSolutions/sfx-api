@@ -325,10 +325,20 @@ callers have no carrier yet (EV-014).
 
 ## Deploying
 
-The image is built in the registry from a context of [deploy/Dockerfile](deploy/Dockerfile),
-[deploy/start.sh](deploy/start.sh), [host/](host/), [sfx-api.config.json](sfx-api.config.json) and the
-admitted kernel install under `kernel/`, assembled at a short path (the kernel's authority tree
-exceeds the Windows path limit under a deep directory):
+The image is built in the registry from a context assembled at a short path, because the kernel's authority tree
+exceeds the Windows path limit under a deep directory. The context holds:
+- [deploy/Dockerfile](deploy/Dockerfile) and [deploy/start.sh](deploy/start.sh);
+- [host/](host/) and [sfx-api.config.json](sfx-api.config.json);
+- the kernel's boot configuration [deploy/kernel-host.json](deploy/kernel-host.json), at the context root;
+- the host's provider authority, `providers/host-provider-authority.json`, which binds the declared-read port to
+  `answer-host-declared-read`;
+- the host's pinned bundle, `authorities/host-bundle/`;
+- the admitted kernel install under `kernel/`: SDA `05ff751`, linux-x64, artifact digest
+  `eb80040182f6dbb5e3922022598ea097b5789020d7382d9027ee8aab357d5c9d`, built by
+  `ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody` from a clean clone of SDA at that commit.
+
+The kernel, the provider authority, the bundle and the pin go out in this one image
+(answer-host-declared-read.feature).
 
     az acr build --registry bpmaiengineacr --image sfx-api:<commit> --build-arg KERNEL_DIGEST=<digest> --file <context>\Dockerfile <context>
 
@@ -488,6 +498,34 @@ kernel per request) and a refused sign-in 0.47 s (2.18 s); see
 [docs/azure-test-2026-10-31.md](docs/azure-test-2026-10-31.md). Each kernel's first two requests
 still read: the first starts the kernel (5 to 6 s) and the second refreshes once more (about 3 s),
 because the kernel's first envelope reports a different generation for the same estate.
+
+The host served from its bundle, on SDA `05ff751` (kernel `eb800401`), WSL against the estate, 2026-11-03:
+- **The new facade.** With all six kernels, it listened after 10 to 14 s. Over 20 warm requests alternating
+  `GET /sfx/v1/nope` (404) and `GET /sfx/v1/session` without a credential (401), it answered at p50 1.60 s, p95 1.77 s,
+  min 1.36 s and max 1.97 s. An earlier sample of 2.42 s p50 did not repeat. The facade adds about 0.1 s to one
+  kernel's time.
+- **The same kernel with and without the host's provider authority.** One resident kernel took the same requests.
+
+  | Per warm envelope | Estate's `serve-http-request`, port unbound | The bundle's, port bound |
+  | --- | --- | --- |
+  | Wall time | 1.17 to 1.30 s | 1.51 to 1.61 s |
+  | Kernel CPU | 652 to 842 ms | 670 to 731 ms |
+  | Database queries | 2 | 6 |
+  | Declarations | 15, all reused | 12, all reused |
+
+  The difference is four round trips from WSL to the estate's database, not CPU
+  ([docs/request-sda-warm-envelope-round-trips.md](docs/request-sda-warm-envelope-round-trips.md)).
+- **The drawing poller.** Run alongside the request kernel, it left warm requests at 1.32 to 1.75 s.
+- **Parity with the host now serving.** Eight raw requests without a session went through the estate's
+  `serve-http-request` and the bundle's on the same kernel. Both answered each one byte for byte the same:
+  - 404 `OPERATION_NOT_DECLARED`, for `GET /sfx/v1/capabilities`, `DELETE /sfx/v1/session` and `GET /`;
+  - 401 `CALLER_REQUIRED`, for `/events`, the estate stream, `POST /sfx/v1/runs`, and a run's events with a bad
+    bearer;
+  - 400 `LOGIN_INPUT_INVALID`, for a sign-in body that is not JSON.
+- **The sign-in derivation.** `verify-password-derivation` from the bundle answered `MATCHES` through the host's
+  `sfx-identity-login-derive.v2`.
+- **Not run locally.** Sign-in with a real identity, session reads and runs need a signed-in caller, so they are
+  checked on `sfx-api-test`.
 
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 

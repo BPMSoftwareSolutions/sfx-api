@@ -59,12 +59,36 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
     @status:not-built
     @capability:answer-host-declared-read
     Scenario: The provider is a declared capability, bound at the profile schema boundary
-      Then answer-host-declared-read is declared in SEJ in the bundle
-      And the host's provider authority binds sda-kernel-declared-read-port.v1 to it
+      Then answer-host-declared-read is declared in SEJ in this repo
+      And the host's provider authority binds sda-kernel-declared-read-port.v1 with one eventPorts entry: SDA's generic
+        capability-invocation provider in its configured form, with answer-host-declared-read's graph source as the
+        entry's configuration
       And the host writes no provider code in any runtime language
-      # SDA's port rule names the binding as an eventPorts entry of the host's provider authority (rule.binding in
-      # declared-read-port.semantic-authority.json). A host provider module was written on 2026-11-03 and removed the same
-      # day: "providers are declared capabilities as well."
+      # SDA 1bd400e, D12 and D13: the kernel passes the entry's configuration to the provider unchanged, and the configured
+      # form (InvokeConfiguredCapability in C#) runs the graph source, with the read request as its input, through the
+      # delivery's run capability, on the delivery's data access without the port. A host provider module was written on
+      # 2026-11-03 and removed the same day: "providers are declared capabilities as well."
+      # Declared in providers/host-provider-authority.json. Run locally on 2026-11-03 against the estate, kernel b6872d49
+      # (SDA 1bd400e): the delivery's first read failed PLATFORM_MECHANIC_NOT_DECLARED:execute-declared-capability:
+      # read-execution-capability-authority, because the estate's execution-delivery names the delivery wrapper, not a
+      # graph runner. With no provider bound, the same kernel answered verify-password-derivation MATCHES. Waits on SDA:
+      # docs/request-sda-host-provider-bindings.md.
+
+    @status:not-built
+    @capability:answer-host-declared-read
+    @provider:sfx-api-host-bundle-read-port.v1
+    Scenario: The host's own provider bindings come from the host
+      When the delivery's run capability realizes answer-host-declared-read or a capability the bundle owns
+      Then its mechanics are bound by the overlay rules and provider entries the host declares, for the host's own
+        mechanics: the bundle-read provider, the built-in read step and the host's five providers
+      And the estate's run capability keeps every other rule unchanged
+      # The estate's run-declared-graph binds each mechanic from its execute port's overlayBindings (110 rules) and
+      # providers (61 entries), the host's five among them as the estate declares them, and has no rule for
+      # sfx-api-host-bundle-read-port.v1 or sda-kernel-built-in-read.v1 (run c9be6b42; SDA 1bd400e,
+      # SemanticExecutionGraphExecutionProvider.cs ResolvePlan). Waits on SDA: docs/request-sda-host-provider-bindings.md.
+      # SDA D15 (working tree after 1bd400e) lets the host's provider authority declare overlayBindings and
+      # declaredProviders. providers/host-provider-authority.json declares the bundle reader and the host's five
+      # providers under v2 identities; D14 now realizes the built-in read step from SDA's own registry.
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -120,10 +144,12 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
     Scenario: Every other read is passed to the delivery's own session
       When a read is for a capability the manifest does not own: the consumer's, a run's, or one a request dispatches, such
         as read-ui-page for GET /sfx/v1/pages
-      Then the provider passes the request unchanged to builtInRead
+      Then the provider passes the request unchanged to a step bound to SDA's built-in read step,
+        sda-kernel-built-in-read.v1
       And builtInRead answers it in the delivery's own estate session, pin and impersonation
-      # SDA bcbdbec, D9: "the host needs no estate reader of its own". It serves only reads the boot data-access authority
-      # declares (DATA_ACCESS_READ_NOT_DECLARED:<readId> otherwise).
+      # SDA 1bd400e, D14: the step sends a cell's declared-read-request.v1 to builtInRead, and refuses with
+      # BUILT_IN_READ_NOT_BOUND anywhere but in the port's provider. D9: "the host needs no estate reader of its own". It
+      # serves only reads the boot data-access authority declares (DATA_ACCESS_READ_NOT_DECLARED:<readId> otherwise).
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -147,10 +173,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
         consumer's capability
       Then each capability is served from its own source and reports that source's identity
       And no capability is refused for carrying another source's identity
-      # Waits on SDA: docs/request-sda-one-delivery-two-sources.md. At bcbdbec every kernel holds one identity across a
-      # delivery's capabilities: C# and Python carry the first capability's mechanics into every later read and check them
-      # (AuthorityRead.cs:109-117, authority_read.py:138-143); TypeScript checks every capability against the
-      # execution-delivery read (invocation-boot.mjs:238-246). Read from source, not run.
+      # SDA 60aefbb (D10, 2026-11-03) allows it in all three kernels: coherence is per capability, and mechanics carried
+      # from another capability stand in only when they share its identity. It answered
+      # docs/request-sda-one-delivery-two-sources.md. Not built here: the host serves nothing from a bundle yet.
 
   Rule: The bundle is admitted before the host listens
 
@@ -160,8 +185,10 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       When the manifest does not match the pin, or a document is missing, malformed or does not match its digest
       Then the host does not listen
       And it never serves the host's operations from the estate instead
-      # Every kernel starts before the facade listens (host-facade.feature), and the facade's first delivery reads its
-      # configuration from an owned capability (read-api-host-configuration.feature).
+      # The kernel reads no document and checks no digest (SDA D13): the provider checks them itself, reading each document
+      # through the bundle-read provider (sfx-api-host-bundle-read.feature). Every kernel starts before the facade listens
+      # (host-facade.feature), and the facade's first delivery reads its configuration from an owned capability
+      # (read-api-host-configuration.feature), so a mismatch fails that delivery and the host never listens.
 
   Rule: The bundle is this repo's own declarations in SEJ, and changes only by a deploy
 
@@ -188,7 +215,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
     @capability:answer-host-declared-read
     Scenario: The bundle's digest is the pin
       Then the manifest names the SHA-256 digest of every document of the bundle
-      And the SHA-256 digest of the manifest is the pin in the provider's binding
+      And the SHA-256 digest of the manifest is the pin, which answer-host-declared-read's graph source names
+      # The graph source is the binding's configuration, so the pin goes out with the provider authority (SDA D13: "the
+      # graph source is the binding's data, and pinning it is the host's").
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -196,6 +225,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       When a host declaration changes in this repo and the pin does not
       Then the host serves the pinned declaration
       And the change is served once it is pinned and deployed
+      # SDA D11 (60aefbb): the declaration cache serves a provider's earlier answers under the estate's generation and the
+      # envelope's pin, so "a host that changes what its provider serves restarts the kernels it serves". The one deploy
+      # restarts them.
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -221,12 +253,13 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
     Scenario: Each declared read honors the provider binding, proved by the delivery's evidence
       Given the kernel's reads depend on this provider binding:
         | calls                                          | provider capability they need                                                   | result it must produce here         | run evidence that proves it                                     |
-        | every declared read of an owned capability     | answer-host-declared-read, bound to sda-kernel-declared-read-port.v1            | the bundle's answer, under the pin  | the delivery's outcome.evidence snapshotId and projectionDigest |
-        | every other declared read                      | answer-host-declared-read, passing to builtInRead                               | the session's answer                | the delivery's outcome.evidence names the session's snapshot    |
+        | every declared read of an owned capability     | answer-host-declared-read, bound to sda-kernel-declared-read-port.v1            | the bundle's answer, under the pin  | the capability's entry in outcome.evidence.authorities, naming the pin |
+        | every other declared read                      | answer-host-declared-read, passing to builtInRead                               | the session's answer                | the capability's entry in outcome.evidence.authorities, naming the session's snapshot |
       When a delivery runs an owned capability that dispatches to a consumer's capability
       Then each read produces the answer its binding requires
-      And the delivery's evidence names the pin for the owned capability and the session's snapshot for the other
-      # SDA D6: "a delivery that runs the capability reports that identity in outcome.evidence".
+      And outcome.evidence.authorities names the pin for the owned capability and the session's snapshot for the other
+      # SDA D6, and D10 (60aefbb): a delivery reports every capability authority it read, with its own identity, its own
+      # first, once each in read order, those it composed included.
 
   Rule: Each provider tag must agree with the accepted binding and the actual invocation
 
@@ -272,8 +305,14 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
         | declaration reads made by a warm envelope  | none       | none, 0.3 to 20 ms (WSL, today's estate reads)  |
       When an envelope runs an owned capability its kernel has already answered from the bundle under the same pin
       Then the kernel resolves it without a read through the provider
-      # SDA 3296bc1's declaration cache holds a resolved selection per generation and pin (AuthorityRead.cs,
-      # ReadAuthorityAsync). The bundle keeps that strategy; it does not turn a cached resolution into a provider call.
+      # SDA D11 (60aefbb): the declaration cache spanning a resident kernel's deliveries is keyed by the estate's declared
+      # generation and the envelope's pin, and serves a bound provider's earlier answers under that key. The bundle keeps
+      # the strategy of SDA 3296bc1; it does not turn a cached resolution into a provider call.
+      # On SDA 05ff751, warm on WSL against the estate, the bundle's serve-http-request resolved 12 declarations with 12
+      # reused and 0 read. The SLI is still not met. A warm envelope makes 6 database queries with the port bound, against 2
+      # unbound, on the same kernel. The port's configured capability reads its execution delivery and runner where the
+      # cache does not serve them, and the command vocabulary is read on every envelope
+      # (docs/request-sda-warm-envelope-round-trips.md).
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -281,7 +320,11 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
     Scenario: The frontdoor's latency objective holds with the bundle
       When requests are answered with the host's declarations served from the bundle
       Then frontdoor-warm-latency holds: p50 at most 0.88 s and p95 at most 3.35 s on sfx-api-test
-      # The baseline was measured with every declaration read from the estate (docs/azure-test-2026-10-31.md).
+      # The baseline was measured with every declaration read from the estate (docs/azure-test-2026-10-31.md). On WSL, on
+      # SDA 05ff751 with one resident kernel, the kernel's CPU per warm request was the same with and without the bundle:
+      # 670 to 731 ms bound, 652 to 842 ms unbound. The wall time was 1.51 to 1.61 s bound, against 1.17 to 1.30 s
+      # unbound, the difference being four database round trips from WSL. The facade with all six kernels answered at p50
+      # 1.60 s and p95 1.77 s over 20 warm requests. sfx-api-test is not yet measured.
 
     @status:probed
     @slo:session-setup

@@ -1,0 +1,252 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-run-graphs",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-run-graphs",
+  "graphSource": {
+    "capabilityId": "read-run-graphs",
+    "rootScenarioId": "read-run-graphs",
+    "scenarios": [
+      {
+        "scenarioId": "read-run-graphs",
+        "input": {
+          "inputId": "read-run-graphs-request",
+          "contract": {
+            "contractId": "read-run-graphs-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-run-graphs-requested",
+          "executionAuthorityId": "read-run-graphs.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-run-graphs-outcome",
+          "contract": {
+            "contractId": "read-run-graphs-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-run-graphs",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-run-graphs.v1",
+        "owningScenarioId": "read-run-graphs",
+        "operations": [
+          {
+            "operationId": "read-run-graphs.prepare",
+            "kind": "invoke-port",
+            "portId": "read-run-graphs-prepare"
+          },
+          {
+            "operationId": "read-run-graphs.read",
+            "kind": "invoke-port",
+            "portId": "read-run-graphs-read"
+          },
+          {
+            "operationId": "read-run-graphs.select",
+            "kind": "invoke-port",
+            "portId": "read-run-graphs-select"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-run-graphs-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-run-graphs",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-run-graphs-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-run-graphs-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-run-graphs-transform.v1"
+          }
+        },
+        {
+          "portId": "read-run-graphs-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-run-graphs-prepare"
+          }
+        },
+        {
+          "portId": "read-run-graphs-read",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-run-graphs-select",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-run-graphs-select"
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [
+      {
+        "id": "read-run-graphs-prepare",
+        "expression": {
+          "op": "object",
+          "fields": {
+            "executionTarget": {
+              "op": "literal",
+              "value": "read-run-evidence"
+            },
+            "executionNamespace": {
+              "op": "literal",
+              "value": "sidefx:capabilities"
+            },
+            "executionScenario": {
+              "op": "literal",
+              "value": "read-run-evidence"
+            },
+            "inputType": {
+              "op": "literal",
+              "value": "json"
+            },
+            "dispatchRequest": {
+              "op": "path",
+              "path": ""
+            }
+          }
+        }
+      },
+      {
+        "id": "read-run-graphs-select",
+        "expression": {
+          "op": "if",
+          "when": {
+            "op": "equals",
+            "left": {
+              "op": "path",
+              "path": "result.status"
+            },
+            "right": {
+              "op": "literal",
+              "value": "READ"
+            }
+          },
+          "then": {
+            "op": "object",
+            "fields": {
+              "status": {
+                "op": "path",
+                "path": "result.status"
+              },
+              "runId": {
+                "op": "path",
+                "path": "result.runId"
+              },
+              "graphs": {
+                "op": "path",
+                "path": "result.graphs"
+              }
+            }
+          },
+          "else": {
+            "op": "path",
+            "path": "result"
+          }
+        }
+      }
+    ],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-run-graphs-request.v1": {
+          "schemaRef": "read-run-graphs-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "runId"
+            ],
+            "properties": {
+              "principalId": {
+                "type": "string"
+              },
+              "runId": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "read-run-graphs-result.v1": {
+          "schemaRef": "read-run-graphs-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-run-graphs-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-run-graphs",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-run-graphs",
+      "input_id": "read-run-graphs-request",
+      "event_id": "read-run-graphs-requested",
+      "responsibility": "the kernel reads the run evidence and selects its graphs",
+      "outcome_id": "read-run-graphs-outcome",
+      "scenario_definition_digest": "4msY9JevCteFLMoGEE+i32buGmiGNGSc4zNRjCzwSMM="
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "resolve-http-request",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "resolve-http-request",
+  "graphSource": {
+    "capabilityId": "resolve-http-request",
+    "rootScenarioId": "resolve-http-request",
+    "scenarios": [
+      {
+        "scenarioId": "resolve-http-request",
+        "input": {
+          "inputId": "resolve-http-request-request",
+          "contract": {
+            "contractId": "resolve-http-request-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "resolve-http-request-requested",
+          "executionAuthorityId": "resolve-http-request.v1"
+        },
+        "outcome": {
+          "outcomeId": "resolve-http-request-outcome",
+          "contract": {
+            "contractId": "resolve-http-request-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "resolve-http-request",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "resolve-http-request.v1",
+        "owningScenarioId": "resolve-http-request",
+        "operations": [
+          {
+            "operationId": "resolve-http-request.read",
+            "kind": "invoke-port",
+            "portId": "resolve-http-request-read"
+          },
+          {
+            "operationId": "resolve-http-request.ingress",
+            "kind": "invoke-port",
+            "portId": "resolve-http-request-ingress"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "resolve-http-request-cli",
+          "kind": "cli",
+          "rootScenarioId": "resolve-http-request",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "text",
+              "contract": "resolve-http-request-request.v1",
+              "path": "raw"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "resolve-http-request-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "resolve-http-request-transform.v1"
+          }
+        },
+        {
+          "portId": "resolve-http-request-read",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "path",
+              "path": "raw"
+            }
+          }
+        },
+        {
+          "portId": "resolve-http-request-ingress",
+          "platformCapabilityId": "sfx-api-ingress-resolve-port.v2",
+          "configuration": {
+            "providerId": "sfx-api-ingress-resolve.v2",
+            "dependency": {
+              "objectKind": "DEPENDENCY",
+              "namespace": "sidefx:dependencies",
+              "id": "sfx-api-ingress"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "resolve-http-request-request.v1": {
+          "schemaRef": "resolve-http-request-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contractId",
+              "raw"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "resolve-http-request-request.v1"
+              },
+              "raw": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "resolve-http-request-result.v1": {
+          "schemaRef": "resolve-http-request-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "text",
+      "contract": "resolve-http-request-request.v1",
+      "path": "raw"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "resolve-http-request",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "resolve-http-request",
+      "input_id": "resolve-http-request-request",
+      "event_id": "resolve-http-request-requested",
+      "responsibility": "the ingress provider reads it",
+      "outcome_id": "resolve-http-request-outcome",
+      "scenario_definition_digest": "xfN7RoxHLjDtBycEEfuJQRlKtz0RSE+1quMY/RnMOdM="
+    }
+  ]
+}

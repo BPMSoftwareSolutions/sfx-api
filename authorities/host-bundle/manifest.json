@@ -1,0 +1,149 @@
+{
+  "contractId": "sfx-api-host-bundle.v1",
+  "capabilities": [
+    {
+      "capabilityId": "admit-api-run-live",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/admit-api-run-live.json",
+      "sha256Base64": "guFOHubqkg5k7FklC4sSg1M2r0o7lfk0Oe6Kcq84KMY="
+    },
+    {
+      "capabilityId": "answer-api-response",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/answer-api-response.json",
+      "sha256Base64": "zMlaYX2C5/0l0DIdqD3GNmnHVoRWQC+E9fd6mhq4Lkw="
+    },
+    {
+      "capabilityId": "append-api-run-trace",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/append-api-run-trace.json",
+      "sha256Base64": "K37jjMYqUCIJFg6NHy4a5vZgB89RooFx/AdIDE2Yb8I="
+    },
+    {
+      "capabilityId": "capture-estate-live-observation-facts",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/capture-estate-live-observation-facts.json",
+      "sha256Base64": "yq29hezmPfUJ0TMVEyTbCQezAxPP4Ff+gh1+U3xzKmY="
+    },
+    {
+      "capabilityId": "check-api-session",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/check-api-session.json",
+      "sha256Base64": "7nDEjg0wDmD1LO9Lga8GpCg76f4cQrVhVM9rbGPwrPo="
+    },
+    {
+      "capabilityId": "complete-api-run",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/complete-api-run.json",
+      "sha256Base64": "pRwAfQ2g13UXiTjYADTF4mwkJKeRE1K+zcJ3PeK13sI="
+    },
+    {
+      "capabilityId": "open-api-run-stream",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/open-api-run-stream.json",
+      "sha256Base64": "NDY+FplGjRprQef71Mw6uMicxNUy8JosSUQ+VH4PLR4="
+    },
+    {
+      "capabilityId": "open-api-session",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/open-api-session.json",
+      "sha256Base64": "bIrvuNw3L+O8qGHizRYqlXl2z6GJRKhNpEVm80cQ9gs="
+    },
+    {
+      "capabilityId": "project-api-run-events",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/project-api-run-events.json",
+      "sha256Base64": "HNClvPZYaE8GKwUFxVTSShvwkYwx17XkOvbGLqN8lpk="
+    },
+    {
+      "capabilityId": "publish-estate-live-observation",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/publish-estate-live-observation.json",
+      "sha256Base64": "9JpFyX8WK1iNt/2MHk77MEDqc96GZrNjJp04WYsVWoQ="
+    },
+    {
+      "capabilityId": "read-api-estate-scopes",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-estate-scopes.json",
+      "sha256Base64": "U+llwHNjbaRdkQv/shvhgYoSjcossBfEylAT9fuloU0="
+    },
+    {
+      "capabilityId": "read-api-host-configuration",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-host-configuration.json",
+      "sha256Base64": "+NHavvIlvAkARQ7x4PyavsdSC9UGz+cCyv5qJHx8jA4="
+    },
+    {
+      "capabilityId": "read-api-session",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-session.json",
+      "sha256Base64": "gbTFcjAUAPyi/x/+QzsIGKeCja5dugUjWtY2/rG7Iaw="
+    },
+    {
+      "capabilityId": "read-estate-drawing-changes",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-estate-drawing-changes.json",
+      "sha256Base64": "uPbEzzI+S97AF/7aBMewvel42/pn+LjzzX+HMv2ikis="
+    },
+    {
+      "capabilityId": "read-run-graphs",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-run-graphs.json",
+      "sha256Base64": "mK1MYPuAuAggTSJ+yrWGb+Ft4tphIVFaLPG1gufq9nA="
+    },
+    {
+      "capabilityId": "read-run-output",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-run-output.json",
+      "sha256Base64": "DjQPmajCJ48ZSRZGdts8msAET7IRQ3I1jPncBW/bDn4="
+    },
+    {
+      "capabilityId": "read-run-state",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-run-state.json",
+      "sha256Base64": "yTcKtRgM/Pz9wMyThco9GwoOpMVUXSE+pTKExfyu+wc="
+    },
+    {
+      "capabilityId": "resolve-http-request",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/resolve-http-request.json",
+      "sha256Base64": "4fDqOOnGRRx039M/WOcUWxMVmmiaE8BaZcV0i77xJpA="
+    },
+    {
+      "capabilityId": "revoke-api-session",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/revoke-api-session.json",
+      "sha256Base64": "qaXfdaJxazi0QgE4eFWDSg8gN7Q0f4h9hYW0bRwNZOo="
+    },
+    {
+      "capabilityId": "select-estate-live-observation",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/select-estate-live-observation.json",
+      "sha256Base64": "7ibjvw+1l4Y3aV96W3twDwZwNxBgjfam9DGaFsu3vLk="
+    },
+    {
+      "capabilityId": "serve-api-request",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/serve-api-request.json",
+      "sha256Base64": "wbdS4eYZCMpSqk2JgcO0+xt/aEmxDz1MqyOTEgANJ1Y="
+    },
+    {
+      "capabilityId": "serve-http-request",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/serve-http-request.json",
+      "sha256Base64": "0hLtjOlDaAVIIuIGZJLQgS9Ay8uoUPPAHfC5CpG9ieY="
+    },
+    {
+      "capabilityId": "subscribe-estate-live-observation",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/subscribe-estate-live-observation.json",
+      "sha256Base64": "z7d+KLH2KTfFZi0FXq8/NgwGjOm52wwKlpVdi5vaWrk="
+    },
+    {
+      "capabilityId": "verify-password-derivation",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/verify-password-derivation.json",
+      "sha256Base64": "mKZy6DEnSmvm7HQOm8qvB0pMvLyl1AIIjKX82j2wV10="
+    }
+  ]
+}

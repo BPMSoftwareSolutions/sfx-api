@@ -1,7 +1,9 @@
 # Review copy for the owner and the owner's team, 2026-11-03.
 #
-# What this file is: the behavior of the provider capability sfx-api-ingress-resolve-port.v1 (provider
-# sfx-api-ingress-resolve), written as Gherkin. Every HTTP request the hosting facade receives is read by it. The sources
+# What this file is: the behavior of the provider capability sfx-api-ingress-resolve-port.v2 (provider
+# sfx-api-ingress-resolve.v2), written as Gherkin. The host's bundle binds it under that identity through the host's own declared
+# providers (SDA D15); until the image that carries the bundle replaces the host now serving, the estate's copy
+# serves as sfx-api-ingress-resolve-port.v1 (provider sfx-api-ingress-resolve). Every HTTP request the hosting facade receives is read by it. The sources
 # are the provider's declared program (providers/sfx-api-ingress.dependency.json, operation resolve-request), the
 # estate's declaration of it (DEPENDENCY sidefx:dependencies/sfx-api-ingress, definition a8d6f423, read on 2026-11-03
 # through sql-database-reader, run 4d1c2e4f-db9b-ae32-f716-377c0a781c08), the two capabilities that bind it
@@ -47,7 +49,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: A request is read into the members the frontdoor binds
       Given a raw HTTP/1.1 request as the facade received it: the request line, the header block and the body
       When resolve-http-request reads it
@@ -57,7 +59,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: Text that is not an HTTP request reads as empty members
       Given text with no request line of the form "<METHOD> /<target> <version>"
       When resolve-http-request reads it
@@ -68,7 +70,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: The path is decoded before it is split
       Given the target /sfx/v1/runs/a%2Fb
       When resolve-http-request reads the request
@@ -78,7 +80,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:installed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario Outline: The query is answered as JSON text, each key and value decoded once
       Given a target whose query is <query>
       When resolve-http-request reads the request
@@ -100,7 +102,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: A bearer is digested twice
       Given the header "Authorization: Bearer <44 base64 characters of 32 bytes>"
       When resolve-http-request reads the request
@@ -111,7 +113,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: The session cookie is digested the same way
       Given a Cookie header holding __Host-sfx-session=<44 base64 characters of 32 bytes> among other cookies
       When resolve-http-request reads the request
@@ -120,7 +122,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: A bearer is read before a cookie
       Given a request with both a bearer and a session cookie
       When resolve-http-request reads it
@@ -129,7 +131,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: A malformed or missing carrier is not carried
       Given a bearer that is not 44 base64 characters of 32 bytes, or no carrier
       When resolve-http-request reads the request
@@ -140,7 +142,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: The carrier itself is never answered
       When serve-http-request reads a request that carries a bearer or a session cookie
       Then no member of the provider's answer holds the bearer or the cookie's value
@@ -151,7 +153,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: The source is X-Client-IP, else the first X-Forwarded-For entry, else empty
       When serve-http-request reads a request
       Then source is the first token of X-Client-IP when the request has it
@@ -163,7 +165,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:probed
     @capability:resolve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: Idempotency-Key is read, trimmed, and empty when absent
       When resolve-http-request reads a request
       Then headers.idempotency-key is the first Idempotency-Key header's value, its name matched in any case
@@ -174,7 +176,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: Last-Event-ID is read the same way
       When serve-http-request reads a request
       Then headers.last-event-id is the first Last-Event-ID header's value, trimmed, and empty when absent
@@ -183,7 +185,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: No other header reaches the frontdoor
       When serve-http-request reads a request with any other headers
       Then headers holds only the headers the program declares
@@ -193,12 +195,12 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: Each step that reads a request honors its binding, proved by the run
       Given these steps depend on these provider bindings:
         | calls                         | provider capability the step needs                                         | result it must produce here | run evidence that proves it                                    |
-        | serve-http-request.ingress    | sfx-api-ingress-resolve-port.v1, provider sfx-api-ingress-resolve, port serve-http-request-ingress    | the request's members       | the delivery's testimony for the cell of serve-http-request.ingress |
-        | resolve-http-request.ingress  | sfx-api-ingress-resolve-port.v1, provider sfx-api-ingress-resolve, port resolve-http-request-ingress  | the request's members       | the delivery's outcome, which is that cell's result            |
+        | serve-http-request.ingress    | sfx-api-ingress-resolve-port.v2, provider sfx-api-ingress-resolve.v2, port serve-http-request-ingress    | the request's members       | the delivery's testimony for the cell of serve-http-request.ingress |
+        | resolve-http-request.ingress  | sfx-api-ingress-resolve-port.v2, provider sfx-api-ingress-resolve.v2, port resolve-http-request-ingress  | the request's members       | the delivery's outcome, which is that cell's result            |
       When a request is served
       Then each call produces the result its binding requires
       And acceptance finds each invocation attributed to its step within the same delivery
@@ -208,9 +210,9 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario Outline: Provider acceptance fails when the evidence cannot prove a required call
-      Given the accepted binding of serve-http-request.ingress to sfx-api-ingress-resolve-port.v1
+      Given the accepted binding of serve-http-request.ingress to sfx-api-ingress-resolve-port.v2
       When acceptance checks a delivery with <defect>
       Then provider acceptance fails for serve-http-request.ingress and identifies the missing or conflicting evidence
 
@@ -227,7 +229,7 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: Its program is declared for each runtime the host declares
       Then providers/sfx-api-ingress.dependency.json declares the resolve-request program for each runtime language the
         host's kernels run, and the host declares that language with its kernel in sfx-api.config.json
@@ -238,19 +240,22 @@ Feature: Every HTTP request is read by a declared provider, not by the facade
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     Scenario: The host runs the program its own bundle carries
       When serve-http-request is answered from the host's bundle
       Then its port binding carries this repo's resolve-request program
       And no change to the estate's declaration of sfx-api-ingress-resolve changes what the host runs
       # Today the program the host runs comes with serve-http-request's declaration from the estate (estateProvider in
       # its port binding, definition a8d6f423). answer-host-declared-read.feature.
+      # The delivery's run capability, the estate's run-declared-graph, binds each mechanic through its execute port's
+      # overlayBindings and providers, which hold the estate's copy of this program (run c9be6b42). The host's own
+      # binding waits on SDA: docs/request-sda-host-provider-bindings.md.
 
   Rule: Reading the request keeps the frontdoor's service levels
 
     @status:proven
     @capability:serve-http-request
-    @provider:sfx-api-ingress-resolve-port.v1
+    @provider:sfx-api-ingress-resolve-port.v2
     @slo:frontdoor-warm-latency
     Scenario: Every request is read within the frontdoor's latency objective
       Given the service level:

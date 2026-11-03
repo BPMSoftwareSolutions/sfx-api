@@ -1,7 +1,9 @@
 # Review copy for the owner and the owner's team, 2026-11-03.
 #
-# What this file is: the behavior of the provider capability sfx-api-ingress-compose-port.v1 (provider
-# sfx-api-ingress-compose), written as Gherkin. It writes the raw HTTP/1.1 response serve-http-request answers. The sources
+# What this file is: the behavior of the provider capability sfx-api-ingress-compose-port.v2 (provider
+# sfx-api-ingress-compose.v2), written as Gherkin. The host's bundle binds it under that identity through the host's own declared
+# providers (SDA D15); until the image that carries the bundle replaces the host now serving, the estate's copy
+# serves as sfx-api-ingress-compose-port.v1 (provider sfx-api-ingress-compose). It writes the raw HTTP/1.1 response serve-http-request answers. The sources
 # are the provider's declared program (providers/sfx-api-ingress.dependency.json, operation compose-response), the
 # estate's declaration of it (DEPENDENCY sidefx:dependencies/sfx-api-ingress, definition 39ffb87e, read on 2026-11-03
 # through sql-database-reader, run 4d1c2e4f-db9b-ae32-f716-377c0a781c08), the capability that binds it
@@ -47,7 +49,7 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:probed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: A response is written with its status line, its headers and its body
       Given serve-http-request hands the provider a status, the reasons, a content type and a body
       When the provider writes the response
@@ -63,7 +65,7 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: The reason phrase is the one declared for the status
       Given the reasons serve-http-request declares
       When the provider writes a response of a status the reasons name
@@ -72,7 +74,7 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: A status the reasons do not name is written with an empty reason
       When the provider writes a response of a status the reasons do not name
       Then the status line is "HTTP/1.1 <status> " with nothing after the space
@@ -80,7 +82,7 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: A body is written as JSON text, or as it is when it is text
       When the body is an object or an array
       Then the provider writes it as JSON text
@@ -91,11 +93,11 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: The step that writes a response honors its binding, proved by the run
       Given this step depends on this provider binding:
         | calls                       | provider capability the step needs                                                                | result it must produce here | run evidence that proves it                                     |
-        | serve-http-request.respond  | sfx-api-ingress-compose-port.v1, provider sfx-api-ingress-compose, port serve-http-request-respond | the raw HTTP/1.1 response   | the delivery's testimony for the cell of serve-http-request.respond |
+        | serve-http-request.respond  | sfx-api-ingress-compose-port.v2, provider sfx-api-ingress-compose.v2, port serve-http-request-respond | the raw HTTP/1.1 response   | the delivery's testimony for the cell of serve-http-request.respond |
       When a request is served
       Then the call produces the response its binding requires
       And acceptance finds the invocation attributed to that step within the same delivery
@@ -105,9 +107,9 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario Outline: Provider acceptance fails when the evidence cannot prove a required call
-      Given the accepted binding of serve-http-request.respond to sfx-api-ingress-compose-port.v1
+      Given the accepted binding of serve-http-request.respond to sfx-api-ingress-compose-port.v2
       When acceptance checks a delivery with <defect>
       Then provider acceptance fails for serve-http-request.respond and identifies the missing or conflicting evidence
 
@@ -123,7 +125,7 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:installed
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: Its program is declared for each runtime the host declares
       Then providers/sfx-api-ingress.dependency.json declares the compose-response program for each runtime language the
         host's kernels run, and the host declares that language with its kernel in sfx-api.config.json
@@ -134,19 +136,22 @@ Feature: Every HTTP response is written by a declared provider, not by the facad
 
     @status:not-built
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     Scenario: The host runs the program its own bundle carries
       When serve-http-request is answered from the host's bundle
       Then its port binding carries this repo's compose-response program
       And no change to the estate's declaration of sfx-api-ingress-compose changes what the host runs
       # Today the program comes with serve-http-request's declaration from the estate (definition 39ffb87e).
       # answer-host-declared-read.feature.
+      # The delivery's run capability, the estate's run-declared-graph, binds each mechanic through its execute port's
+      # overlayBindings and providers, which hold the estate's copy of this program (run c9be6b42). The host's own
+      # binding waits on SDA: docs/request-sda-host-provider-bindings.md.
 
   Rule: Writing the response keeps the frontdoor's service levels
 
     @status:proven
     @capability:serve-http-request
-    @provider:sfx-api-ingress-compose-port.v1
+    @provider:sfx-api-ingress-compose-port.v2
     @slo:frontdoor-warm-latency
     Scenario: Every response is written within the frontdoor's latency objective
       When serve-http-request writes each response through this provider

@@ -21,8 +21,8 @@ platform bind open-api-session-credential
 platform: sfx-identity-credential-port.v1
 config: {"providerId":"sfx-identity-database-credential","dependency":{"objectKind":"DEPENDENCY","namespace":"sidefx:dependencies","id":"sfx-identity-database"}}
 platform bind open-api-session-open
-platform: sfx-vault-reference-open-port.v1
-config: {"providerId":"sfx-vault-secret-service-reference","dependency":{"objectKind":"DEPENDENCY","namespace":"sidefx:dependencies","id":"sfx-vault-secret-service"}}
+platform: sfx-vault-reference-carry-port.v1
+config: {"providerId":"sfx-vault-secret-service-reference-carry","dependency":{"objectKind":"DEPENDENCY","namespace":"sidefx:dependencies","id":"sfx-vault-secret-service"}}
 platform bind open-api-session-login
 platform: sfx-identity-login-open-port.v1
 config: {"providerId":"sfx-identity-login-open","dependency":{"objectKind":"DEPENDENCY","namespace":"sidefx:dependencies","id":"sfx-identity-login"}}

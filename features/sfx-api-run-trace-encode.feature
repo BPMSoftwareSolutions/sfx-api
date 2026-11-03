@@ -1,7 +1,9 @@
 # Review copy for the owner and the owner's team, 2026-11-03.
 #
-# What this file is: the behavior of the provider capability sfx-api-run-trace-encode-port.v1 (provider
-# sfx-api-run-trace-encode), written as Gherkin. It encodes each chunk of a run's events as the run store's trace chunk.
+# What this file is: the behavior of the provider capability sfx-api-run-trace-encode-port.v2 (provider
+# sfx-api-run-trace-encode.v2), written as Gherkin. The host's bundle binds it under that identity through the host's own declared
+# providers (SDA D15); until the image that carries the bundle replaces the host now serving, the estate's copy
+# serves as sfx-api-run-trace-encode-port.v1 (provider sfx-api-run-trace-encode). It encodes each chunk of a run's events as the run store's trace chunk.
 # The sources are the provider's declared program (providers/sfx-api-run-trace.dependency.json, operation encode-chunk),
 # the estate's declaration of it (DEPENDENCY sidefx:dependencies/sfx-api-run-trace, definition da5ee4ad, declared by run
 # 310be6b8 and read on 2026-11-03 through sql-database-reader, run 4d1c2e4f-db9b-ae32-f716-377c0a781c08), the capability
@@ -47,7 +49,7 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:proven
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: A chunk is encoded, and it reads back as the events that were streamed
       Given a chunk of a run's events with its runId, firstCursor, lastCursor and recordCount
       When append-api-run-trace encodes the chunk
@@ -59,7 +61,7 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:probed
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: Every decoder of the run store reads the chunk
       When a chunk the provider encoded is decoded by .NET's brotli decoder and by the legacy evidence store's decoder
       Then both read the same events
@@ -68,7 +70,7 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:not-built
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: The compression level is declared by its meaning
       Then the program names the brotli compression level the trace is written at in words every runtime reads alike
       # Finding: the program passes the number 0 to System.IO.Compression.BrotliStream, which .NET binds to
@@ -79,11 +81,11 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:not-built
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: The step that encodes a chunk honors its binding, proved by the run
       Given this step depends on this provider binding:
         | calls                        | provider capability the step needs                                                                      | result it must produce here | run evidence that proves it                                        |
-        | append-api-run-trace.encode  | sfx-api-run-trace-encode-port.v1, provider sfx-api-run-trace-encode, port append-api-run-trace-encode   | the encoded chunk           | the delivery's testimony for the cell of append-api-run-trace.encode |
+        | append-api-run-trace.encode  | sfx-api-run-trace-encode-port.v2, provider sfx-api-run-trace-encode.v2, port append-api-run-trace-encode   | the encoded chunk           | the delivery's testimony for the cell of append-api-run-trace.encode |
       When a run's trace is retained
       Then each call produces the chunk its binding requires
       And acceptance finds each invocation attributed to that step within the same delivery
@@ -93,9 +95,9 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:not-built
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario Outline: Provider acceptance fails when the evidence cannot prove a required call
-      Given the accepted binding of append-api-run-trace.encode to sfx-api-run-trace-encode-port.v1
+      Given the accepted binding of append-api-run-trace.encode to sfx-api-run-trace-encode-port.v2
       When acceptance checks a delivery with <defect>
       Then provider acceptance fails for append-api-run-trace.encode and identifies the missing or conflicting evidence
 
@@ -111,7 +113,7 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:installed
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: Its program is declared for each runtime the host declares
       Then providers/sfx-api-run-trace.dependency.json declares the encode-chunk program for each runtime language the
         host's kernels run, and the host declares that language with its kernel in sfx-api.config.json
@@ -122,19 +124,22 @@ Feature: A run's trace is encoded by a declared provider, as the run store's oth
 
     @status:not-built
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     Scenario: The host runs the program its own bundle carries
       When append-api-run-trace is answered from the host's bundle
       Then its port binding carries this repo's encode-chunk program
       And no change to the estate's declaration of sfx-api-run-trace-encode changes what the host runs
       # Today the program comes with append-api-run-trace's declaration from the estate (definition da5ee4ad).
       # answer-host-declared-read.feature.
+      # The delivery's run capability, the estate's run-declared-graph, binds each mechanic through its execute port's
+      # overlayBindings and providers, which hold the estate's copy of this program (run c9be6b42). The host's own
+      # binding waits on SDA: docs/request-sda-host-provider-bindings.md.
 
   Rule: The trace is encoded in bounded chunks
 
     @status:proven
     @capability:append-api-run-trace
-    @provider:sfx-api-run-trace-encode-port.v1
+    @provider:sfx-api-run-trace-encode-port.v2
     @slo:trace-chunk
     Scenario: A chunk holds at most 2000 events and 524288 bytes of events
       Given the service level:

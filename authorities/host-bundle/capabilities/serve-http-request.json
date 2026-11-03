@@ -1,0 +1,1107 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "serve-http-request",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "serve-http-request",
+  "graphSource": {
+    "capabilityId": "serve-http-request",
+    "rootScenarioId": "serve-http-request",
+    "scenarios": [
+      {
+        "scenarioId": "serve-http-request",
+        "input": {
+          "inputId": "serve-http-request-request",
+          "contract": {
+            "contractId": "serve-http-request-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "serve-http-request-requested",
+          "executionAuthorityId": "serve-http-request.v1"
+        },
+        "outcome": {
+          "outcomeId": "serve-http-request-outcome",
+          "contract": {
+            "contractId": "serve-http-request-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "serve-http-request",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "serve-http-request.v1",
+        "owningScenarioId": "serve-http-request",
+        "operations": [
+          {
+            "operationId": "serve-http-request.read",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-read"
+          },
+          {
+            "operationId": "serve-http-request.ingress",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-ingress"
+          },
+          {
+            "operationId": "serve-http-request.prepare",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-prepare"
+          },
+          {
+            "operationId": "serve-http-request.frontdoor",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-frontdoor"
+          },
+          {
+            "operationId": "serve-http-request.shape",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-shape"
+          },
+          {
+            "operationId": "serve-http-request.respond",
+            "kind": "invoke-port",
+            "portId": "serve-http-request-respond"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "serve-http-request-cli",
+          "kind": "cli",
+          "rootScenarioId": "serve-http-request",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "text",
+              "contract": "serve-http-request-request.v1",
+              "path": "raw"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "serve-http-request-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "serve-http-request-transform.v1"
+          }
+        },
+        {
+          "portId": "serve-http-request-ingress",
+          "platformCapabilityId": "sfx-api-ingress-resolve-port.v2",
+          "configuration": {
+            "providerId": "sfx-api-ingress-resolve.v2",
+            "dependency": {
+              "objectKind": "DEPENDENCY",
+              "namespace": "sidefx:dependencies",
+              "id": "sfx-api-ingress"
+            }
+          }
+        },
+        {
+          "portId": "serve-http-request-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "signin": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "method"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "path",
+                        "path": "method"
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "POST"
+                      }
+                    },
+                    "then": {
+                      "op": "if",
+                      "when": {
+                        "op": "equals",
+                        "left": {
+                          "op": "type",
+                          "value": {
+                            "op": "path",
+                            "path": "segments"
+                          }
+                        },
+                        "right": {
+                          "op": "literal",
+                          "value": "array"
+                        }
+                      },
+                      "then": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "length",
+                            "value": {
+                              "op": "path",
+                              "path": "segments"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": 4
+                          }
+                        },
+                        "then": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "path",
+                              "path": "segments.1"
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": "sfx"
+                            }
+                          },
+                          "then": {
+                            "op": "if",
+                            "when": {
+                              "op": "equals",
+                              "left": {
+                                "op": "path",
+                                "path": "segments.2"
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": "v1"
+                              }
+                            },
+                            "then": {
+                              "op": "equals",
+                              "left": {
+                                "op": "path",
+                                "path": "segments.3"
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": "session"
+                              }
+                            },
+                            "else": {
+                              "op": "literal",
+                              "value": false
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": false
+                          }
+                        },
+                        "else": {
+                          "op": "literal",
+                          "value": false
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": false
+                      }
+                    },
+                    "else": {
+                      "op": "literal",
+                      "value": false
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": false
+                  }
+                },
+                "parsed": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "body"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "try-parse-json",
+                    "value": {
+                      "op": "path",
+                      "path": "body"
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": {
+                      "disposition": "NOT_PARSED",
+                      "value": null
+                    }
+                  }
+                },
+                "parsedOk": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "path",
+                      "path": "disposition",
+                      "from": "parsed"
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "PARSED"
+                    }
+                  },
+                  "then": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "value",
+                        "from": "parsed"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "object"
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": false
+                  }
+                },
+                "identifierOk": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "value.identifier",
+                        "from": "parsed"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "matches",
+                    "value": {
+                      "op": "path",
+                      "path": "value.identifier",
+                      "from": "parsed"
+                    },
+                    "pattern": "^(?=.*\\S)[^\\x00-\\x1F\\x7F]{1,254}$"
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": false
+                  }
+                },
+                "passwordOk": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "value.password",
+                        "from": "parsed"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "matches",
+                    "value": {
+                      "op": "path",
+                      "path": "value.password",
+                      "from": "parsed"
+                    },
+                    "pattern": "^[^\\x00]{1,1024}$"
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": false
+                  }
+                },
+                "sourceKey": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "source"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "if",
+                    "when": {
+                      "op": "matches",
+                      "value": {
+                        "op": "path",
+                        "path": "source"
+                      },
+                      "pattern": "^.+$"
+                    },
+                    "then": {
+                      "op": "path",
+                      "path": "source"
+                    },
+                    "else": {
+                      "op": "literal",
+                      "value": "unknown"
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": "unknown"
+                  }
+                }
+              },
+              "value": {
+                "op": "if",
+                "when": {
+                  "op": "path",
+                  "path": "",
+                  "from": "signin"
+                },
+                "then": {
+                  "op": "if",
+                  "when": {
+                    "op": "path",
+                    "path": "",
+                    "from": "parsedOk"
+                  },
+                  "then": {
+                    "op": "if",
+                    "when": {
+                      "op": "path",
+                      "path": "",
+                      "from": "identifierOk"
+                    },
+                    "then": {
+                      "op": "if",
+                      "when": {
+                        "op": "path",
+                        "path": "",
+                        "from": "passwordOk"
+                      },
+                      "then": {
+                        "op": "object",
+                        "fields": {
+                          "executionTarget": {
+                            "op": "literal",
+                            "value": "open-api-session"
+                          },
+                          "executionNamespace": {
+                            "op": "literal",
+                            "value": "sidefx:capabilities"
+                          },
+                          "executionScenario": {
+                            "op": "literal",
+                            "value": "open-api-session"
+                          },
+                          "inputType": {
+                            "op": "literal",
+                            "value": "json"
+                          },
+                          "dispatchRequest": {
+                            "op": "object",
+                            "fields": {
+                              "login": {
+                                "op": "object",
+                                "fields": {
+                                  "realm": {
+                                    "op": "literal",
+                                    "value": "sfx-ide-local"
+                                  },
+                                  "identifier": {
+                                    "op": "path",
+                                    "path": "value.identifier",
+                                    "from": "parsed"
+                                  },
+                                  "sourceKey": {
+                                    "op": "path",
+                                    "path": "",
+                                    "from": "sourceKey"
+                                  }
+                                }
+                              },
+                              "password": {
+                                "op": "path",
+                                "path": "value.password",
+                                "from": "parsed"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "else": {
+                        "op": "object",
+                        "fields": {
+                          "executionTarget": {
+                            "op": "literal",
+                            "value": "answer-api-response"
+                          },
+                          "executionNamespace": {
+                            "op": "literal",
+                            "value": "sidefx:capabilities"
+                          },
+                          "executionScenario": {
+                            "op": "literal",
+                            "value": "answer-api-response"
+                          },
+                          "inputType": {
+                            "op": "literal",
+                            "value": "json"
+                          },
+                          "dispatchRequest": {
+                            "op": "object",
+                            "fields": {
+                              "contractId": {
+                                "op": "literal",
+                                "value": "api-response.v1"
+                              },
+                              "status": {
+                                "op": "literal",
+                                "value": 400
+                              },
+                              "headers": {
+                                "op": "literal",
+                                "value": {
+                                  "content-type": "application/json; charset=utf-8"
+                                }
+                              },
+                              "body": {
+                                "op": "object",
+                                "fields": {
+                                  "status": {
+                                    "op": "literal",
+                                    "value": "LOGIN_INPUT_INVALID"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "op": "object",
+                      "fields": {
+                        "executionTarget": {
+                          "op": "literal",
+                          "value": "answer-api-response"
+                        },
+                        "executionNamespace": {
+                          "op": "literal",
+                          "value": "sidefx:capabilities"
+                        },
+                        "executionScenario": {
+                          "op": "literal",
+                          "value": "answer-api-response"
+                        },
+                        "inputType": {
+                          "op": "literal",
+                          "value": "json"
+                        },
+                        "dispatchRequest": {
+                          "op": "object",
+                          "fields": {
+                            "contractId": {
+                              "op": "literal",
+                              "value": "api-response.v1"
+                            },
+                            "status": {
+                              "op": "literal",
+                              "value": 400
+                            },
+                            "headers": {
+                              "op": "literal",
+                              "value": {
+                                "content-type": "application/json; charset=utf-8"
+                              }
+                            },
+                            "body": {
+                              "op": "object",
+                              "fields": {
+                                "status": {
+                                  "op": "literal",
+                                  "value": "LOGIN_INPUT_INVALID"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "object",
+                    "fields": {
+                      "executionTarget": {
+                        "op": "literal",
+                        "value": "answer-api-response"
+                      },
+                      "executionNamespace": {
+                        "op": "literal",
+                        "value": "sidefx:capabilities"
+                      },
+                      "executionScenario": {
+                        "op": "literal",
+                        "value": "answer-api-response"
+                      },
+                      "inputType": {
+                        "op": "literal",
+                        "value": "json"
+                      },
+                      "dispatchRequest": {
+                        "op": "object",
+                        "fields": {
+                          "contractId": {
+                            "op": "literal",
+                            "value": "api-response.v1"
+                          },
+                          "status": {
+                            "op": "literal",
+                            "value": 400
+                          },
+                          "headers": {
+                            "op": "literal",
+                            "value": {
+                              "content-type": "application/json; charset=utf-8"
+                            }
+                          },
+                          "body": {
+                            "op": "object",
+                            "fields": {
+                              "status": {
+                                "op": "literal",
+                                "value": "LOGIN_INPUT_INVALID"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "op": "object",
+                  "fields": {
+                    "executionTarget": {
+                      "op": "literal",
+                      "value": "serve-api-request"
+                    },
+                    "executionNamespace": {
+                      "op": "literal",
+                      "value": "sidefx:capabilities"
+                    },
+                    "executionScenario": {
+                      "op": "literal",
+                      "value": "serve-api-request"
+                    },
+                    "inputType": {
+                      "op": "literal",
+                      "value": "json"
+                    },
+                    "dispatchRequest": {
+                      "op": "object",
+                      "fields": {
+                        "request": {
+                          "op": "object",
+                          "fields": {
+                            "method": {
+                              "op": "path",
+                              "path": "method"
+                            },
+                            "segments": {
+                              "op": "path",
+                              "path": "segments"
+                            },
+                            "query": {
+                              "op": "let",
+                              "bindings": {
+                                "parsed": {
+                                  "op": "try-parse-json",
+                                  "value": {
+                                    "op": "path",
+                                    "path": "queryJson"
+                                  }
+                                }
+                              },
+                              "value": {
+                                "op": "if",
+                                "when": {
+                                  "op": "equals",
+                                  "left": {
+                                    "op": "type",
+                                    "value": {
+                                      "op": "path",
+                                      "path": "value",
+                                      "from": "parsed"
+                                    }
+                                  },
+                                  "right": {
+                                    "op": "literal",
+                                    "value": "object"
+                                  }
+                                },
+                                "then": {
+                                  "op": "path",
+                                  "path": "value",
+                                  "from": "parsed"
+                                },
+                                "else": {
+                                  "op": "literal",
+                                  "value": {}
+                                }
+                              }
+                            },
+                            "body": {
+                              "op": "path",
+                              "path": "body"
+                            },
+                            "headers": {
+                              "op": "if",
+                              "when": {
+                                "op": "equals",
+                                "left": {
+                                  "op": "type",
+                                  "value": {
+                                    "op": "path",
+                                    "path": "headers"
+                                  }
+                                },
+                                "right": {
+                                  "op": "literal",
+                                  "value": "object"
+                                }
+                              },
+                              "then": {
+                                "op": "path",
+                                "path": "headers"
+                              },
+                              "else": {
+                                "op": "literal",
+                                "value": {}
+                              }
+                            }
+                          }
+                        },
+                        "caller": {
+                          "op": "if",
+                          "when": {
+                            "op": "equals",
+                            "left": {
+                              "op": "path",
+                              "path": "carried"
+                            },
+                            "right": {
+                              "op": "literal",
+                              "value": true
+                            }
+                          },
+                          "then": {
+                            "op": "object",
+                            "fields": {
+                              "sessionDigest": {
+                                "op": "path",
+                                "path": "sessionDigest"
+                              }
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": null
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "serve-http-request-frontdoor",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "serve-http-request-shape",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "status": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "result.status"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "lookup",
+                    "value": {
+                      "op": "literal",
+                      "value": {
+                        "AUTHENTICATED": 200,
+                        "AUTHENTICATION_REJECTED": 401,
+                        "THROTTLED": 429
+                      }
+                    },
+                    "path": {
+                      "op": "path",
+                      "path": "result.status"
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": null
+                  }
+                },
+                "response": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "path",
+                      "path": "executionTarget"
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "open-api-session"
+                    }
+                  },
+                  "then": {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "type",
+                        "value": {
+                          "op": "path",
+                          "path": "",
+                          "from": "status"
+                        }
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "number"
+                      }
+                    },
+                    "then": {
+                      "op": "object",
+                      "fields": {
+                        "status": {
+                          "op": "path",
+                          "path": "",
+                          "from": "status"
+                        },
+                        "headers": {
+                          "op": "literal",
+                          "value": {
+                            "content-type": "application/json; charset=utf-8"
+                          }
+                        },
+                        "body": {
+                          "op": "path",
+                          "path": "result"
+                        }
+                      }
+                    },
+                    "else": {
+                      "op": "object",
+                      "fields": {
+                        "status": {
+                          "op": "literal",
+                          "value": 503
+                        },
+                        "headers": {
+                          "op": "literal",
+                          "value": {
+                            "content-type": "application/json; charset=utf-8"
+                          }
+                        },
+                        "body": {
+                          "op": "object",
+                          "fields": {
+                            "status": {
+                              "op": "literal",
+                              "value": "IDENTITY_UNAVAILABLE"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "path",
+                        "path": "result.contractId"
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "api-response.v1"
+                      }
+                    },
+                    "then": {
+                      "op": "path",
+                      "path": "result"
+                    },
+                    "else": {
+                      "op": "object",
+                      "fields": {
+                        "status": {
+                          "op": "literal",
+                          "value": 502
+                        },
+                        "headers": {
+                          "op": "literal",
+                          "value": {
+                            "content-type": "application/json; charset=utf-8"
+                          }
+                        },
+                        "body": {
+                          "op": "object",
+                          "fields": {
+                            "error": {
+                              "op": "object",
+                              "fields": {
+                                "code": {
+                                  "op": "literal",
+                                  "value": "FRONTDOOR_RESPONSE_INVALID"
+                                },
+                                "message": {
+                                  "op": "path",
+                                  "path": "result.message"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "object",
+                "fields": {
+                  "status": {
+                    "op": "path",
+                    "path": "status",
+                    "from": "response"
+                  },
+                  "contentType": {
+                    "op": "path",
+                    "path": "headers.content-type",
+                    "from": "response"
+                  },
+                  "body": {
+                    "op": "path",
+                    "path": "body",
+                    "from": "response"
+                  },
+                  "reasons": {
+                    "op": "literal",
+                    "value": {
+                      "200": "OK",
+                      "201": "Created",
+                      "202": "Accepted",
+                      "204": "No Content",
+                      "400": "Bad Request",
+                      "401": "Unauthorized",
+                      "403": "Forbidden",
+                      "404": "Not Found",
+                      "405": "Method Not Allowed",
+                      "409": "Conflict",
+                      "413": "Content Too Large",
+                      "415": "Unsupported Media Type",
+                      "422": "Unprocessable Content",
+                      "429": "Too Many Requests",
+                      "500": "Internal Server Error",
+                      "501": "Not Implemented",
+                      "502": "Bad Gateway",
+                      "503": "Service Unavailable",
+                      "504": "Gateway Timeout"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "serve-http-request-respond",
+          "platformCapabilityId": "sfx-api-ingress-compose-port.v2",
+          "configuration": {
+            "providerId": "sfx-api-ingress-compose.v2",
+            "dependency": {
+              "objectKind": "DEPENDENCY",
+              "namespace": "sidefx:dependencies",
+              "id": "sfx-api-ingress"
+            }
+          }
+        },
+        {
+          "portId": "serve-http-request-read",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "path",
+              "path": "raw"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "serve-http-request-request.v1": {
+          "schemaRef": "serve-http-request-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contractId",
+              "raw"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "serve-http-request-request.v1"
+              },
+              "raw": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "serve-http-request-result.v1": {
+          "schemaRef": "serve-http-request-result.v1.schema.json",
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "text",
+      "contract": "serve-http-request-request.v1",
+      "path": "raw"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "serve-http-request",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "serve-http-request",
+      "input_id": "serve-http-request-request",
+      "event_id": "serve-http-request-requested",
+      "responsibility": "the kernel resolves the request, runs the frontdoor and composes the response",
+      "outcome_id": "serve-http-request-outcome",
+      "scenario_definition_digest": "tRW8zgO09tnrfKMC6TnKEePmhBm7L7NC6HvqxmPelbI="
+    }
+  ]
+}

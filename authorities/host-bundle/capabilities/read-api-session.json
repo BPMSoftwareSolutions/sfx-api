@@ -1,0 +1,171 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-session",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-session",
+  "graphSource": {
+    "capabilityId": "read-api-session",
+    "rootScenarioId": "read-api-session",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-session",
+        "input": {
+          "inputId": "read-api-session-request",
+          "contract": {
+            "contractId": "read-api-session-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-session-requested",
+          "executionAuthorityId": "read-api-session.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-session-outcome",
+          "contract": {
+            "contractId": "read-api-session-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-session",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-session.v1",
+        "owningScenarioId": "read-api-session",
+        "operations": [
+          {
+            "operationId": "read-api-session.answer",
+            "kind": "invoke-port",
+            "portId": "read-api-session-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-session-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-session",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-session-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-session-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-api-session-transform.v1"
+          }
+        },
+        {
+          "portId": "read-api-session-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-api-session-answer"
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [
+      {
+        "id": "read-api-session-answer",
+        "expression": {
+          "op": "object",
+          "fields": {
+            "status": {
+              "op": "literal",
+              "value": "READ"
+            },
+            "kind": {
+              "op": "path",
+              "path": "kind"
+            },
+            "principalId": {
+              "op": "path",
+              "path": "principalId"
+            },
+            "sessionId": {
+              "op": "path",
+              "path": "sessionId"
+            },
+            "sessionExpiresAt": {
+              "op": "path",
+              "path": "sessionExpiresAt"
+            }
+          }
+        }
+      }
+    ],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-session-request.v1": {
+          "schemaRef": "read-api-session-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "read-api-session-result.v1": {
+          "schemaRef": "read-api-session-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-session-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-session",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-session",
+      "input_id": "read-api-session-request",
+      "event_id": "read-api-session-requested",
+      "responsibility": "the kernel evaluates the declared SEJ",
+      "outcome_id": "read-api-session-outcome",
+      "scenario_definition_digest": "JqC4JdzAa2tO6CmSjgugwrnGwD5B4p3adm0/mIz9RF8="
+    }
+  ]
+}

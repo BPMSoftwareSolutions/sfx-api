@@ -1,0 +1,327 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "select-estate-live-observation",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "select-estate-live-observation",
+  "graphSource": {
+    "capabilityId": "select-estate-live-observation",
+    "rootScenarioId": "select-estate-live-observation",
+    "scenarios": [
+      {
+        "scenarioId": "select-estate-live-observation",
+        "input": {
+          "inputId": "select-estate-live-observation-request",
+          "contract": {
+            "contractId": "select-estate-live-observation-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "select-estate-live-observation-requested",
+          "executionAuthorityId": "select-estate-live-observation.v1"
+        },
+        "outcome": {
+          "outcomeId": "select-estate-live-observation-outcome",
+          "contract": {
+            "contractId": "select-estate-live-observation-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "select-estate-live-observation",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "select-estate-live-observation.v1",
+        "owningScenarioId": "select-estate-live-observation",
+        "operations": [
+          {
+            "operationId": "select-estate-live-observation.select",
+            "kind": "invoke-port",
+            "portId": "select-estate-live-observation-select"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "select-estate-live-observation-cli",
+          "kind": "cli",
+          "rootScenarioId": "select-estate-live-observation",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "select-estate-live-observation-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "select-estate-live-observation-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "select-estate-live-observation-transform.v1"
+          }
+        },
+        {
+          "portId": "select-estate-live-observation-select",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "w": {
+                  "op": "if",
+                  "when": {
+                    "op": "structural-equals",
+                    "left": {
+                      "op": "path",
+                      "path": "select.run"
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "next"
+                    }
+                  },
+                  "then": {
+                    "op": "find",
+                    "from": {
+                      "op": "path",
+                      "path": "windows"
+                    },
+                    "as": "w",
+                    "where": {
+                      "op": "structural-equals",
+                      "left": {
+                        "op": "path",
+                        "path": "startSeq",
+                        "from": "w"
+                      },
+                      "right": {
+                        "op": "path",
+                        "path": "started"
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "if",
+                    "when": {
+                      "op": "structural-equals",
+                      "left": {
+                        "op": "path",
+                        "path": "select.run"
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "current"
+                      }
+                    },
+                    "then": {
+                      "op": "find",
+                      "from": {
+                        "op": "path",
+                        "path": "windows"
+                      },
+                      "as": "w",
+                      "where": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "path",
+                              "path": "select.graphId"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "string"
+                          }
+                        },
+                        "then": {
+                          "op": "structural-equals",
+                          "left": {
+                            "op": "find",
+                            "from": {
+                              "op": "path",
+                              "path": "graphs",
+                              "from": "w"
+                            },
+                            "as": "g",
+                            "where": {
+                              "op": "literal",
+                              "value": true
+                            }
+                          },
+                          "right": {
+                            "op": "path",
+                            "path": "select.graphId"
+                          }
+                        },
+                        "else": {
+                          "op": "literal",
+                          "value": true
+                        }
+                      }
+                    },
+                    "else": {
+                      "op": "find",
+                      "from": {
+                        "op": "path",
+                        "path": "windows"
+                      },
+                      "as": "w",
+                      "where": {
+                        "op": "structural-equals",
+                        "left": {
+                          "op": "subtract",
+                          "left": {
+                            "op": "length",
+                            "value": {
+                              "op": "path",
+                              "path": "windows"
+                            }
+                          },
+                          "right": {
+                            "op": "path",
+                            "path": "",
+                            "from": "wIndex"
+                          }
+                        },
+                        "right": {
+                          "op": "path",
+                          "path": "select.run"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "object",
+                "fields": {
+                  "contractId": {
+                    "op": "literal",
+                    "value": "select-estate-live-observation-result.v1"
+                  },
+                  "window": {
+                    "op": "if",
+                    "when": {
+                      "op": "path",
+                      "path": "",
+                      "from": "w"
+                    },
+                    "then": {
+                      "op": "object",
+                      "fields": {
+                        "runId": {
+                          "op": "path",
+                          "path": "runId",
+                          "from": "w"
+                        },
+                        "startSeq": {
+                          "op": "path",
+                          "path": "startSeq",
+                          "from": "w"
+                        },
+                        "endSeq": {
+                          "op": "path",
+                          "path": "endSeq",
+                          "from": "w"
+                        }
+                      }
+                    },
+                    "else": {
+                      "op": "literal",
+                      "value": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "select-estate-live-observation-request.v1": {
+          "schemaRef": "select-estate-live-observation-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "select",
+              "windows"
+            ],
+            "properties": {
+              "select": {
+                "type": "object"
+              },
+              "windows": {
+                "type": "array"
+              },
+              "started": {}
+            }
+          }
+        },
+        "select-estate-live-observation-result.v1": {
+          "schemaRef": "select-estate-live-observation-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "select-estate-live-observation-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "select-estate-live-observation",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "select-estate-live-observation",
+      "input_id": "select-estate-live-observation-request",
+      "event_id": "select-estate-live-observation-requested",
+      "responsibility": "the selection is matched to a window",
+      "outcome_id": "select-estate-live-observation-outcome",
+      "scenario_definition_digest": "8B6NCZu3ZESjrs2/gSDhoPD5hDjRiPJRYyWc8UEpUiw="
+    }
+  ]
+}

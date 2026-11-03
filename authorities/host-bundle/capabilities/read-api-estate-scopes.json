@@ -1,0 +1,186 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-estate-scopes",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-estate-scopes",
+  "graphSource": {
+    "capabilityId": "read-api-estate-scopes",
+    "rootScenarioId": "read-api-estate-scopes",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-estate-scopes",
+        "input": {
+          "inputId": "read-api-estate-scopes-request",
+          "contract": {
+            "contractId": "read-api-estate-scopes-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-estate-scopes-requested",
+          "executionAuthorityId": "read-api-estate-scopes.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-estate-scopes-outcome",
+          "contract": {
+            "contractId": "estate-scopes.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-estate-scopes",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-estate-scopes.v1",
+        "owningScenarioId": "read-api-estate-scopes",
+        "operations": [
+          {
+            "operationId": "read-api-estate-scopes.read",
+            "kind": "invoke-port",
+            "portId": "read-api-estate-scopes-read"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-estate-scopes-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-estate-scopes",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-estate-scopes-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-estate-scopes-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-api-estate-scopes-transform.v1"
+          }
+        },
+        {
+          "portId": "read-api-estate-scopes-read",
+          "platformCapabilityId": "sda-embodiment-plan-port.v1",
+          "configuration": {
+            "statement": "SET NOCOUNT ON; DECLARE @t TABLE(value nvarchar(max)); INSERT @t EXEC analysis.read_estate_execution_topology @input = N'{\"capabilityLimit\":1,\"relationshipLimit\":1}', @estate_model_pk = @estate_model_pk; DECLARE @topology nvarchar(max) = (SELECT TOP (1) value FROM @t); DECLARE @readable bit = CASE WHEN JSON_VALUE(@topology, '$.status') = N'READ' AND JSON_VALUE(@topology, '$.scope.read') = N'true' THEN 1 ELSE 0 END; SELECT (SELECT N'estate-scopes.v1' AS contractId, N'READ' AS status, JSON_VALUE(@input, '$.principalId') AS principalId, JSON_QUERY(CASE WHEN @readable = 1 THEN N'[' + JSON_MODIFY(JSON_MODIFY(JSON_QUERY(@topology, '$.estate'), '$.scopeId', JSON_VALUE(@topology, '$.scope.namespaceId')), '$.read', CONVERT(bit, 1)) + N']' ELSE N'[]' END) AS estates, JSON_QUERY(N'{\"available\":true,\"maximumIntervalMilliseconds\":86400000,\"reads\":{\"topology\":\"/sfx/v1/estate-execution/topology\",\"activity\":\"/sfx/v1/estate-execution/activity\",\"coverage\":\"/sfx/v1/estate-execution/coverage\",\"provenance\":\"/sfx/v1/estate-execution/provenance\",\"revision\":\"/sfx/v1/estate-execution/revision\"}}') AS retained, JSON_QUERY(N'{\"available\":true,\"stream\":\"/sfx/v1/estate-execution/stream\",\"resume\":[\"since\",\"Last-Event-ID\"],\"instanceHeader\":\"x-observer-instance\"}') AS live FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS value;",
+            "resultColumn": "value",
+            "providerId": "sda-declared-read-graph-provider.v1",
+            "estateProvider": {
+              "providerId": "sda-declared-read-graph-provider.v1",
+              "name": "Declared Read Graph Provider (query runner)",
+              "declarationProfile": "sda-platform-capability-catalog.v1",
+              "effectClassification": "effect",
+              "factory": true,
+              "module": "languages/typescript/runtimes/node/semantic-execution-graph-declared-read-provider.mjs",
+              "export": "createDeclaredReadProvider",
+              "capabilities": [
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "csharp",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/csharp/src/ScenarioKernel.Adapters/Graph/SemanticExecutionGraphDeclaredReadProvider.cs",
+                  "conformanceRef": "languages/csharp/tests/ScenarioKernel.ConformanceTests/SemanticExecutionGraphExecutionProviderTests.cs"
+                },
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "node",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/typescript/runtimes/node/semantic-execution-graph-declared-read-provider.mjs",
+                  "conformanceRef": "languages/typescript/runtimes/node/canonical-graph-host-invariance.conformance.test.mjs"
+                },
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "python",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/python/src/scenario_kernel/adapters/semantic_execution_graph_declared_read_provider.py",
+                  "conformanceRef": "languages/python/tests/conformance/test_semantic_execution_graph_execution.py"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "estate-scopes.v1": {
+          "schemaRef": "estate-scopes.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "estates"
+            ]
+          }
+        },
+        "read-api-estate-scopes-request.v1": {
+          "schemaRef": "read-api-estate-scopes-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "principalId": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-estate-scopes-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-estate-scopes",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-estate-scopes",
+      "input_id": "read-api-estate-scopes-request",
+      "event_id": "read-api-estate-scopes-requested",
+      "responsibility": "the topology reader reads the selected estate's identity and scope",
+      "outcome_id": "read-api-estate-scopes-outcome",
+      "scenario_definition_digest": "OlD1zZfWIFdwIBtAvz7DOqf4aCSJjAbKRlnzrEVwFbQ="
+    }
+  ]
+}

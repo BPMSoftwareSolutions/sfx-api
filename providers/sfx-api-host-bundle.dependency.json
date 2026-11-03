@@ -1,0 +1,234 @@
+{
+  "dependencyId": "sfx-api-host-bundle",
+  "meaning": "The host's pinned bundle, read by a declared provider so that no host code reads it. read-document reads one document of the bundle and answers it only when the SHA-256 of its exact bytes is the digest the caller names: the manifest under the pin, a capability's document under the digest the manifest names. A missing document, another digest, or bytes that are not UTF-8 fail the read. It opens no connection and holds no credential.",
+  "objectGraphClosure": "object-graph.v1",
+  "runtimes": {
+    "csharp": {
+      "package": "System.Private.CoreLib",
+      "type": "System.IO.FileStream"
+    }
+  },
+  "operations": [
+    {
+      "operationId": "read-document",
+      "meaning": "Read the document at path and answer it with carry when the base64 SHA-256 of its bytes equals sha256Base64: {carry, text}, where carry is the caller's own member passed through unchanged and text is the document as UTF-8. The digest is checked by keeping the document under the declared digest alone, as sfx-identity-login keeps a package only under its declared digest. The caller parses text, so a document that is not JSON fails there.",
+      "parameters": [
+        {
+          "name": "path",
+          "source": "input",
+          "path": "path"
+        },
+        {
+          "name": "expected",
+          "source": "input",
+          "path": "sha256Base64"
+        },
+        {
+          "name": "carry",
+          "source": "input",
+          "path": "carry"
+        }
+      ],
+      "result": {
+        "from": "value"
+      },
+      "programs": {
+        "csharp": [
+          {
+            "bind": "stream",
+            "invocation": "new System.IO.FileStream",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "path"
+              },
+              {
+                "op": "literal",
+                "value": 3
+              },
+              {
+                "op": "literal",
+                "value": 1
+              }
+            ],
+            "release": {
+              "invocation": "stream.Dispose"
+            }
+          },
+          {
+            "bind": "buffer",
+            "invocation": "new System.IO.MemoryStream",
+            "release": {
+              "invocation": "buffer.Dispose"
+            }
+          },
+          {
+            "invocation": "stream.CopyTo",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "buffer"
+              }
+            ]
+          },
+          {
+            "bind": "content",
+            "invocation": "buffer.ToArray"
+          },
+          {
+            "bind": "hasher",
+            "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+            "release": {
+              "invocation": "hasher.Dispose"
+            }
+          },
+          {
+            "bind": "digest",
+            "invocation": "hasher.ComputeHash",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "content"
+              }
+            ]
+          },
+          {
+            "bind": "digests",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "digests.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "actual"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "digest"
+              }
+            ]
+          },
+          {
+            "bind": "actual",
+            "invocation": "digests.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "actual"
+            }
+          },
+          {
+            "bind": "pinned",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "pinned.Add",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "expected"
+              },
+              {
+                "op": "literal",
+                "value": "pinned"
+              }
+            ]
+          },
+          {
+            "bind": "match",
+            "invocation": "pinned.$computed.$read",
+            "selector": {
+              "op": "path",
+              "from": "scope",
+              "path": "actual"
+            }
+          },
+          {
+            "bind": "matched",
+            "invocation": "match.ToString"
+          },
+          {
+            "bind": "decoder",
+            "invocation": "new System.Text.UTF8Encoding",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": false
+              },
+              {
+                "op": "literal",
+                "value": true
+              }
+            ]
+          },
+          {
+            "bind": "text",
+            "invocation": "decoder.GetString",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "content"
+              }
+            ]
+          },
+          {
+            "bind": "value",
+            "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": null
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "carry"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "carry"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "text"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "text"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

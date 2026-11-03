@@ -1,0 +1,612 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "open-api-run-stream",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "open-api-run-stream",
+  "graphSource": {
+    "capabilityId": "open-api-run-stream",
+    "rootScenarioId": "open-api-run-stream",
+    "scenarios": [
+      {
+        "scenarioId": "open-api-run-stream",
+        "input": {
+          "inputId": "open-api-run-stream-request",
+          "contract": {
+            "contractId": "open-api-run-stream-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "open-api-run-stream-requested",
+          "executionAuthorityId": "open-api-run-stream.v1"
+        },
+        "outcome": {
+          "outcomeId": "open-api-run-stream-outcome",
+          "contract": {
+            "contractId": "open-api-run-stream-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "open-api-run-stream",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "open-api-run-stream.v1",
+        "owningScenarioId": "open-api-run-stream",
+        "operations": [
+          {
+            "operationId": "open-api-run-stream.read-prepare",
+            "kind": "invoke-port",
+            "portId": "open-api-run-stream-read-prepare"
+          },
+          {
+            "operationId": "open-api-run-stream.read",
+            "kind": "invoke-port",
+            "portId": "open-api-run-stream-read"
+          },
+          {
+            "operationId": "open-api-run-stream.answer",
+            "kind": "invoke-port",
+            "portId": "open-api-run-stream-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "open-api-run-stream-cli",
+          "kind": "cli",
+          "rootScenarioId": "open-api-run-stream",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "open-api-run-stream-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "open-api-run-stream-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "open-api-run-stream-transform.v1"
+          }
+        },
+        {
+          "portId": "open-api-run-stream-read-prepare",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "object",
+              "fields": {
+                "executionTarget": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "executionNamespace": {
+                  "op": "literal",
+                  "value": "sidefx:capabilities"
+                },
+                "executionScenario": {
+                  "op": "literal",
+                  "value": "sql-database-reader"
+                },
+                "inputType": {
+                  "op": "literal",
+                  "value": "json"
+                },
+                "dispatchRequest": {
+                  "op": "object",
+                  "fields": {
+                    "dataSource": {
+                      "op": "literal",
+                      "value": "sfx-identity-database"
+                    },
+                    "statement": {
+                      "op": "literal",
+                      "value": "SET NOCOUNT ON; DECLARE @principal_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.principalId')); DECLARE @run_id varchar(128) = JSON_VALUE(@input, '$.runId'); DECLARE @session_id uniqueidentifier = TRY_CONVERT(uniqueidentifier, JSON_VALUE(@input, '$.sessionId')); DECLARE @expires datetimeoffset(7) = (SELECT s.expires_at FROM [identity].session s JOIN [identity].principal p ON p.principal_id = s.principal_id WHERE s.session_id = @session_id AND s.principal_id = @principal_id AND s.revoked_at IS NULL AND s.expires_at > SYSUTCDATETIME() AND p.active = 1); DECLARE @r TABLE(run_id varchar(128), capability_id nvarchar(512), namespace_id nvarchar(256), admitted_at datetime2(7), session_id uniqueidentifier, run_json nvarchar(max), graph_json nvarchar(max), output_json nvarchar(max), latest_cursor bigint, trace_complete bit, material_digest varbinary(32), graphs_json nvarchar(max), capture_status varchar(16)); IF @principal_id IS NOT NULL AND @run_id IS NOT NULL INSERT @r EXEC evidence.read_run @principal_id = @principal_id, @run_id = @run_id; SELECT (SELECT CASE WHEN EXISTS (SELECT 1 FROM @r) THEN 'READ' ELSE 'NOT_FOUND' END AS status, @run_id AS runId, (SELECT TOP (1) COALESCE(JSON_VALUE(run_json, '$.state'), 'admitted') FROM @r) AS state, TRY_CONVERT(bigint, JSON_VALUE(@input, '$.after')) AS after, JSON_VALUE(@input, '$.lastEventId') AS lastEventId, LOWER(CONVERT(varchar(36), @principal_id)) AS principalId, LOWER(CONVERT(varchar(36), @session_id)) AS sessionId, @expires AS sessionExpiresAt, CONVERT(bit, CASE WHEN @expires IS NULL THEN 0 ELSE 1 END) AS sessionLive, COALESCE(TRY_CONVERT(int, JSON_VALUE(@input, '$.recheckMilliseconds')), 5000) AS recheckMilliseconds FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) AS value;"
+                    },
+                    "resultColumn": {
+                      "op": "literal",
+                      "value": "value"
+                    },
+                    "input": {
+                      "op": "path",
+                      "path": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "portId": "open-api-run-stream-read",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "open-api-run-stream-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "let",
+              "bindings": {
+                "found": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "result.value"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "string"
+                    }
+                  },
+                  "then": {
+                    "op": "let",
+                    "bindings": {
+                      "parsed": {
+                        "op": "try-parse-json",
+                        "value": {
+                          "op": "path",
+                          "path": "result.value"
+                        },
+                        "stripBom": true
+                      }
+                    },
+                    "value": {
+                      "op": "path",
+                      "path": "value",
+                      "from": "parsed"
+                    }
+                  },
+                  "else": {
+                    "op": "if",
+                    "when": {
+                      "op": "equals",
+                      "left": {
+                        "op": "type",
+                        "value": {
+                          "op": "path",
+                          "path": "result.value"
+                        }
+                      },
+                      "right": {
+                        "op": "literal",
+                        "value": "object"
+                      }
+                    },
+                    "then": {
+                      "op": "path",
+                      "path": "result.value"
+                    },
+                    "else": {
+                      "op": "path",
+                      "path": "result"
+                    }
+                  }
+                }
+              },
+              "value": {
+                "op": "if",
+                "when": {
+                  "op": "equals",
+                  "left": {
+                    "op": "path",
+                    "path": "status",
+                    "from": "found"
+                  },
+                  "right": {
+                    "op": "literal",
+                    "value": "READ"
+                  }
+                },
+                "then": {
+                  "op": "if",
+                  "when": {
+                    "op": "path",
+                    "path": "sessionLive",
+                    "from": "found"
+                  },
+                  "then": {
+                    "op": "let",
+                    "bindings": {
+                      "after": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "type",
+                            "value": {
+                              "op": "path",
+                              "path": "after",
+                              "from": "found"
+                            }
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "number"
+                          }
+                        },
+                        "then": {
+                          "op": "if",
+                          "when": {
+                            "op": "greater-than",
+                            "left": {
+                              "op": "literal",
+                              "value": 0
+                            },
+                            "right": {
+                              "op": "path",
+                              "path": "after",
+                              "from": "found"
+                            }
+                          },
+                          "then": {
+                            "op": "literal",
+                            "value": 0
+                          },
+                          "else": {
+                            "op": "path",
+                            "path": "after",
+                            "from": "found"
+                          }
+                        },
+                        "else": {
+                          "op": "if",
+                          "when": {
+                            "op": "if",
+                            "when": {
+                              "op": "equals",
+                              "left": {
+                                "op": "type",
+                                "value": {
+                                  "op": "path",
+                                  "path": "lastEventId",
+                                  "from": "found"
+                                }
+                              },
+                              "right": {
+                                "op": "literal",
+                                "value": "string"
+                              }
+                            },
+                            "then": {
+                              "op": "matches",
+                              "value": {
+                                "op": "path",
+                                "path": "lastEventId",
+                                "from": "found"
+                              },
+                              "pattern": "^(0|[1-9][0-9]{0,14})$"
+                            },
+                            "else": {
+                              "op": "literal",
+                              "value": false
+                            }
+                          },
+                          "then": {
+                            "op": "parse-json",
+                            "value": {
+                              "op": "path",
+                              "path": "lastEventId",
+                              "from": "found"
+                            }
+                          },
+                          "else": {
+                            "op": "literal",
+                            "value": 0
+                          }
+                        }
+                      }
+                    },
+                    "value": {
+                      "op": "object",
+                      "fields": {
+                        "contractId": {
+                          "op": "literal",
+                          "value": "api-response.v1"
+                        },
+                        "disposition": {
+                          "op": "literal",
+                          "value": "RESPONDED"
+                        },
+                        "status": {
+                          "op": "literal",
+                          "value": 200
+                        },
+                        "headers": {
+                          "op": "literal",
+                          "value": {
+                            "content-type": "application/vnd.sfx.host-directive+json"
+                          }
+                        },
+                        "body": {
+                          "op": "object",
+                          "fields": {
+                            "contractId": {
+                              "op": "literal",
+                              "value": "sfx-api-host-directive.v1"
+                            },
+                            "directive": {
+                              "op": "literal",
+                              "value": "stream-run"
+                            },
+                            "runId": {
+                              "op": "path",
+                              "path": "runId",
+                              "from": "found"
+                            },
+                            "state": {
+                              "op": "path",
+                              "path": "state",
+                              "from": "found"
+                            },
+                            "after": {
+                              "op": "path",
+                              "path": "",
+                              "from": "after"
+                            },
+                            "stream": {
+                              "op": "object",
+                              "fields": {
+                                "head": {
+                                  "op": "literal",
+                                  "value": "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache, no-store\r\nX-Accel-Buffering: no\r\nConnection: close\r\n\r\n"
+                                },
+                                "open": {
+                                  "op": "literal",
+                                  "value": ": sfx-api run event stream\n\n"
+                                },
+                                "keepalive": {
+                                  "op": "literal",
+                                  "value": ": keepalive\n\n"
+                                },
+                                "sessionEnded": {
+                                  "op": "format",
+                                  "template": "event: session-ended\ndata: {\"runId\":{r},\"cursor\":{cursor}}\n\n",
+                                  "values": {
+                                    "r": {
+                                      "op": "json-stringify",
+                                      "value": {
+                                        "op": "path",
+                                        "path": "runId",
+                                        "from": "found"
+                                      }
+                                    }
+                                  }
+                                },
+                                "end": {
+                                  "op": "format",
+                                  "template": "event: end\ndata: {d}\n\n",
+                                  "values": {
+                                    "d": {
+                                      "op": "json-stringify",
+                                      "value": {
+                                        "op": "object",
+                                        "fields": {
+                                          "runId": {
+                                            "op": "path",
+                                            "path": "runId",
+                                            "from": "found"
+                                          },
+                                          "state": {
+                                            "op": "path",
+                                            "path": "state",
+                                            "from": "found"
+                                          },
+                                          "cursor": {
+                                            "op": "path",
+                                            "path": "",
+                                            "from": "after"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "session": {
+                              "op": "object",
+                              "fields": {
+                                "expiresAt": {
+                                  "op": "path",
+                                  "path": "sessionExpiresAt",
+                                  "from": "found"
+                                },
+                                "recheck": {
+                                  "op": "object",
+                                  "fields": {
+                                    "capabilityId": {
+                                      "op": "literal",
+                                      "value": "check-api-session"
+                                    },
+                                    "input": {
+                                      "op": "object",
+                                      "fields": {
+                                        "principalId": {
+                                          "op": "path",
+                                          "path": "principalId",
+                                          "from": "found"
+                                        },
+                                        "sessionId": {
+                                          "op": "path",
+                                          "path": "sessionId",
+                                          "from": "found"
+                                        }
+                                      }
+                                    },
+                                    "intervalMilliseconds": {
+                                      "op": "path",
+                                      "path": "recheckMilliseconds",
+                                      "from": "found"
+                                    },
+                                    "shared": {
+                                      "op": "literal",
+                                      "value": true
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "object",
+                    "fields": {
+                      "code": {
+                        "op": "literal",
+                        "value": "CELL_EXECUTION_FAILED"
+                      },
+                      "message": {
+                        "op": "literal",
+                        "value": "EVIDENCE_SESSION_REQUIRED"
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "path",
+                      "path": "status",
+                      "from": "found"
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "NOT_FOUND"
+                    }
+                  },
+                  "then": {
+                    "op": "object",
+                    "fields": {
+                      "status": {
+                        "op": "literal",
+                        "value": "NOT_FOUND"
+                      },
+                      "runId": {
+                        "op": "path",
+                        "path": "runId",
+                        "from": "found"
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "path",
+                    "path": "",
+                    "from": "found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "open-api-run-stream-request.v1": {
+          "schemaRef": "open-api-run-stream-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "principalId": {
+                "type": "string"
+              },
+              "sessionId": {
+                "type": "string"
+              },
+              "runId": {
+                "type": "string"
+              },
+              "after": {
+                "type": "string"
+              },
+              "lastEventId": {
+                "type": "string"
+              },
+              "recheckMilliseconds": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "open-api-run-stream-result.v1": {
+          "schemaRef": "open-api-run-stream-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "open-api-run-stream-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "open-api-run-stream",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "open-api-run-stream",
+      "input_id": "open-api-run-stream-request",
+      "event_id": "open-api-run-stream-requested",
+      "responsibility": "the run store reads the run for the caller",
+      "outcome_id": "open-api-run-stream-outcome",
+      "scenario_definition_digest": "+vn8289MB9/g26ceMJopy/jBOdUEIOkVm0D5jygbIxQ="
+    }
+  ]
+}

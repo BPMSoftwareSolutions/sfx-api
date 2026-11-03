@@ -1,9 +1,6 @@
 {
-  "contractId": "sfx-api-config.v4",
   "kernel": {
-    "digest": "1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
-    "rid": "linux-x64",
-    "root": "/opt/sfx/kernel/1f070fac8a9bc85fb2f7089ddc7e0ff78e82ad785c0053c036c6377a1c03f22e",
+    "root": "/opt/sfx/kernel/eb80040182f6dbb5e3922022598ea097b5789020d7382d9027ee8aab357d5c9d",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -27,9 +24,7 @@
     "instances": 2,
     "answerTimeoutMs": 3605000
   },
-  "observation": {
-    "publish": "publish-estate-live-observation",
-    "requests": false,
+  "publisher": {
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -38,12 +33,10 @@
       "--timeout",
       "55000"
     ],
+    "instances": 1,
     "answerTimeoutMs": 58000
   },
   "drawings": {
-    "capabilityId": "read-estate-drawing-changes",
-    "intervalMilliseconds": 2000,
-    "limit": 20,
     "command": [
       "./KernelEntry",
       "--resident-envelopes",
@@ -52,25 +45,20 @@
       "--timeout",
       "55000"
     ],
+    "instances": 1,
     "answerTimeoutMs": 58000
   },
-  "runs": {
-    "retained": 64,
-    "maxEvents": 50000,
-    "eventPayloadBytes": 1048576,
-    "traceChunkBytes": 524288,
-    "traceChunkEvents": 2000,
-    "keepaliveSeconds": 15,
-    "feedEvents": 20000,
-    "feedBytes": 33554432,
-    "feedBatchEvents": 200,
-    "feedBatchBytes": 1048576
-  },
-  "request": {
-    "object": "capability",
-    "verb": "invoke",
-    "subject": "serve-http-request",
-    "inputType": "text"
+  "bookkeeping": {
+    "command": [
+      "./KernelEntry",
+      "--resident-envelopes",
+      "--config",
+      "kernel-host.json",
+      "--timeout",
+      "55000"
+    ],
+    "instances": 1,
+    "answerTimeoutMs": 58000
   },
   "http": {
     "host": "0.0.0.0",

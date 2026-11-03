@@ -1,0 +1,13 @@
+{
+  "configurationType": "sfx-database-memory-runtime.v1",
+  "sdaRoot": ".",
+  "declaredChangeMode": "preflight",
+  "credentialVaultStoreLocator": "${XDG_DATA_HOME:-~/.local/share}/sfx/vault",
+  "credentialVaultLocatorBindings": {
+    "%LOCALAPPDATA%\\sfx\\vault": "${XDG_DATA_HOME:-~/.local/share}/sfx/vault"
+  },
+  "credentialStoreRealization": {
+    "providerProfileId": "linux-secret-service-credential-store-provider"
+  },
+  "providerAuthorityPath": "../../providers/host-provider-authority.json"
+}

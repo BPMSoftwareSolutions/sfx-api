@@ -1,0 +1,289 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-estate-drawing-changes",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-estate-drawing-changes",
+  "graphSource": {
+    "capabilityId": "read-estate-drawing-changes",
+    "rootScenarioId": "read-estate-drawing-changes",
+    "scenarios": [
+      {
+        "scenarioId": "read-estate-drawing-changes",
+        "input": {
+          "inputId": "read-estate-drawing-changes-request",
+          "contract": {
+            "contractId": "read-estate-drawing-changes-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-estate-drawing-changes-requested",
+          "executionAuthorityId": "read-estate-drawing-changes.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-estate-drawing-changes-outcome",
+          "contract": {
+            "contractId": "estate-drawing-changes.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-estate-drawing-changes",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-estate-drawing-changes.v1",
+        "owningScenarioId": "read-estate-drawing-changes",
+        "operations": [
+          {
+            "operationId": "read-estate-drawing-changes.read",
+            "kind": "invoke-port",
+            "portId": "read-estate-drawing-changes-read"
+          },
+          {
+            "operationId": "read-estate-drawing-changes.events",
+            "kind": "invoke-port",
+            "portId": "read-estate-drawing-changes-events"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-estate-drawing-changes-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-estate-drawing-changes",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-estate-drawing-changes-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-estate-drawing-changes-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-estate-drawing-changes-transform.v1"
+          }
+        },
+        {
+          "portId": "read-estate-drawing-changes-read",
+          "platformCapabilityId": "sda-embodiment-plan-port.v1",
+          "configuration": {
+            "statement": "SET NOCOUNT ON; DECLARE @limit int=COALESCE(TRY_CONVERT(int,JSON_VALUE(@input,'$.limit')),20); DECLARE @cursor nvarchar(max)=JSON_QUERY(@input,'$.cursor'); DECLARE @now bigint=CHANGE_TRACKING_CURRENT_VERSION(); DECLARE @estateId nvarchar(40)=CONCAT(N'estate:',@estate_model_pk); DECLARE @mods TABLE(name nvarchar(300) PRIMARY KEY,digest varchar(80),done bit); DECLARE @src TABLE(value nvarchar(max)); DECLARE @m nvarchar(300),@req nvarchar(max),@read nvarchar(max),@body nvarchar(max),@digest varchar(80),@p int,@e int,@tok nvarchar(300); INSERT @mods(name,done) VALUES(N'analysis.read_live_scenario_circuit',0); WHILE EXISTS(SELECT 1 FROM @mods WHERE done=0) AND (SELECT COUNT(*) FROM @mods)<200 BEGIN SELECT TOP (1) @m=name FROM @mods WHERE done=0 ORDER BY name; SET @req=(SELECT @m AS objectName FOR JSON PATH,WITHOUT_ARRAY_WRAPPER); DELETE @src; SET @read=NULL; SET @body=NULL; SET @digest=NULL; INSERT @src EXEC analysis.read_declared_object_source @input=@req,@estate_model_pk=@estate_model_pk; SELECT TOP (1) @read=value FROM @src; SELECT @digest=COALESCE(j.definitionDigest,j.status),@body=j.body FROM OPENJSON(@read) WITH(status nvarchar(40) '$.status',definitionDigest varchar(80) '$.definitionDigest',body nvarchar(max) '$.body') j; UPDATE @mods SET digest=@digest,done=1 WHERE name=@m; SET @p=CHARINDEX(N'analysis.',COALESCE(@body,N'')); WHILE @p>0 BEGIN SET @e=@p+9; WHILE @e<=LEN(@body) AND SUBSTRING(@body,@e,1) LIKE N'[a-z0-9_]' SET @e=@e+1; SET @tok=LOWER(SUBSTRING(@body,@p,@e-@p)); IF @e>@p+9 AND NOT EXISTS(SELECT 1 FROM @mods WHERE name=@tok) INSERT @mods(name,done) VALUES(@tok,0); SET @p=CHARINDEX(N'analysis.',@body,@e); END; END; DECLARE @renderer varchar(64)=LOWER(CONVERT(varchar(64),HASHBYTES('SHA2_256',CONVERT(varbinary(max),(SELECT name,digest FROM @mods ORDER BY name FOR JSON PATH))),2)); DECLARE @from bigint=TRY_CONVERT(bigint,JSON_VALUE(@cursor,'$.version')),@fromRenderer varchar(64)=JSON_VALUE(@cursor,'$.renderer'),@to bigint=TRY_CONVERT(bigint,JSON_VALUE(@cursor,'$.target.version')),@toRenderer varchar(64)=JSON_VALUE(@cursor,'$.target.renderer'),@after nvarchar(1000)=JSON_VALUE(@cursor,'$.after'); IF @from IS NULL OR (@to IS NULL AND @now=@from AND @renderer=@fromRenderer) BEGIN SELECT (SELECT N'estate-drawing-changes.v1' AS contractId,N'READ' AS status,@estateId AS estateId,JSON_QUERY((SELECT COALESCE(@from,@now) AS version,COALESCE(@fromRenderer,@renderer) AS renderer FOR JSON PATH,WITHOUT_ARRAY_WRAPPER)) AS [cursor],CONVERT(bit,1) AS settled,CONVERT(bit,0) AS fullPass,0 AS reads,0 AS selections,JSON_QUERY(N'[]') AS changes FOR JSON PATH,WITHOUT_ARRAY_WRAPPER) AS value; RETURN; END; IF @to IS NULL BEGIN SET @to=@now; SET @toRenderer=@renderer; SET @after=NULL; END; BEGIN TRY DECLARE @full bit=CASE WHEN @fromRenderer=@toRenderer THEN 0 ELSE 1 END; IF @full=0 AND EXISTS(SELECT 1 FROM (VALUES(N'model.scenario_version'),(N'model.scenario_event'),(N'model.scenario_input'),(N'model.scenario_outcome'),(N'model.scenario_outcome_contract'),(N'model.scenario'),(N'model.outcome_variant'),(N'model.execution_authority_version'),(N'model.execution_authority'),(N'model.execution_operation'),(N'model.operation_port_invocation'),(N'model.operation_scenario_invocation'),(N'model.operation_mechanic'),(N'model.mechanic_version'),(N'model.port'),(N'model.port_version'),(N'model.contract_version'),(N'model.contract'),(N'model.schema_object'),(N'model.semantic_object_definition'),(N'model.estate_definition'),(N'source.content_object'),(N'model.semantic_object'),(N'model.identity_namespace'),(N'model.capability'),(N'model.estate_capability'),(N'model.capability_version'),(N'model.capability_scenario'),(N'model.capability_root_scenario')) t(n) WHERE CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(t.n))>@from) SET @full=1; DECLARE @sv TABLE(pk bigint); DECLARE @eav TABLE(pk bigint); DECLARE @port TABLE(pk bigint); DECLARE @cvs TABLE(pk bigint); DECLARE @def TABLE(pk bigint); DECLARE @cap TABLE(pk bigint); DECLARE @prov TABLE(id nvarchar(400)); IF @full=0 BEGIN IF (SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.outcome_variant,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.execution_operation,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.port_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.contract_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.semantic_object_definition,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.capability_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.SYS_CHANGE_OPERATION='D')+(SELECT COUNT(*) FROM CHANGETABLE(CHANGES model.identity_namespace,@from) c WHERE c.SYS_CHANGE_VERSION<=@to)>0 SET @full=1; END; IF @full=0 BEGIN INSERT @sv SELECT c.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario_event,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario_input,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario_outcome,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario_outcome_contract,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.scenario_version_pk FROM CHANGETABLE(CHANGES model.scenario,@from) c JOIN model.scenario_version v ON v.scenario_pk=c.scenario_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.scenario_version_pk FROM CHANGETABLE(CHANGES model.outcome_variant,@from) c JOIN model.outcome_variant v ON v.outcome_variant_pk=c.outcome_variant_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @eav SELECT c.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.execution_authority_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.execution_authority,@from) c JOIN model.execution_authority_version v ON v.execution_authority_pk=c.execution_authority_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT o.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.execution_operation,@from) c JOIN model.execution_operation o ON o.execution_operation_pk=c.execution_operation_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT o.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.operation_port_invocation,@from) c JOIN model.execution_operation o ON o.execution_operation_pk=c.execution_operation_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT o.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.operation_scenario_invocation,@from) c JOIN model.execution_operation o ON o.execution_operation_pk=c.execution_operation_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT o.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.operation_mechanic,@from) c JOIN model.execution_operation o ON o.execution_operation_pk=c.execution_operation_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT o.execution_authority_version_pk FROM CHANGETABLE(CHANGES model.mechanic_version,@from) c JOIN model.operation_mechanic m ON m.mechanic_version_pk=c.mechanic_version_pk JOIN model.execution_operation o ON o.execution_operation_pk=m.execution_operation_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @port SELECT c.port_pk FROM CHANGETABLE(CHANGES model.port,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.port_pk FROM CHANGETABLE(CHANGES model.port_version,@from) c JOIN model.port_version v ON v.port_version_pk=c.port_version_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @cvs SELECT c.contract_version_pk FROM CHANGETABLE(CHANGES model.contract_version,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.contract_version_pk FROM CHANGETABLE(CHANGES model.contract,@from) c JOIN model.contract_version v ON v.contract_pk=c.contract_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.contract_version_pk FROM CHANGETABLE(CHANGES model.schema_object,@from) c JOIN model.contract_version v ON v.schema_object_pk=c.schema_object_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.contract_version_pk FROM CHANGETABLE(CHANGES source.content_object,@from) c JOIN model.schema_object s ON s.content_object_pk=c.content_object_pk JOIN model.contract_version v ON v.schema_object_pk=s.schema_object_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @def SELECT c.semantic_object_definition_pk FROM CHANGETABLE(CHANGES model.semantic_object_definition,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.semantic_object_definition_pk FROM CHANGETABLE(CHANGES model.estate_definition,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.estate_model_pk=@estate_model_pk UNION SELECT d.semantic_object_definition_pk FROM CHANGETABLE(CHANGES source.content_object,@from) c JOIN model.semantic_object_definition d ON d.canonical_content_pk=c.content_object_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT d.semantic_object_definition_pk FROM CHANGETABLE(CHANGES model.semantic_object,@from) c JOIN model.semantic_object_definition d ON d.semantic_object_pk=c.semantic_object_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @cap SELECT c.capability_pk FROM CHANGETABLE(CHANGES model.capability,@from) c WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT c.capability_pk FROM CHANGETABLE(CHANGES model.estate_capability,@from) c WHERE c.SYS_CHANGE_VERSION<=@to AND c.estate_model_pk=@estate_model_pk UNION SELECT v.capability_pk FROM CHANGETABLE(CHANGES model.capability_version,@from) c JOIN model.capability_version v ON v.capability_version_pk=c.capability_version_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.capability_pk FROM CHANGETABLE(CHANGES model.capability_scenario,@from) c JOIN model.capability_version v ON v.capability_version_pk=c.capability_version_pk WHERE c.SYS_CHANGE_VERSION<=@to UNION SELECT v.capability_pk FROM CHANGETABLE(CHANGES model.capability_root_scenario,@from) c JOIN model.capability_version v ON v.capability_version_pk=c.capability_version_pk WHERE c.SYS_CHANGE_VERSION<=@to; INSERT @cap SELECT ec.capability_pk FROM model.estate_capability ec WHERE ec.estate_model_pk=@estate_model_pk AND ec.semantic_object_definition_pk IN (SELECT pk FROM @def); INSERT @sv SELECT v.scenario_version_pk FROM model.scenario_version v WHERE v.semantic_object_definition_pk IN (SELECT pk FROM @def); INSERT @port SELECT v.port_pk FROM model.port_version v WHERE v.semantic_object_definition_pk IN (SELECT pk FROM @def); INSERT @cvs SELECT v.contract_version_pk FROM model.contract_version v WHERE v.semantic_object_definition_pk IN (SELECT pk FROM @def); INSERT @eav SELECT o.execution_authority_version_pk FROM model.mechanic_version v JOIN model.operation_mechanic m ON m.mechanic_version_pk=v.mechanic_version_pk JOIN model.execution_operation o ON o.execution_operation_pk=m.execution_operation_pk WHERE v.semantic_object_definition_pk IN (SELECT pk FROM @def); INSERT @prov SELECT DISTINCT so.declared_id FROM model.semantic_object_definition d JOIN model.semantic_object so ON so.semantic_object_pk=d.semantic_object_pk JOIN model.identity_namespace n ON n.namespace_pk=so.namespace_pk WHERE d.semantic_object_definition_pk IN (SELECT pk FROM @def) AND n.namespace_id=N'sidefx:providers'; IF EXISTS(SELECT 1 FROM @prov) INSERT @port SELECT v.port_pk FROM model.port_version v JOIN model.estate_definition ed ON ed.semantic_object_definition_pk=v.semantic_object_definition_pk AND ed.estate_model_pk=@estate_model_pk JOIN model.semantic_object_definition d ON d.semantic_object_definition_pk=v.semantic_object_definition_pk JOIN source.content_object co ON co.content_object_pk=d.canonical_content_pk WHERE JSON_VALUE(CONVERT(nvarchar(max),CONVERT(varchar(max),co.content_bytes) COLLATE Latin1_General_100_BIN2_UTF8),'$.semantics.configuration.providerId') IN (SELECT id FROM @prov); INSERT @port SELECT v.port_pk FROM model.port_contract pc JOIN model.port_version v ON v.port_version_pk=pc.port_version_pk WHERE pc.contract_version_pk IN (SELECT pk FROM @cvs); INSERT @eav SELECT o.execution_authority_version_pk FROM model.operation_port_invocation i JOIN model.port_version v ON v.port_version_pk=i.port_version_pk JOIN model.execution_operation o ON o.execution_operation_pk=i.execution_operation_pk WHERE v.port_pk IN (SELECT pk FROM @port); INSERT @sv SELECT scenario_version_pk FROM model.scenario_input WHERE input_contract_version_pk IN (SELECT pk FROM @cvs) UNION SELECT scenario_version_pk FROM model.scenario_outcome_contract WHERE contract_version_pk IN (SELECT pk FROM @cvs); INSERT @sv SELECT se.scenario_version_pk FROM model.scenario_event se WHERE se.execution_authority_version_pk IN (SELECT pk FROM @eav); DECLARE @grew int=1,@rounds int=0; WHILE @grew>0 AND @rounds<50 BEGIN INSERT @sv SELECT DISTINCT se.scenario_version_pk FROM model.operation_scenario_invocation i JOIN model.execution_operation o ON o.execution_operation_pk=i.execution_operation_pk JOIN model.scenario_event se ON se.execution_authority_version_pk=o.execution_authority_version_pk WHERE i.target_scenario_version_pk IN (SELECT pk FROM @sv) AND se.scenario_version_pk IS NOT NULL AND NOT EXISTS(SELECT 1 FROM @sv x WHERE x.pk=se.scenario_version_pk); SET @grew=@@ROWCOUNT; SET @rounds=@rounds+1; END; INSERT @cap SELECT cs.capability_pk FROM model.capability_scenario cs JOIN model.estate_capability ec ON ec.capability_version_pk=cs.capability_version_pk AND ec.estate_model_pk=@estate_model_pk WHERE cs.scenario_version_pk IN (SELECT pk FROM @sv); END; DECLARE @sel TABLE(k nvarchar(1000) PRIMARY KEY,capabilityId nvarchar(400),namespaceId nvarchar(400),scenarioId nvarchar(400),isDefault bit); INSERT @sel SELECT CONCAT(n.namespace_id,NCHAR(1),c.capability_id,NCHAR(1)),c.capability_id,n.namespace_id,NULL,1 FROM model.estate_capability ec JOIN model.capability c ON c.capability_pk=ec.capability_pk JOIN model.identity_namespace n ON n.namespace_pk=c.namespace_pk WHERE ec.estate_model_pk=@estate_model_pk AND (@full=1 OR EXISTS(SELECT 1 FROM @cap x WHERE x.pk=ec.capability_pk)); INSERT @sel SELECT DISTINCT CONCAT(n.namespace_id,NCHAR(1),c.capability_id,NCHAR(1),s.scenario_id),c.capability_id,n.namespace_id,s.scenario_id,0 FROM model.estate_capability ec JOIN model.capability c ON c.capability_pk=ec.capability_pk JOIN model.identity_namespace n ON n.namespace_pk=c.namespace_pk JOIN model.capability_scenario cs ON cs.capability_version_pk=ec.capability_version_pk JOIN model.scenario s ON s.scenario_pk=cs.scenario_pk LEFT JOIN model.capability_root_scenario r ON r.capability_version_pk=ec.capability_version_pk WHERE ec.estate_model_pk=@estate_model_pk AND (r.scenario_pk IS NULL OR r.scenario_pk<>cs.scenario_pk) AND (@full=1 OR EXISTS(SELECT 1 FROM @cap x WHERE x.pk=ec.capability_pk)); DECLARE @changes TABLE(ord int IDENTITY(1,1),namespaceId nvarchar(400),capabilityId nvarchar(400),scenarioId nvarchar(400),isDefault bit,presentationDigest varchar(64)); DECLARE @k nvarchar(1000),@capId nvarchar(400),@nsId nvarchar(400),@scId nvarchar(400),@isDef bit,@res nvarchar(max),@reads int=0; DECLARE sel CURSOR LOCAL FAST_FORWARD FOR SELECT TOP (@limit) k,capabilityId,namespaceId,scenarioId,isDefault FROM @sel WHERE @after IS NULL OR k>@after ORDER BY k; OPEN sel; FETCH NEXT FROM sel INTO @k,@capId,@nsId,@scId,@isDef; WHILE @@FETCH_STATUS=0 BEGIN SET @req=(SELECT N'live-scenario-circuit-request.v1' AS contractId,JSON_QUERY((SELECT @capId AS capabilityId,@nsId AS namespaceId,@scId AS scenarioId FOR JSON PATH,WITHOUT_ARRAY_WRAPPER)) AS payload FOR JSON PATH,WITHOUT_ARRAY_WRAPPER); SET @res=NULL; BEGIN TRY EXEC analysis.read_live_scenario_circuit @input=@req,@estate_model_pk=@estate_model_pk,@result=@res OUTPUT,@emit=0; END TRY BEGIN CATCH SET @res=NULL; END CATCH; SET @reads=@reads+1; IF JSON_VALUE(@res,'$.status')=N'AVAILABLE' AND JSON_VALUE(@res,'$.presentationDigest') IS NOT NULL INSERT @changes(namespaceId,capabilityId,scenarioId,isDefault,presentationDigest) VALUES(@nsId,@capId,JSON_VALUE(@res,'$.scenarioId'),@isDef,JSON_VALUE(@res,'$.presentationDigest')); SET @after=@k; FETCH NEXT FROM sel INTO @k,@capId,@nsId,@scId,@isDef; END; CLOSE sel; DEALLOCATE sel; DECLARE @settled bit=CASE WHEN EXISTS(SELECT 1 FROM @sel WHERE @after IS NOT NULL AND k>@after) THEN 0 ELSE 1 END; DECLARE @next nvarchar(max)=CASE WHEN @settled=1 THEN (SELECT @to AS version,@toRenderer AS renderer FOR JSON PATH,WITHOUT_ARRAY_WRAPPER) ELSE (SELECT @from AS version,@fromRenderer AS renderer,JSON_QUERY((SELECT @to AS version,@toRenderer AS renderer FOR JSON PATH,WITHOUT_ARRAY_WRAPPER)) AS target,@after AS after FOR JSON PATH,WITHOUT_ARRAY_WRAPPER) END; SELECT (SELECT N'estate-drawing-changes.v1' AS contractId,N'READ' AS status,@estateId AS estateId,JSON_QUERY(@next) AS [cursor],@settled AS settled,@full AS fullPass,@reads AS reads,(SELECT COUNT(*) FROM @sel) AS selections,JSON_QUERY(COALESCE((SELECT @estateId AS estateId,namespaceId,capabilityId,scenarioId,isDefault AS defaultSelection,presentationDigest,@to AS generation FROM @changes ORDER BY ord FOR JSON PATH),N'[]')) AS changes FOR JSON PATH,WITHOUT_ARRAY_WRAPPER) AS value; END TRY BEGIN CATCH SELECT (SELECT N'estate-drawing-changes.v1' AS contractId,N'FAILED' AS status,@estateId AS estateId,ERROR_NUMBER() AS errorNumber,ERROR_MESSAGE() AS error FOR JSON PATH,WITHOUT_ARRAY_WRAPPER) AS value; END CATCH;",
+            "resultColumn": "value",
+            "providerId": "sda-declared-read-graph-provider.v1",
+            "estateProvider": {
+              "providerId": "sda-declared-read-graph-provider.v1",
+              "name": "Declared Read Graph Provider (query runner)",
+              "declarationProfile": "sda-platform-capability-catalog.v1",
+              "effectClassification": "effect",
+              "factory": true,
+              "module": "languages/typescript/runtimes/node/semantic-execution-graph-declared-read-provider.mjs",
+              "export": "createDeclaredReadProvider",
+              "capabilities": [
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "csharp",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/csharp/src/ScenarioKernel.Adapters/Graph/SemanticExecutionGraphDeclaredReadProvider.cs",
+                  "conformanceRef": "languages/csharp/tests/ScenarioKernel.ConformanceTests/SemanticExecutionGraphExecutionProviderTests.cs"
+                },
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "node",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/typescript/runtimes/node/semantic-execution-graph-declared-read-provider.mjs",
+                  "conformanceRef": "languages/typescript/runtimes/node/canonical-graph-host-invariance.conformance.test.mjs"
+                },
+                {
+                  "capabilityId": "sda-embodiment-plan-port.v1",
+                  "kind": "graph-profile",
+                  "projectionTarget": "python",
+                  "status": "ADMITTED",
+                  "implementationRef": "languages/python/src/scenario_kernel/adapters/semantic_execution_graph_declared_read_provider.py",
+                  "conformanceRef": "languages/python/tests/conformance/test_semantic_execution_graph_execution.py"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "portId": "read-estate-drawing-changes-events",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "merge",
+              "values": [
+                {
+                  "op": "path",
+                  "path": ""
+                },
+                {
+                  "op": "if",
+                  "when": {
+                    "op": "equals",
+                    "left": {
+                      "op": "type",
+                      "value": {
+                        "op": "path",
+                        "path": "changes"
+                      }
+                    },
+                    "right": {
+                      "op": "literal",
+                      "value": "array"
+                    }
+                  },
+                  "then": {
+                    "op": "object",
+                    "fields": {
+                      "events": {
+                        "op": "map",
+                        "from": {
+                          "op": "path",
+                          "path": "changes"
+                        },
+                        "as": "c",
+                        "value": {
+                          "op": "object",
+                          "fields": {
+                            "eventId": {
+                              "op": "format",
+                              "template": "urn:sfx-api:drawing-change:{g}:{n}:{k}:{s}",
+                              "values": {
+                                "g": {
+                                  "op": "path",
+                                  "path": "generation",
+                                  "from": "c"
+                                },
+                                "n": {
+                                  "op": "path",
+                                  "path": "namespaceId",
+                                  "from": "c"
+                                },
+                                "k": {
+                                  "op": "path",
+                                  "path": "capabilityId",
+                                  "from": "c"
+                                },
+                                "s": {
+                                  "op": "path",
+                                  "path": "scenarioId",
+                                  "from": "c"
+                                }
+                              }
+                            },
+                            "kind": {
+                              "op": "literal",
+                              "value": "drawing.changed"
+                            },
+                            "payload": {
+                              "op": "path",
+                              "path": "",
+                              "from": "c"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "op": "literal",
+                    "value": null
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-estate-drawing-changes-request.v1": {
+          "schemaRef": "read-estate-drawing-changes-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "cursor": {},
+              "limit": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "estate-drawing-changes.v1": {
+          "schemaRef": "estate-drawing-changes.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "cursor",
+              "settled",
+              "changes"
+            ],
+            "properties": {
+              "events": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-estate-drawing-changes-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-estate-drawing-changes",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-estate-drawing-changes",
+      "input_id": "read-estate-drawing-changes-request",
+      "event_id": "read-estate-drawing-changes-requested",
+      "responsibility": "the change check finds the version or the drawing procedure moved, and the affected selections are read",
+      "outcome_id": "read-estate-drawing-changes-outcome",
+      "scenario_definition_digest": "tv4laYNZnXubQ1/TaBfl3CkhcaBma5mZJwiCUCZbgkE="
+    }
+  ]
+}
