@@ -1,6 +1,6 @@
 {
   "kernel": {
-    "root": "/opt/sfx/kernel/eb80040182f6dbb5e3922022598ea097b5789020d7382d9027ee8aab357d5c9d",
+    "root": "/opt/sfx/kernel/244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
     "command": [
       "./KernelEntry",
       "--resident-envelopes",

@@ -296,7 +296,7 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
 
   Rule: Answering from the bundle keeps the host's service levels
 
-    @status:not-built
+    @status:probed
     @capability:answer-host-declared-read
     @slo:warm-definitions
     Scenario: A warm envelope reads no owned declaration again
@@ -308,11 +308,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       # SDA D11 (60aefbb): the declaration cache spanning a resident kernel's deliveries is keyed by the estate's declared
       # generation and the envelope's pin, and serves a bound provider's earlier answers under that key. The bundle keeps
       # the strategy of SDA 3296bc1; it does not turn a cached resolution into a provider call.
-      # On SDA 05ff751, warm on WSL against the estate, the bundle's serve-http-request resolved 12 declarations with 12
-      # reused and 0 read. The SLI is still not met. A warm envelope makes 6 database queries with the port bound, against 2
-      # unbound, on the same kernel. The port's configured capability reads its execution delivery and runner where the
-      # cache does not serve them, and the command vocabulary is read on every envelope
-      # (docs/request-sda-warm-envelope-round-trips.md).
+      # On SDA 29355da, warm on WSL against the estate, the bundle's serve-http-request resolved 13 declarations, all 13
+      # reused and none read, and made 1 database query, the session's generation read, as the estate's does. Before D16
+      # it made 6 queries, against 2 unbound (docs/request-sda-warm-envelope-round-trips.md). README.md, Verified.
 
     @status:not-built
     @capability:answer-host-declared-read
@@ -321,10 +319,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       When requests are answered with the host's declarations served from the bundle
       Then frontdoor-warm-latency holds: p50 at most 0.88 s and p95 at most 3.35 s on sfx-api-test
       # The baseline was measured with every declaration read from the estate (docs/azure-test-2026-10-31.md). On WSL, on
-      # SDA 05ff751 with one resident kernel, the kernel's CPU per warm request was the same with and without the bundle:
-      # 670 to 731 ms bound, 652 to 842 ms unbound. The wall time was 1.51 to 1.61 s bound, against 1.17 to 1.30 s
-      # unbound, the difference being four database round trips from WSL. The facade with all six kernels answered at p50
-      # 1.60 s and p95 1.77 s over 20 warm requests. sfx-api-test is not yet measured.
+      # SDA 29355da with one resident kernel, a warm request took 0.86 s with the bundle and 1.03 s with the estate's
+      # declarations. The facade with all six kernels answered at p50 0.78 s and p95 1.08 s over 20 warm requests.
+      # sfx-api-test is not yet measured.
 
     @status:probed
     @slo:session-setup

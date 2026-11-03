@@ -127,7 +127,7 @@ The objectives:
 | --- | --- | --- | --- | --- | --- |
 | `frontdoor-warm-latency` | server time of a request answered by a warm request kernel on sfx-api-test: time to first byte minus the TLS handshake, nearest-rank percentiles over 30 sequential requests | p50 at most 0.88 s and p95 at most 3.35 s | p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image `f32450fa`, kernel `39881693`, 2026-10-31) | proven | serve-http-request, serve-api-request, the two ingress providers, answer-host-declared-read |
 | `frontdoor-tail-explained` | warm requests over 1.05 s whose cause the delivery's evidence names | every one (proposed) | 5 of 30 took 1.2 to 4.0 s, cause open: the facade keeps no kernel evidence | not-built | host-facade |
-| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed with the port unbound; not met with it bound: 6 queries, not 2, per warm envelope (SDA `05ff751`, WSL; [request](../docs/request-sda-warm-envelope-round-trips.md)) | serve-api-request, answer-api-response, answer-host-declared-read |
+| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed, bound and unbound: 0 declaration reads, and 1 query, the session's generation read (SDA `29355da`, WSL; [request](../docs/request-sda-warm-envelope-round-trips.md)) | serve-api-request, answer-api-response, answer-host-declared-read |
 | `request-answer-bound` (SLA) | time from a request's receipt to its answer | within App Service's 230 s: by its kernel within 228 s, a 503 after 2 s without a free kernel, or a 502 when the delivery fails | the kernel's answer bound, 228000 ms (sfx-api.config.json) | installed (228 s), not-built (2 s) | host-facade, read-api-host-configuration |
 | `no-kernel-start-on-request` | kernel starts a request pays once the host listens | none | the first request after the `f32450fa` swap took 13.8 s, including the kernel's start; the `64f3a28` site's warm-up probe paid it | probed | host-facade |
 | `abandoned-request-release` | time a kernel stays held after its client gives up | released when the client goes (proposed) | 30 abandoned requests queued the next request 68 s (WSL) | not-built | host-facade |
@@ -324,12 +324,21 @@ One more gap:
   The host declares the bundle reader and its five providers under `.v2` identities
   (`providers/host-provider-authority.json`). The estate's `.v1` copies serve the host now running until the new image
   replaces it, then a declared change retires them ([request](../docs/request-sda-host-provider-bindings.md)).
-- **Warm envelopes with a provider at the port.** Open, not blocking. With the port bound, a warm envelope makes 6
-  database queries, against 2 unbound, on the same kernel. The kernel's CPU is the same. The four round trips add about
-  0.34 s to each request from WSL, and should add tens of milliseconds on `sfx-api-test`. Two causes appear in the
-  source: the resident loop reads the command vocabulary on every envelope, and the port's configured capability reads
-  its execution delivery and runner on a data access the declaration cache does not serve. Until they are fixed,
-  `warm-definitions` is not met on the bundle path ([request](../docs/request-sda-warm-envelope-round-trips.md)).
+- **Compiling each declared graph once.** Answered by SDA `9926177` (2026-11-03, rules P1 to P5, CI green). A resident
+  kernel holds each compiled plan by the SHA-256 of its declared sources, within 32 MiB, for estate and bundle
+  capabilities alike, and the C# compiler is faster.
+  - Compiling and realizing the two frontdoor graphs fell from about 500 ms to about 45 ms per warm envelope.
+  - The facade's warm p50 on WSL fell from 1.60 s to 1.22 s.
+  - The six kernels' memory after use was 1283 MiB, against 1135 MiB before; on `29355da` it was 1172 MiB.
+  - Lighter testimony waits on this measurement: executing the cells, testimony included, is now about 145 ms per warm
+    envelope (README.md, Verified).
+- **Warm envelopes with a provider at the port.** Answered by SDA `29355da` (2026-11-03, rule D16, CI green).
+  - The command vocabulary is now read through the declaration cache.
+  - The port provider's own reads are cached too, under a `built-in` scope, so a port answer is never served from them.
+  - On its kernel (`244e0129`), a warm envelope makes 1 database query, bound or unbound: the session's generation read.
+    It made 6 bound and 2 unbound before.
+  - The facade's warm p50 on WSL is 0.78 s and its p95 1.08 s
+    ([request](../docs/request-sda-warm-envelope-round-trips.md)).
 - **The kernel's estate session behind a host-bound port.** This is SDA's next KV-001 step. Until it ships, every delivery needs the estate. SDA bcbdbec (rule D9) closed the other half: the provider now passes a read through `builtInRead`, in the delivery's own session, pin and impersonation, and needs no estate reader or credential of its own (answer-host-declared-read.feature).
 - **A byte input.** Whether the kernel takes a byte input, so a request's bytes reach the ingress unchanged, has not been checked (host-facade.feature).
 

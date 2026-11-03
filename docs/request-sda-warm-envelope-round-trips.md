@@ -7,7 +7,16 @@ Evidence:
 - The kernel built from it: linux-x64, artifact `eb80040182f6dbb5e3922022598ea097b5789020d7382d9027ee8aab357d5c9d`.
 - Runs on WSL against the estate, on 2026-11-03.
 
-Status: open. Not blocking: see the impact below.
+Status: answered by SDA `29355da` (2026-11-03, rule D16, CI green), and verified on the estate. On its kernel
+(`244e0129`), a warm envelope makes 1 database query, whether the port is bound or not: the session's generation read.
+
+| Per warm envelope, kernel `244e0129` | Port unbound | Port bound |
+| --- | --- | --- |
+| `readSession.queries` | 1 | 1 |
+| Wall time, mean of 20 | 1.03 s | 0.86 s |
+
+The facade with all six kernels answered at p50 0.78 s and p95 1.08 s over 20 warm requests on WSL. What follows is
+the request as it was made.
 
 ## What was measured
 
@@ -33,6 +42,15 @@ In one pair of envelopes:
 
 The difference lies outside the graph, before the delivery's first phase. It is not CPU. It is four more round trips to
 the estate's database per envelope, 77 to 85 ms each from WSL.
+
+It is still there on SDA `9926177` (kernel `1cf8539e`), which compiles each graph once. Each configuration was measured
+over 20 warm envelopes:
+
+| Per warm envelope | Port unbound | Port bound |
+| --- | --- | --- |
+| `readSession.queries` | 2 | 6 |
+| Kernel CPU | 527 ms | 496 ms |
+| Wall time | 1.00 s | 1.24 s |
 
 ## What explains it in the source
 
@@ -61,8 +79,8 @@ This was found by reading the source, not by instrumenting it.
 
 ## Impact
 
-- **On WSL:** the four round trips add about 0.34 s to every warm request. The facade's warm p50 was 1.60 s and its p95
-  1.77 s, over 20 requests with all six kernels running.
+- **On WSL:** the four round trips add about 0.24 s to every warm request on `9926177`, and added about 0.34 s on
+  `05ff751`. Over 20 requests with all six kernels running, the facade's warm p50 is 1.22 s and its p95 1.40 s.
 - **On `sfx-api-test`:** the database is in the same region, so the same round trips should cost tens of milliseconds.
   `frontdoor-warm-latency` (p50 at most 0.88 s) is measured there after the deploy.
 - **`warm-definitions` (declaration reads made by a warm envelope: none):** this SLO is not met while these reads remain,

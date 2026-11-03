@@ -333,8 +333,8 @@ exceeds the Windows path limit under a deep directory. The context holds:
 - the host's provider authority, `providers/host-provider-authority.json`, which binds the declared-read port to
   `answer-host-declared-read`;
 - the host's pinned bundle, `authorities/host-bundle/`;
-- the admitted kernel install under `kernel/`: SDA `05ff751`, linux-x64, artifact digest
-  `eb80040182f6dbb5e3922022598ea097b5789020d7382d9027ee8aab357d5c9d`, built by
+- the admitted kernel install under `kernel/`: SDA `29355da`, linux-x64, artifact digest
+  `244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af`, built by
   `ScenarioKernel install --rid linux-x64 --estate C:\lab\repos\sfx-embody` from a clean clone of SDA at that commit.
 
 The kernel, the provider authority, the bundle and the pin go out in this one image
@@ -526,6 +526,25 @@ The host served from its bundle, on SDA `05ff751` (kernel `eb800401`), WSL again
   `sfx-identity-login-derive.v2`.
 - **Not run locally.** Sign-in with a real identity, session reads and runs need a signed-in caller, so they are
   checked on `sfx-api-test`.
+
+The same measurements were run on two later kernels, with means over 20 warm envelopes:
+- **SDA `9926177`, kernel `1cf8539e`:** each process compiles a declared graph once, and the C# compiler is faster.
+- **SDA `29355da`, kernel `244e0129`:** the command vocabulary and the port provider's own reads are served by the
+  declaration cache (D16).
+
+| | `eb800401` | `1cf8539e` | `244e0129` |
+| --- | --- | --- | --- |
+| Database queries per warm envelope, estate path and bundle path | 2 and 6 | 2 and 6 | 1 and 1 |
+| Estate path: wall time, kernel CPU | 1.17 to 1.30 s, 652 to 842 ms | 1.00 s, 527 ms | 1.03 s, 687 ms |
+| Bundle path: wall time, kernel CPU | 1.51 to 1.61 s, 670 to 731 ms | 1.24 s, 496 ms | 0.86 s, 578 ms |
+| The facade, six kernels: p50, p95 | 1.60 s, 1.77 s | 1.22 s, 1.40 s | 0.78 s, 1.08 s |
+| `serve-api-request`, whole delivery | 796 ms | 285 ms | not measured |
+| Compiling and realizing both frontdoor graphs | about 500 ms | about 45 ms | not measured |
+| Executing their cells, testimony included | about 270 ms | about 145 ms | not measured |
+| Six kernels' memory, after use | 1135 MiB | 1283 MiB | 1172 MiB |
+
+On `244e0129`, the one query left in a warm envelope is the session's generation read, bound or unbound. Kernel CPU
+varies from run to run by as much as the differences shown.
 
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 
