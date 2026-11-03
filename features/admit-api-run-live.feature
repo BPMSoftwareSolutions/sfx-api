@@ -79,7 +79,7 @@ Feature: A run is admitted with its whole plan declared
         | runs executing at once     | 2           | 2 workers, each about 350 MB on the shared plan (README.md, Next 2) |
       When more than two runs are admitted
       Then two execute and the rest wait for a worker
-      # sfx-api.config.json workers.instances 2.
+      # sfx-api.config.json workers.instances 2. Each worker starts on its first run (host-facade.feature).
 
     @status:not-built
     @slo:run-capacity

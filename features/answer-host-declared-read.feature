@@ -186,8 +186,9 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       Then the host does not listen
       And it never serves the host's operations from the estate instead
       # The kernel reads no document and checks no digest (SDA D13): the provider checks them itself, reading each document
-      # through the bundle-read provider (sfx-api-host-bundle-read.feature). Every kernel starts before the facade listens
-      # (host-facade.feature), and the facade's first delivery reads its configuration from an owned capability
+      # through the bundle-read provider (sfx-api-host-bundle-read.feature). The request kernels, the publisher and the
+      # drawing reader start before the facade listens (host-facade.feature), and the facade's first delivery reads its
+      # configuration from an owned capability
       # (read-api-host-configuration.feature), so a mismatch fails that delivery and the host never listens.
 
   Rule: The bundle is this repo's own declarations in SEJ, and changes only by a deploy
@@ -312,16 +313,15 @@ Feature: The host's own declarations are answered from its pinned bundle, by a d
       # reused and none read, and made 1 database query, the session's generation read, as the estate's does. Before D16
       # it made 6 queries, against 2 unbound (docs/request-sda-warm-envelope-round-trips.md). README.md, Verified.
 
-    @status:not-built
+    @status:proven
     @capability:answer-host-declared-read
     @slo:frontdoor-warm-latency
     Scenario: The frontdoor's latency objective holds with the bundle
       When requests are answered with the host's declarations served from the bundle
       Then frontdoor-warm-latency holds: p50 at most 0.88 s and p95 at most 3.35 s on sfx-api-test
-      # The baseline was measured with every declaration read from the estate (docs/azure-test-2026-10-31.md). On WSL, on
-      # SDA 29355da with one resident kernel, a warm request took 0.86 s with the bundle and 1.03 s with the estate's
-      # declarations. The facade with all six kernels answered at p50 0.78 s and p95 1.08 s over 20 warm requests.
-      # sfx-api-test is not yet measured.
+      # The baseline was measured with every declaration read from the estate (docs/azure-test-2026-10-31.md). On
+      # sfx-api-test on 2026-11-03 (image 5eb18bf, kernel 244e0129), 30 warm requests took p50 0.46 s and p95 0.57 s of
+      # server time (docs/azure-test-2026-11-03.md).
 
     @status:probed
     @slo:session-setup

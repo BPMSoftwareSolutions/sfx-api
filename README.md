@@ -340,6 +340,14 @@ exceeds the Windows path limit under a deep directory. The context holds:
 The kernel, the provider authority, the bundle and the pin go out in this one image
 (answer-host-declared-read.feature).
 
+Live on `sfx-api-test` since 2026-11-03, 21:32 UTC:
+- image `sfx-api:5eb18bf` (`sha256:540bf6a9…`), with kernel `244e0129` from SDA `29355da`;
+- warm server time p50 0.46 s and p95 0.57 s;
+- the plan at 60% memory afterwards ([docs/azure-test-2026-11-03.md](docs/azure-test-2026-11-03.md)).
+
+Its first, cold start failed before listening, and the site was down for about 50 s until App Service started it
+again. The rollback is image `sfx-api:a57ebba` (`sha256:4d631391…`).
+
     az acr build --registry bpmaiengineacr --image sfx-api:<commit> --build-arg KERNEL_DIGEST=<digest> --file <context>\Dockerfile <context>
 
 The image holds no credential material. The host and the kernel live under `/opt/sfx`; `/home` is
@@ -545,6 +553,14 @@ The same measurements were run on two later kernels, with means over 20 warm env
 
 On `244e0129`, the one query left in a warm envelope is the session's generation read, bound or unbound. Kernel CPU
 varies from run to run by as much as the differences shown.
+
+The kernel set the owner chose on 2026-11-03 was run on kernel `244e0129`, WSL against the estate: two request kernels,
+workers that start on their first run, and the host's bookkeeping on the drawing reader's kernel.
+- **Start:** the facade listened after 7 s with four kernels, 654 MiB at start and 877 MiB after use.
+- **Warm requests:** p50 0.69 s, p95 0.76 s.
+- **Concurrent requests:** bursts of 2, 4 and 6 were all answered. The slowest of the 6 took 2.31 s, and none was
+  refused `REQUEST_KERNEL_BUSY`.
+- **The drawing reader:** its first pass ran through the kernel it shares.
 
 `serve-api-request` end to end on the WSL kernel `9f78e78d`, each a real run against the estate:
 

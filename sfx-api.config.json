@@ -9,7 +9,7 @@
       "--timeout",
       "225000"
     ],
-    "instances": 1,
+    "instances": 2,
     "answerTimeoutMs": 228000
   },
   "workers": {
@@ -37,18 +37,6 @@
     "answerTimeoutMs": 58000
   },
   "drawings": {
-    "command": [
-      "./KernelEntry",
-      "--resident-envelopes",
-      "--config",
-      "kernel-host.json",
-      "--timeout",
-      "55000"
-    ],
-    "instances": 1,
-    "answerTimeoutMs": 58000
-  },
-  "bookkeeping": {
     "command": [
       "./KernelEntry",
       "--resident-envelopes",

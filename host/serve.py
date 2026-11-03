@@ -8,9 +8,10 @@ kernels, writes what they answer and fans in what they write; it decides nothing
 between requests (--resident-envelopes: one envelope per line on stdin, one delivery per line on stdout), so no request
 pays a kernel start.
 
-At start, before it listens, the facade delivers read-api-host-configuration to every kernel, so each one admits the
-host's bundle, and holds the answer as its settings for as long as it runs (api-host-configuration.v1). A kernel that
-does not answer, or settings the facade cannot carry out, stop the host.
+At start, before it listens, the facade delivers read-api-host-configuration to every request kernel, the publisher
+and the drawing reader, so each one admits the host's bundle, and holds the answer as its settings for as long as it
+runs (api-host-configuration.v1). A kernel that does not answer, or settings the facade cannot carry out, stop the host.
+A run worker starts on its first run.
 
 A run outlives the request that admits it, so its admission answers a host directive: a response of type
 application/vnd.sfx.host-directive+json whose body names sfx-api-host-directive.v1. The facade carries out what it
@@ -201,7 +202,8 @@ def invoke(kernel, capability_id, payload):
 
 
 def bookkeep(capability_id, payload):
-    """One bookkeeping capability on a bookkeeping kernel, never a request kernel; its outcome or None."""
+    """One bookkeeping capability on the drawing reader's kernel, never a request kernel; its outcome or None. The
+    drawing reader takes its kernel the same way, so the two never deliver to it at once."""
     kernel = bookkeepers.get()
     try:
         return invoke(kernel, capability_id, payload)
@@ -615,10 +617,11 @@ class Channel:
 
 
 class Drawings:
-    """The estate's circuit drawing changes, on a kernel of its own: the declared read capability, invoked at the
-    declared interval with the cursor it answered last, answers the channel events of the drawings that changed and what
-    to read from next, and the facade appends each event as answered. The cursor advances only once the channel has
-    published every one of them, so a failed publication is read again, and an unsettled pass is read on at once."""
+    """The estate's circuit drawing changes, on the kernel the host's bookkeeping shares. The declared read capability,
+    invoked at the declared interval with the cursor it answered last, answers the channel events of the drawings that
+    changed and what to read from next, and the facade appends each event as answered. The cursor advances only once the
+    channel has published every one of them, so a failed publication is read again, and an unsettled pass is read on at
+    once."""
 
     def __init__(self, kernel):
         self.kernel = kernel
@@ -628,7 +631,7 @@ class Drawings:
         declared = settings['drawings']
         interval = declared['intervalMilliseconds'] / 1000
         while True:
-            answer = invoke(self.kernel, declared['capabilityId'], {'cursor': self.cursor, 'limit': declared['limit']})
+            answer = bookkeep(declared['capabilityId'], {'cursor': self.cursor, 'limit': declared['limit']})
             if not (isinstance(answer, dict) and answer.get('status') == 'READ' and isinstance(answer.get('events'), list)):
                 sys.stderr.write('[sfx-api drawings] %s answered %s\n' % (declared['capabilityId'], json.dumps(answer)))
                 time.sleep(interval)
@@ -896,10 +899,10 @@ def admit(kernel, answers, index):
 
 
 every = {kind: [Kernel(host[kind]) for _ in range(host[kind]['instances'])]
-         for kind in ('kernel', 'workers', 'publisher', 'drawings', 'bookkeeping')}
+         for kind in ('kernel', 'workers', 'publisher', 'drawings')}
 if len(every['publisher']) != 1 or len(every['drawings']) != 1:
     sys.exit('[sfx-api] the channel has one publisher and one drawing reader')
-started = [kernel for kind in every.values() for kernel in kind]
+started = every['kernel'] + every['publisher'] + every['drawings']
 answers = [None] * len(started)
 admissions = [threading.Thread(target=admit, args=(kernel, answers, index)) for index, kernel in enumerate(started)]
 for admission in admissions:
@@ -915,8 +918,7 @@ kernels = queue.Queue()
 for kernel in every['kernel']:
     kernels.put(kernel)
 bookkeepers = queue.Queue()
-for kernel in every['bookkeeping']:
-    bookkeepers.put(kernel)
+bookkeepers.put(every['drawings'][0])
 sessions = Sessions()
 channel = Channel(every['publisher'][0])
 threading.Thread(target=channel.publish, daemon=True).start()
