@@ -20,7 +20,7 @@ and writes back the raw response the kernel resolves.
 | --- | --- |
 | [host/serve.py](host/serve.py) | The hosting facade: the platform's HTTP server bound to a pool of resident kernels, each request one `serve-http-request` envelope (Python standard library) |
 | [providers/sfx-api-ingress.dependency.json](providers/sfx-api-ingress.dependency.json) | The DEPENDENCY `sfx-api-ingress`: the ingress mechanics as C# programs the kernel's resolver runs (`resolve-request`, `compose-response`) |
-| [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) | The interface as declared (`sidefx:authorities/sidefx-api-interface.v1`); a change is declared with `model-declare-semantic-object` |
+| [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) (`serve-carry-interface`) | The interface (`sidefx-api-interface.v1`), carried in the frontdoor's own declaration since 2026-11-02 (authored, not yet declared; [features/README.md](features/README.md), The declarations). The live frontdoor still reads `sidefx:authorities/sidefx-api-interface.v1` from the estate, last declared from `authorities/sidefx-api-interface.v1.json` at `a57ebba` |
 | [sej/serve-api-request.sej.json](sej/serve-api-request.sej.json) | The frontdoor's SEJ: identify the caller, prepare the interface read, resolve the request, compose the response |
 | [sej/answer-api-response.sej.json](sej/answer-api-response.sej.json) | Returns the refusal it is given, so refusals take the answer path |
 | [sej/resolve-api-request.sej.json](sej/resolve-api-request.sej.json) | The resolve stage as a standalone capability, for verification |
@@ -154,7 +154,7 @@ no statement can capture them. The activity reader reads `model.execution_fact`,
 host's capture writes; runs this host executes are not captured there yet.
 
 The estate's live observation channel is the legacy observer's publish/subscribe channel
-([features/estate-live-observation.feature](features/estate-live-observation.feature)). Every event of
+([features/subscribe-estate-live-observation.feature](features/subscribe-estate-live-observation.feature)). Every event of
 every run this host executes is published into it, and any signed-in session subscribes from any
 machine at `GET /events`, as the observer served it, or at `GET /sfx/v1/estate-execution/stream`. Both
 resolve to `subscribe-estate-live-observation`
@@ -370,7 +370,7 @@ is its JSON `value` (sfx-dal `007-run-output-stage`, dry run first with its roll
 
 Since 06 every change is declared through the estate rather than a file run by hand: transformations
 and capabilities through `apply-declared-change`, the interface through `model-declare-semantic-object`
-from [authorities/sidefx-api-interface.v1.json](authorities/sidefx-api-interface.v1.json) after
+from `authorities/sidefx-api-interface.v1.json` (until `a57ebba`; it is now carried in the frontdoor's SEJ) after
 checking that the live interface still equals the last declared one, and sfx-identity migrations
 through `sql-database-reader` on `sfx-identity-database`.
 

@@ -11,7 +11,7 @@
   "operations": [
     {
       "operationId": "resolve-request",
-      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the query as JSON text: each key and value percent-decoded once as UTF-8, + read as a space, members without a key dropped), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty) and headers (the declared request headers the interface binds as $header.: idempotency-key, empty when absent). A request that does not parse reads as empty members.",
+      "meaning": "Read the raw HTTP request (the request line, the header block and the body as the facade received them): method, segments (the decoded path split on /), queryJson (the query as JSON text: each key and value percent-decoded once as UTF-8, + read as a space, members without a key dropped), body, carried (whether a well-formed carrier was presented), sessionDigest (base64 of SHA-256 of SHA-256 of the carrier bytes) source (the X-Client-IP header, else the first X-Forwarded-For entry, else empty) and headers (the declared request headers the interface binds as $header.: idempotency-key and last-event-id, each empty when absent). A request that does not parse reads as empty members.",
       "parameters": [
         {
           "name": "raw",
@@ -623,6 +623,51 @@
             }
           },
           {
+            "bind": "lastEventPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "(?im)^last-event-id:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+              }
+            ]
+          },
+          {
+            "bind": "lastEventMatch",
+            "invocation": "lastEventPattern.Match",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "head"
+              }
+            ]
+          },
+          {
+            "bind": "lastEventGroups",
+            "invocation": "lastEventMatch.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Groups"
+            }
+          },
+          {
+            "bind": "lastEventGroup",
+            "invocation": "lastEventGroups.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": 1
+            }
+          },
+          {
+            "bind": "lastEventId",
+            "invocation": "lastEventGroup.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Value"
+            }
+          },
+          {
             "bind": "headers",
             "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
             "arguments": [
@@ -643,6 +688,20 @@
                 "op": "path",
                 "from": "scope",
                 "path": "idempotencyKey"
+              }
+            ]
+          },
+          {
+            "invocation": "headers.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "last-event-id"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "lastEventId"
               }
             ]
           },

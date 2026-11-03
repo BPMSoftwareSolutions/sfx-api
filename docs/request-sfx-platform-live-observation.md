@@ -46,7 +46,7 @@ The declarations are the source. A record or answer that differs from them is an
 - Record and frame: [19-publish-estate-live-observation.dsl](../declarations/19-publish-estate-live-observation.dsl).
 - Routes: `stream-observer-events` (`GET /events`), `stream-estate-events` (`GET /sfx/v1/estate-execution/stream`)
   and `read-observer-run-output` (`GET /api/circuit/v1/runs/{runId}/output`) in
-  [authorities/sidefx-api-interface.v1.json](../authorities/sidefx-api-interface.v1.json).
+  [authorities/sidefx-api-interface.v1.json](https://github.com/BPMSoftwareSolutions/sfx-api/blob/a57ebbad80ab02b5110f856304902396fe66cc1b/authorities/sidefx-api-interface.v1.json).
 
 What those declare, in short:
 - **Session:** the cookie `__Host-sfx-session` or a bearer. Without one: `401 CALLER_REQUIRED`.

@@ -341,7 +341,7 @@ the legacy host until a browser session is declared.
   [`sda-api-v1.authority.json`][sda-api].
 - **Staging frontdoor.** sfx-platform [`frontdoor.mjs`][frontdoor] (#66).
 - **Declared API.** This repository at `ae0f01d`:
-  [`sidefx-api-interface.v1.json`](../authorities/sidefx-api-interface.v1.json),
+  [`sidefx-api-interface.v1.json`](https://github.com/BPMSoftwareSolutions/sfx-api/blob/a57ebbad80ab02b5110f856304902396fe66cc1b/authorities/sidefx-api-interface.v1.json),
   [`07-serve-http-request.dsl`](../declarations/07-serve-http-request.dsl),
   [`09-open-api-session.dsl`](../declarations/09-open-api-session.dsl), [`sej/`](../sej/),
   [`sfx-api-ingress.dependency.json`](../providers/sfx-api-ingress.dependency.json).
