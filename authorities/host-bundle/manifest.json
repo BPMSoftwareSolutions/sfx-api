@@ -71,7 +71,7 @@
       "capabilityId": "read-api-host-configuration",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-api-host-configuration.json",
-      "sha256Base64": "+NHavvIlvAkARQ7x4PyavsdSC9UGz+cCyv5qJHx8jA4="
+      "sha256Base64": "+k+xbCGwILIMqtLNicvKTLOwQtPiAke5BXSQxADolUE="
     },
     {
       "capabilityId": "read-api-session",

@@ -7,10 +7,10 @@
       "--config",
       "kernel-host.json",
       "--timeout",
-      "225000"
+      "195000"
     ],
     "instances": 2,
-    "answerTimeoutMs": 228000
+    "answerTimeoutMs": 198000
   },
   "workers": {
     "command": [

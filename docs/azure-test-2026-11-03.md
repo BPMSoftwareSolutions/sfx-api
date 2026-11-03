@@ -62,3 +62,27 @@ The plan's memory and CPU (`ASP-sidefxgroup-ad2e`, P0v3), as 5-minute averages:
 
 Sign-in with a real identity, session reads, runs and streams need a signed-in caller. sfx-platform's signed-in
 acceptance covers them.
+
+## The second swap: two request kernels (`ba0cdb4`)
+
+- **Image:** `sfx-api@sha256:99a620e393af50de6318b56539f148caaa12bc82e77a9bd1b5f64a81e926dab4` (tag `sfx-api:ba0cdb4`),
+  ACR build `caar`.
+- **Kernel set:** two request kernels, workers that start on their first run, and bookkeeping on the drawing reader's
+  kernel. Four kernels admit at start.
+- **The swap:** the image was set at 22:10:08 UTC and the site started at 22:10:57. Every probe answered through it, so
+  there was no 503 this time.
+- **Plan memory:** 68 to 70% just before the swap, after runs had grown the old container's workers; 58 to 60% after it.
+
+| Sample (UTC) | Requests | Server time p50 / p95 / max | Refused |
+| --- | --- | --- | --- |
+| 22:16, while other clients were active | 30 sequential | 1.35 / 3.63 / 4.33 s | 4 answered 503 |
+| 22:19, quiet | 30 sequential | 0.46 / 0.56 / 0.60 s | none |
+| about 22:18 | bursts of 2, 4 and 6 at once | slowest 2.9 s | 2 of the 6 answered `REQUEST_KERNEL_BUSY` |
+
+- **A second request kernel does not stop the busy refusals.** The plan has one vCPU, so two kernels running at once
+  each run at about half speed, and the queue drains no faster. A request still waiting after the declared 2 s is
+  refused.
+- **The same refusals hit `5eb18bf`.** sfx-api-test answered 17 requests with a 5xx between 21:55 and 21:58, with plan
+  CPU at 74 to 78%, while the Explorer followed a run. On the screen they showed as
+  `Circuit unavailable (REQUEST_KERNEL_BUSY)`.
+- **What the refusal samples miss.** They exercise no use case: no sign-in, run, stream or circuit read.

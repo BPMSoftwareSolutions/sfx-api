@@ -224,7 +224,8 @@ is one kernel: `sfx-api-test` shares a 4 GB plan whose memory already averages 5
 waits for a free kernel, and a client that gives up still holds its kernel until the kernel answers.
 A kernel that fails writes no delivery: the platform closes the connection without a response (the
 front end answers 502), and the kernel's error reaches the host's stderr. `--timeout` bounds each
-delivery at 225 s, not the kernel's life (App Service stops a request at 230 s). The 8 MiB
+delivery at 195 s, not the kernel's life. A request waits at most the declared 30 s for a free request kernel, so
+every request is answered within App Service's 230 s. The 8 MiB
 standard-input bound of a per-request kernel is not established for a resident envelope.
 
 ### Runs

@@ -41,8 +41,10 @@ Feature: The facade's settings are declared
         | the failure response for a delivery that answers none                                 | host/serve.py:639-643                                                                 |
         | how long a request waits for a free request kernel, and the busy refusal              | nowhere: a request waits without a bound (host/serve.py:625)                          |
       # Declared in declarations/25-read-api-host-configuration.dsl (authored 2026-11-02, not yet declared into the
-      # estate), every value held today kept as it is. Two values are new. The 2 s wait is what App Service's 230 s
-      # leaves after the facade's 228 s answer bound for a request kernel (README.md:227, sfx-api.config.json). The 64
+      # estate), every value held today kept as it is. Two values are new. The wait, 2 s until 2026-11-03 and 30 s since,
+      # and the facade's answer bound for a request kernel, 228 s and then 198 s, together stay within App Service's 230 s.
+      # The 2 s wait refused the Explorer's concurrent reads REQUEST_KERNEL_BUSY on sfx-api-test, so a request now queues.
+      # README.md:227 and sfx-api.config.json. The 64
       # waiting runs is a proposed number with no record behind it. The busy, queue-full and delivery-failure responses
       # are 503 REQUEST_KERNEL_BUSY, 503 RUN_QUEUE_FULL and today's 502 KERNEL_DELIVERY_FAILED, each with its
       # Content-Length.
@@ -66,7 +68,7 @@ Feature: The facade's settings are declared
     @slo:request-answer-bound
     @slo:run-capacity
     Scenario: The bounds of request-answer-bound and run-capacity are declared values
-      Then read-api-host-configuration declares the wait for a free request kernel (2000 ms), the runs that may wait for a
+      Then read-api-host-configuration declares the wait for a free request kernel (30000 ms), the runs that may wait for a
         worker (64) and the response the facade writes when either bound is reached
       And each kernel's answer bound and the number of workers stay with the kernels in sfx-api.config.json
       # declarations/25. 64 waiting runs is a proposed number with no record behind it (this feature's outline).

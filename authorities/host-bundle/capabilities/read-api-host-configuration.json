@@ -103,7 +103,7 @@
                       "inputType": "text"
                     }
                   },
-                  "waitMilliseconds": 2000,
+                  "waitMilliseconds": 30000,
                   "busy": "HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 40\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"REQUEST_KERNEL_BUSY\"}}",
                   "failure": "HTTP/1.1 502 Bad Gateway\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 43\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{\"error\":{\"code\":\"KERNEL_DELIVERY_FAILED\"}}"
                 },

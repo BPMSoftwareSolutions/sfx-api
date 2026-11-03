@@ -145,7 +145,7 @@ Feature: The host is a facade
       When a request arrives
       Then it waits at most the declared wait (read-api-host-configuration.feature)
       And past it the client receives the declared busy refusal, and no kernel takes the request
-      # host/serve.py:726-729 waits request.waitMilliseconds, declared as 2000, then writes request.busy. A client that
+      # host/serve.py:726-729 waits request.waitMilliseconds, declared as 30000, then writes request.busy. A client that
       # gives up still holds its kernel until the kernel answers: "A request kernel is released when its client goes".
 
   Rule: The facade writes exactly what the kernel answers
@@ -238,7 +238,7 @@ Feature: The host is a facade
 
     @status:installed
     Scenario: Each kind of kernel has its answer bound
-      Then the facade waits 228 s for a request kernel bounded at 225 s, 3605 s for a worker bounded at 3600 s, and
+      Then the facade waits 198 s for a request kernel bounded at 195 s, 3605 s for a worker bounded at 3600 s, and
         58 s for the publisher and the drawing reader, each bounded at 55 s
       # sfx-api.config.json answerTimeoutMs, and --timeout in each command.
 
@@ -319,11 +319,11 @@ Feature: The host is a facade
     Scenario: No request outlives App Service's 230 s bound
       Given the service level:
         | SLI                                          | SLA                                  | baseline                                                   |
-        | time from a request's receipt to its answer  | every request answered within 230 s  | each kernel's answer bound: 228000 ms for a request kernel |
+        | time from a request's receipt to its answer  | every request answered within 230 s  | each kernel's answer bound: 198000 ms for a request kernel |
       When the facade receives a request
       Then it writes the request's answer within 230 s of receiving it: its kernel's answer, the declared busy response or
         the declared failure response
-      # A request waits at most the declared 2000 ms for a free kernel, and its kernel answers within 228 s or its delivery
+      # A request waits at most the declared 30000 ms for a free kernel, and its kernel answers within 198 s or its delivery
       # fails ("A request waits for a free request kernel within a declared bound", "Each kind of kernel has its answer
       # bound").
 
