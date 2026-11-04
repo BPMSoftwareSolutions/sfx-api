@@ -227,7 +227,7 @@
                       },
                       "sha256Base64": {
                         "op": "literal",
-                        "value": "WhOLtfW2yayhsNBU1DmS95X7h/qHhvMljKQeLbOAPJQ="
+                        "value": "kZCU4A78V+xw+kXYnN02zc39yPHcoNezOxlQqtfSfos="
                       },
                       "carry": {
                         "op": "path",
@@ -422,7 +422,7 @@
                       },
                       "pin": {
                         "op": "literal",
-                        "value": "sha256-base64:WhOLtfW2yayhsNBU1DmS95X7h/qHhvMljKQeLbOAPJQ="
+                        "value": "sha256-base64:kZCU4A78V+xw+kXYnN02zc39yPHcoNezOxlQqtfSfos="
                       }
                     },
                     "value": {
@@ -753,6 +753,18 @@
       "providerProfileId": "sfx-identity-login-derive.v2",
       "providerProfileDigest": "sha256:55ea3bcc1ed327102727c44d5f94e33cb8d64000cb9abf6eca7a48789a50cc11",
       "implementationRef": "sidefx:dependencies/sfx-identity-login"
+    },
+    {
+      "mechanicId": "sfx-api-host-child-process-port.v1",
+      "providerProfileId": "sfx-api-host-child-process",
+      "providerProfileDigest": "sha256:13854b1b357cb5e7cc7dc340a488c35b7030cb280dd34a437c264873b93640f4",
+      "implementationRef": "sidefx:dependencies/sfx-api-host-child-process"
+    },
+    {
+      "mechanicId": "sfx-api-acceptance-python-only-port.v1",
+      "providerProfileId": "sfx-api-acceptance-python-only",
+      "providerProfileDigest": "sha256:69dda165be5e7f2e1a271a661d49b9ca70dca817608c2c0202031156d7692116",
+      "implementationRef": "sidefx:dependencies/sfx-api-acceptance-python-only"
     }
   ],
   "declaredProviders": [
@@ -3638,6 +3650,244 @@
         }
       ],
       "sourceProviderDefinitionDigest": "sha256:d96129e4e176840370075f8ad25a6200c42551fcf4f4b203e9946dbf11f670ba"
+    },
+    {
+      "providerProfileId": "sfx-api-host-child-process",
+      "language": "csharp",
+      "type": "System.Diagnostics.Process",
+      "assembly": "System.Diagnostics.Process",
+      "method": ".ctor",
+      "factory": true,
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "probe",
+          "parameters": [
+            {
+              "name": "check",
+              "source": "input",
+              "path": "check"
+            }
+          ],
+          "result": {
+            "from": "value",
+            "encoding": "json-text"
+          },
+          "program": [
+            {
+              "bind": "start",
+              "invocation": "new System.Diagnostics.ProcessStartInfo, System.Diagnostics.Process"
+            },
+            {
+              "invocation": "start.FileName.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "/usr/bin/timeout"
+                }
+              ]
+            },
+            {
+              "invocation": "start.UseShellExecute.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": false
+                }
+              ]
+            },
+            {
+              "invocation": "start.Environment.Clear"
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "--kill-after=5"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "120"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "/usr/local/bin/python3"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "-I"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "-S"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "-B"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "-c"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "\"\"\"Fixed probes of the hosted execution profile (contracts/sfx-api-hosted-csharp.v1.profile.json).\n\nThe C# program of sfx-api-host-child-process starts this script under /usr/bin/timeout with an empty environment.\nargv[1] names one probe; any other name is refused. argv[2] is the language of the program that started it, which only\nthat language's kernel can run. Each probe answers one JSON object and measures only what it reports.\n\"\"\"\nimport hashlib\nimport json\nimport os\nimport platform\nimport shutil\nimport subprocess\nimport sys\nimport sysconfig\nimport tempfile\nimport time\n\nPYTHON = \"/usr/local/bin/python3\"\nTIMEOUT = \"/usr/bin/timeout\"\nCONFIGURATION = \"/opt/sfx/sfx-api.config.json\"\n\n\ndef remaining(pid):\n    \"\"\"Whether a process with this pid still runs: absent, or a zombie, is not running.\"\"\"\n    try:\n        with open(\"/proc/%d/stat\" % pid) as stat:\n            return stat.read().rsplit(\")\", 1)[1].split()[0] != \"Z\"\n    except OSError:\n        return False\n\n\ndef loadable_tags(major, minor, machine, glibc):\n    \"\"\"The wheel tags this interpreter can load, as the packaging specification derives them for manylinux.\"\"\"\n    tags = [\"py3-none-any\"]\n    if machine != \"x86_64\" or glibc < (2, 17):\n        return tags\n    for libc_minor in range(17, glibc[1] + 1):\n        platform_tag = \"manylinux_2_%d_%s\" % (libc_minor, machine)\n        tags.append(\"cp%d%d-cp%d%d-%s\" % (major, minor, major, minor, platform_tag))\n        tags.extend(\"cp%d%d-abi3-%s\" % (major, abi3, platform_tag) for abi3 in range(2, minor + 1))\n    return tags\n\n\ndef runtime(language):\n    import pwd\n    libc = os.confstr(\"CS_GNU_LIBC_VERSION\") or \"\"\n    glibc_text = libc.split()[-1] if libc.startswith(\"glibc \") else \"\"\n    glibc = tuple(int(part) for part in glibc_text.split(\".\")[:2]) if glibc_text else (0, 0)\n    major, minor = sys.version_info[:2]\n    storage = {\"path\": tempfile.gettempdir(), \"created\": False, \"written\": False, \"readBack\": False, \"deleted\": False}\n    data = os.urandom(65536)\n    handle, path = tempfile.mkstemp(prefix=\"sfx-acceptance-\")\n    storage[\"created\"] = True\n    with os.fdopen(handle, \"wb\") as file:\n        file.write(data)\n    storage[\"written\"] = True\n    with open(path, \"rb\") as file:\n        storage[\"readBack\"] = file.read() == data\n    os.remove(path)\n    storage[\"deleted\"] = not os.path.exists(path)\n    storage[\"freeBytes\"] = shutil.disk_usage(storage[\"path\"]).free\n    return {\"runtimeLanguage\": language, \"user\": pwd.getpwuid(os.getuid()).pw_name, \"uid\": os.getuid(),\n            \"environmentKeys\": sorted(os.environ), \"python\": {\n                \"path\": sys.executable, \"implementation\": sys.implementation.name, \"version\": platform.python_version(),\n                \"soabi\": sysconfig.get_config_var(\"SOABI\"), \"machine\": platform.machine(), \"glibcVersion\": glibc_text,\n                \"loadableTags\": loadable_tags(major, minor, platform.machine(), glibc)},\n            \"temporaryStorage\": storage}\n\n\ndef under_timeout(arguments, child):\n    \"\"\"Run child under timeout with these arguments: its exit code, elapsed time, pid and whether it remains.\"\"\"\n    started = time.monotonic()\n    process = subprocess.Popen([TIMEOUT] + arguments + [PYTHON, \"-I\", \"-S\", \"-B\", \"-c\", child],\n                               stdout=subprocess.PIPE, env={})\n    first = process.stdout.readline().decode(\"utf-8\", \"replace\").split()\n    exit_code = process.wait()\n    # A process ended by a signal is reported as the shell reports it, 128 plus the signal, as GNU timeout documents\n    # its exit statuses: timeout ends itself with the KILL it sends.\n    exit_code = 128 - exit_code if exit_code < 0 else exit_code\n    elapsed = int((time.monotonic() - started) * 1000)\n    pid = int(first[0]) if first else 0\n    time.sleep(0.2)\n    return {\"exitCode\": exit_code, \"elapsedMs\": elapsed, \"childPid\": pid,\n            \"childRemaining\": remaining(pid) if pid else True, \"readiness\": first[1:]}\n\n\ndef forced_termination(language):\n    child = (\"import os, signal, time\\n\"\n             \"signal.signal(signal.SIGTERM, signal.SIG_IGN)\\n\"\n             \"print(os.getpid(), 'ignoring', flush=True)\\n\"\n             \"time.sleep(60)\\n\")\n    measured = under_timeout([\"--kill-after=2\", \"2\"], child)\n    ignored = measured.pop(\"readiness\") == [\"ignoring\"]\n    return dict(measured, timeoutSeconds=2, killAfterSeconds=2, ignoredTermination=ignored)\n\n\ndef graceful_termination(language):\n    version = subprocess.run([TIMEOUT, \"--version\"], capture_output=True, env={}).stdout.decode(\"utf-8\", \"replace\")\n    child = (\"import os, time\\n\"\n             \"print(os.getpid(), 'running', flush=True)\\n\"\n             \"time.sleep(60)\\n\")\n    measured = under_timeout([\"2\"], child)\n    measured.pop(\"readiness\")\n    return dict(measured, timeoutSeconds=2, versionLine=version.splitlines()[0] if version else \"\")\n\n\ndef payload(language):\n    text = \"aé€😀abcdef\" * 393216\n    data = text.encode(\"utf-8\")\n    return {\"contractId\": \"hosted-execution-payload.v1\", \"payloadBytes\": len(data),\n            \"payloadSha256\": \"sha256:\" + hashlib.sha256(data).hexdigest(), \"payload\": text}\n\n\ndef hold(language):\n    started = time.time()\n    time.sleep(5)\n    return {\"heldMs\": int((time.time() - started) * 1000)}\n\n\ndef configuration(language):\n    raw = open(CONFIGURATION, \"rb\").read()\n    host = json.loads(raw)\n    bound = lambda kind: int(host[kind][\"command\"][host[kind][\"command\"].index(\"--timeout\") + 1])\n    return {\"configurationDigest\": \"sha256:\" + hashlib.sha256(raw).hexdigest(),\n            \"request\": {\"kernels\": host[\"kernel\"][\"instances\"], \"deliveryBoundMs\": bound(\"kernel\"),\n                        \"answerBoundMs\": host[\"kernel\"][\"answerTimeoutMs\"]},\n            \"worker\": {\"deliveryBoundMs\": bound(\"workers\"), \"answerBoundMs\": host[\"workers\"][\"answerTimeoutMs\"],\n                       \"concurrentRuns\": host[\"workers\"][\"instances\"]}}\n\n\nPROBES = {\"runtime\": runtime, \"forced-termination\": forced_termination, \"graceful-termination\": graceful_termination,\n          \"payload\": payload, \"hold\": hold, \"configuration\": configuration}\n\ntry:\n    name, language = sys.argv[1], sys.argv[2]\n    if name not in PROBES:\n        raise ValueError(\"PROBE_NOT_DECLARED\")\n    answer = dict(PROBES[name](language), probe=name, status=\"MEASURED\")\nexcept Exception as error:\n    answer = {\"probe\": sys.argv[1] if len(sys.argv) > 1 else \"\", \"status\": \"FAILED\", \"finding\": type(error).__name__ + \": \" + str(error)[:300]}\nprint(json.dumps(answer, ensure_ascii=False, separators=(\",\", \":\")))\n"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "check"
+                }
+              ]
+            },
+            {
+              "invocation": "start.ArgumentList.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "csharp"
+                }
+              ]
+            },
+            {
+              "invocation": "start.RedirectStandardInput.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "invocation": "start.RedirectStandardOutput.$write",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "bind": "process",
+              "invocation": "new System.Diagnostics.Process, System.Diagnostics.Process",
+              "release": {
+                "invocation": "process.Dispose"
+              }
+            },
+            {
+              "invocation": "process.StartInfo.$write",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "start"
+                }
+              ]
+            },
+            {
+              "invocation": "process.Start"
+            },
+            {
+              "invocation": "process.StandardInput.Close"
+            },
+            {
+              "bind": "value",
+              "invocation": "process.StandardOutput.ReadToEnd"
+            },
+            {
+              "invocation": "process.WaitForExit"
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:13854b1b357cb5e7cc7dc340a488c35b7030cb280dd34a437c264873b93640f4"
+    },
+    {
+      "providerProfileId": "sfx-api-acceptance-python-only",
+      "language": "python",
+      "module": "json",
+      "export": "dumps",
+      "effectClassification": "observation",
+      "operations": [
+        {
+          "operationId": "answer",
+          "parameters": [
+            {
+              "name": "wire",
+              "source": "input",
+              "path": ""
+            }
+          ],
+          "result": {
+            "from": "value"
+          },
+          "program": [
+            {
+              "bind": "codec",
+              "invocation": "import_module",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "json"
+                }
+              ]
+            },
+            {
+              "bind": "value",
+              "invocation": "codec.dumps",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "wire"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "sourceProviderDefinitionDigest": "sha256:69dda165be5e7f2e1a271a661d49b9ca70dca817608c2c0202031156d7692116"
     }
   ]
 }

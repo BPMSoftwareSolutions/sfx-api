@@ -50,6 +50,18 @@
       "sha256Base64": "bIrvuNw3L+O8qGHizRYqlXl2z6GJRKhNpEVm80cQ9gs="
     },
     {
+      "capabilityId": "probe-hosted-execution",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/probe-hosted-execution.json",
+      "sha256Base64": "ADIBIj74mqIp39tdD3tpk0pI7k5ZjwduNjdiJ+Je8NY="
+    },
+    {
+      "capabilityId": "probe-hosted-execution-language-refusal",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/probe-hosted-execution-language-refusal.json",
+      "sha256Base64": "Km1Apg+rwS3wme1kprUWr8VGf4OY5pqlCDLlB+Ap5jM="
+    },
+    {
       "capabilityId": "project-api-run-events",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/project-api-run-events.json",
@@ -84,6 +96,12 @@
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-estate-drawing-changes.json",
       "sha256Base64": "uPbEzzI+S97AF/7aBMewvel42/pn+LjzzX+HMv2ikis="
+    },
+    {
+      "capabilityId": "read-hosted-execution-profile",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-hosted-execution-profile.json",
+      "sha256Base64": "WpsXcex6yA1qXt9xnQ0FPOASdckgTPhga9T5f4n3UQU="
     },
     {
       "capabilityId": "read-run-graphs",
@@ -125,7 +143,7 @@
       "capabilityId": "serve-api-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-api-request.json",
-      "sha256Base64": "wbdS4eYZCMpSqk2JgcO0+xt/aEmxDz1MqyOTEgANJ1Y="
+      "sha256Base64": "sNV439JKW41fPIAbHcVXzV9PAgEav6oKA9DpQeeFMR4="
     },
     {
       "capabilityId": "serve-http-request",

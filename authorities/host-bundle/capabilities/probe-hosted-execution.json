@@ -1,0 +1,160 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "probe-hosted-execution",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "probe-hosted-execution",
+  "graphSource": {
+    "capabilityId": "probe-hosted-execution",
+    "rootScenarioId": "probe-hosted-execution",
+    "scenarios": [
+      {
+        "scenarioId": "probe-hosted-execution",
+        "input": {
+          "inputId": "probe-hosted-execution-request",
+          "contract": {
+            "contractId": "probe-hosted-execution-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "probe-hosted-execution-requested",
+          "executionAuthorityId": "probe-hosted-execution.v1"
+        },
+        "outcome": {
+          "outcomeId": "probe-hosted-execution-outcome",
+          "contract": {
+            "contractId": "hosted-execution-probe.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "probe-hosted-execution",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "probe-hosted-execution.v1",
+        "owningScenarioId": "probe-hosted-execution",
+        "operations": [
+          {
+            "operationId": "probe-hosted-execution.answer",
+            "kind": "invoke-port",
+            "portId": "probe-hosted-execution-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "probe-hosted-execution-cli",
+          "kind": "cli",
+          "rootScenarioId": "probe-hosted-execution",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "probe-hosted-execution-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "probe-hosted-execution-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "probe-hosted-execution-transform.v1"
+          }
+        },
+        {
+          "portId": "probe-hosted-execution-answer",
+          "platformCapabilityId": "sfx-api-host-child-process-port.v1",
+          "configuration": {
+            "providerId": "sfx-api-host-child-process",
+            "dependency": {
+              "objectKind": "DEPENDENCY",
+              "namespace": "sidefx:dependencies",
+              "id": "sfx-api-host-child-process"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "probe-hosted-execution-request.v1": {
+          "schemaRef": "probe-hosted-execution-request.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "check"
+            ],
+            "properties": {
+              "check": {
+                "enum": [
+                  "runtime",
+                  "forced-termination",
+                  "graceful-termination",
+                  "payload",
+                  "hold",
+                  "configuration"
+                ]
+              }
+            }
+          }
+        },
+        "hosted-execution-probe.v1": {
+          "schemaRef": "hosted-execution-probe.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "probe-hosted-execution-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "probe-hosted-execution",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "probe-hosted-execution",
+      "input_id": "probe-hosted-execution-request",
+      "event_id": "probe-hosted-execution-requested",
+      "responsibility": "the declared probe runs on a worker and answers what it measured",
+      "outcome_id": "probe-hosted-execution-outcome",
+      "scenario_definition_digest": "Cbf1cfB8YARcr0eDDihmUt6Qte/bK4KZni0r6gk53vk="
+    }
+  ]
+}

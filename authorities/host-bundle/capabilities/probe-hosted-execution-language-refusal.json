@@ -1,0 +1,144 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "probe-hosted-execution-language-refusal",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "probe-hosted-execution-language-refusal",
+  "graphSource": {
+    "capabilityId": "probe-hosted-execution-language-refusal",
+    "rootScenarioId": "probe-hosted-execution-language-refusal",
+    "scenarios": [
+      {
+        "scenarioId": "probe-hosted-execution-language-refusal",
+        "input": {
+          "inputId": "probe-hosted-execution-language-refusal-request",
+          "contract": {
+            "contractId": "probe-hosted-execution-language-refusal-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "probe-hosted-execution-language-refusal-requested",
+          "executionAuthorityId": "probe-hosted-execution-language-refusal.v1"
+        },
+        "outcome": {
+          "outcomeId": "probe-hosted-execution-language-refusal-outcome",
+          "contract": {
+            "contractId": "hosted-execution-probe.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "probe-hosted-execution-language-refusal",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "probe-hosted-execution-language-refusal.v1",
+        "owningScenarioId": "probe-hosted-execution-language-refusal",
+        "operations": [
+          {
+            "operationId": "probe-hosted-execution-language-refusal.answer",
+            "kind": "invoke-port",
+            "portId": "probe-hosted-execution-language-refusal-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "probe-hosted-execution-language-refusal-cli",
+          "kind": "cli",
+          "rootScenarioId": "probe-hosted-execution-language-refusal",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "probe-hosted-execution-language-refusal-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "probe-hosted-execution-language-refusal-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "probe-hosted-execution-language-refusal-transform.v1"
+          }
+        },
+        {
+          "portId": "probe-hosted-execution-language-refusal-answer",
+          "platformCapabilityId": "sfx-api-acceptance-python-only-port.v1",
+          "configuration": {
+            "providerId": "sfx-api-acceptance-python-only",
+            "dependency": {
+              "objectKind": "DEPENDENCY",
+              "namespace": "sidefx:dependencies",
+              "id": "sfx-api-acceptance-python-only"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "probe-hosted-execution-language-refusal-request.v1": {
+          "schemaRef": "probe-hosted-execution-language-refusal-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "hosted-execution-probe.v1": {
+          "schemaRef": "hosted-execution-probe.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "probe-hosted-execution-language-refusal-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "probe-hosted-execution-language-refusal",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "probe-hosted-execution-language-refusal",
+      "input_id": "probe-hosted-execution-language-refusal-request",
+      "event_id": "probe-hosted-execution-language-refusal-requested",
+      "responsibility": "a provider declared only for python is reached on a csharp worker",
+      "outcome_id": "probe-hosted-execution-language-refusal-outcome",
+      "scenario_definition_digest": "I7fTfZZMrMqy/wzwO2Jbaxebu+g+oEKYukTd/pghvsk="
+    }
+  ]
+}

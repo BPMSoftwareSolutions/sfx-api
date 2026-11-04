@@ -1179,6 +1179,28 @@
                               "3": "session",
                               "4": "logout"
                             }
+                          },
+                          {
+                            "operationId": "read-hosted-execution-profile",
+                            "method": "GET",
+                            "path": "/hosted-execution/profile",
+                            "callers": [
+                              "machine",
+                              "user"
+                            ],
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-hosted-execution-profile"
+                            },
+                            "input": {},
+                            "meaning": "Read the host's execution profile: the exact bytes of the profile this deployment promises, and their SHA-256.",
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "hosted-execution",
+                              "4": "profile"
+                            }
                           }
                         ]
                       }

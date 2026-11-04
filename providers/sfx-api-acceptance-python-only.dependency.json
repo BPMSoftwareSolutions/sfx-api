@@ -1,0 +1,52 @@
+{
+  "dependencyId": "sfx-api-acceptance-python-only",
+  "meaning": "A provider declared only for python, so that a csharp worker must refuse it with PROVIDER_LANGUAGE_UNAVAILABLE (T3 of the hosted execution profile). Its program is never meant to run on this host.",
+  "objectGraphClosure": "object-graph.v1",
+  "runtimes": {
+    "python": {
+      "package": "json",
+      "export": "dumps"
+    }
+  },
+  "operations": [
+    {
+      "operationId": "answer",
+      "meaning": "Answer the input as JSON text.",
+      "parameters": [
+        {
+          "name": "wire",
+          "source": "input",
+          "path": ""
+        }
+      ],
+      "result": {
+        "from": "value"
+      },
+      "programs": {
+        "python": [
+          {
+            "bind": "codec",
+            "invocation": "import_module",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "json"
+              }
+            ]
+          },
+          {
+            "bind": "value",
+            "invocation": "codec.dumps",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "wire"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

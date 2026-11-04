@@ -1,0 +1,177 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-hosted-execution-profile",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-hosted-execution-profile",
+  "graphSource": {
+    "capabilityId": "read-hosted-execution-profile",
+    "rootScenarioId": "read-hosted-execution-profile",
+    "scenarios": [
+      {
+        "scenarioId": "read-hosted-execution-profile",
+        "input": {
+          "inputId": "read-hosted-execution-profile-request",
+          "contract": {
+            "contractId": "read-hosted-execution-profile-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-hosted-execution-profile-requested",
+          "executionAuthorityId": "read-hosted-execution-profile.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-hosted-execution-profile-outcome",
+          "contract": {
+            "contractId": "hosted-execution-profile-reading.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-hosted-execution-profile",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-hosted-execution-profile.v1",
+        "owningScenarioId": "read-hosted-execution-profile",
+        "operations": [
+          {
+            "operationId": "read-hosted-execution-profile.answer",
+            "kind": "invoke-port",
+            "portId": "read-hosted-execution-profile-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-hosted-execution-profile-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-hosted-execution-profile",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-hosted-execution-profile-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-hosted-execution-profile-port",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "transformationAuthorityRef": "semantic-transformation.authority.json",
+            "transformationId": "read-hosted-execution-profile-transform.v1"
+          }
+        },
+        {
+          "portId": "read-hosted-execution-profile-answer",
+          "platformCapabilityId": "sda-authority-transformation-port.v1",
+          "configuration": {
+            "expression": {
+              "op": "literal",
+              "value": {
+                "contractId": "hosted-execution-profile-reading.v1",
+                "profileId": "sfx-api-hosted-csharp",
+                "profileVersion": 1,
+                "profileDigest": "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804",
+                "profileText": "{\n  \"contractId\": \"hosted-execution-profile.v1\",\n  \"profileId\": \"sfx-api-hosted-csharp\",\n  \"profileVersion\": 1,\n  \"host\": {\n    \"deployment\": \"sfx-api-test\",\n    \"endpoint\": \"https://sfx-api-test.azurewebsites.net\"\n  },\n  \"runtime\": {\n    \"promiseId\": \"H1\",\n    \"language\": \"csharp\",\n    \"kernel\": {\n      \"implementation\": \"sda-scenario-kernel\",\n      \"sdaRevision\": \"29355da\",\n      \"rid\": \"linux-x64\"\n    }\n  },\n  \"providers\": {\n    \"promiseId\": \"H2\",\n    \"selection\": \"entry-for-runtime-language\",\n    \"refusal\": {\n      \"code\": \"PROVIDER_LANGUAGE_UNAVAILABLE\",\n      \"names\": [\"providerProfileId\", \"declaredLanguage\", \"runtimeLanguage\"]\n    }\n  },\n  \"childProcesses\": {\n    \"promiseId\": \"H3\",\n    \"identity\": { \"user\": \"sjones\", \"uid\": 1000 },\n    \"environment\": \"works-when-cleared\",\n    \"temporaryStorage\": {\n      \"path\": \"/tmp\",\n      \"operations\": [\"create\", \"write\", \"read\", \"delete\"],\n      \"freeBytesAtAcceptance\": { \"minimum\": 67108864, \"lifetime\": \"measured-at-acceptance-not-reserved\" }\n    },\n    \"executables\": [\n      {\n        \"kind\": \"cpython\",\n        \"path\": \"/usr/local/bin/python3\",\n        \"implementation\": \"cpython\",\n        \"version\": { \"major\": 3, \"minor\": 12 },\n        \"soabi\": \"cpython-312-x86_64-linux-gnu\",\n        \"platform\": {\n          \"system\": \"Linux\",\n          \"machine\": \"x86_64\",\n          \"libc\": \"glibc\",\n          \"libcMinimumVersion\": \"2.17\"\n        },\n        \"wheelTags\": [\"py3-none-any\", \"cp38-abi3-manylinux_2_17_x86_64\", \"cp312-cp312-manylinux_2_17_x86_64\"],\n        \"flags\": [\"-I\", \"-S\", \"-B\"]\n      },\n      {\n        \"kind\": \"gnu-timeout\",\n        \"path\": \"/usr/bin/timeout\",\n        \"identity\": { \"package\": \"GNU coreutils\", \"versionLinePattern\": \"^timeout \\\\(GNU coreutils\\\\) [0-9]+\\\\.[0-9]+\" },\n        \"exitWhenTerminated\": 124,\n        \"exitWhenKilled\": 137,\n        \"killAfterOption\": \"--kill-after\"\n      }\n    ]\n  },\n  \"executionPaths\": {\n    \"promiseId\": \"H5\",\n    \"request\": {\n      \"kernels\": 2,\n      \"waitForKernelMs\": 30000,\n      \"deliveryBoundMs\": 195000,\n      \"answerBoundMs\": 198000,\n      \"platformBoundMs\": 230000\n    },\n    \"worker\": {\n      \"deliveryBoundMs\": 3600000,\n      \"answerBoundMs\": 3605000,\n      \"concurrentRuns\": 2,\n      \"waitingRuns\": 64\n    }\n  },\n  \"results\": {\n    \"promiseId\": \"H4\",\n    \"preservation\": \"declared-result-value\",\n    \"artifactBytes\": \"utf-8-sha256\",\n    \"maximumResultBytes\": 6291456\n  },\n  \"consumerObligations\": [\n    { \"obligationId\": \"C1\", \"statement\": \"Every provider in a run's closure has an entry for runtime.language.\" },\n    { \"obligationId\": \"C2\", \"statement\": \"A program that starts a child uses only the executables in childProcesses.executables, sets or clears the child's environment itself, bounds the child within its execution path's delivery bound, and fails visibly when the child exits unsuccessfully, is ended, or answers what is not its declared result.\" },\n    { \"obligationId\": \"C3\", \"statement\": \"Third-party packages come from the consumer's own digest-pinned closure, never from the host image.\" },\n    { \"obligationId\": \"C4\", \"statement\": \"Temporary storage is shared and not reserved. A consumer whose child finds too little space fails visibly.\" }\n  ],\n  \"acceptance\": {\n    \"receiptContract\": \"hosted-execution-acceptance.v1\",\n    \"coordinator\": {\n      \"capabilityId\": \"accept-hosted-execution-profile\",\n      \"executionPath\": \"request\",\n      \"method\": \"POST\",\n      \"path\": \"/sfx/v1/hosted-execution/acceptance\",\n      \"workerSlotsHeld\": 0,\n      \"probeTransport\": \"deployed-https-api\",\n      \"admittedCallers\": [\"machine\"],\n      \"probeAuthority\": { \"caller\": \"machine\", \"credential\": \"host-machine-credential\", \"release\": \"declared-credential-pointer\" },\n      \"requestKernelsRequired\": 2,\n      \"budgetMs\": 150000,\n      \"probeCompletion\": \"run-event-stream-to-end\"\n    },\n    \"repeatWhenChanged\": [\"imageDigest\", \"bundleDigest\", \"kernelArtifactDigest\", \"hostFilesDigest\", \"profileDigest\"],\n    \"checks\": [\n      { \"checkId\": \"T1\", \"promiseIds\": [\"H1\", \"H3\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"The run reports runtime.language. Under the worker identity, with a cleared environment, CPython at its path reports its implementation, version, SOABI, machine and glibc version, and each wheel tag above is among the tags that interpreter can load. Temporary storage at its path allows create, write, read and delete, with at least freeBytesAtAcceptance.minimum free.\" },\n      { \"checkId\": \"T2\", \"promiseIds\": [\"H3\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"timeout --kill-after=2 2 ends a child that ignores SIGTERM: it exits exitWhenKilled after 4 to 5 s, and no process of the child remains.\" },\n      { \"checkId\": \"T3\", \"promiseIds\": [\"H2\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"A run whose closure has a provider with no entry for runtime.language fails with PROVIDER_LANGUAGE_UNAVAILABLE, naming the provider, its declared language and runtime.language.\" },\n      { \"checkId\": \"T4\", \"promiseIds\": [\"H4\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"A worker probe returns a JSON object with a payload string of maximumResultBytes UTF-8 bytes. The coordinator makes an authenticated HTTPS GET to host.endpoint + /sfx/v1/runs/{runId}/output, without redirects, and decodes /output/payload from the response JSON. Those UTF-8 bytes have the declared byte count and SHA-256. Calling serve-http-request in process does not establish this check.\" },\n      { \"checkId\": \"T5\", \"promiseIds\": [\"H3\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"timeout at its path prints a first version line matching its identity, and timeout 2 ends a child that stops on SIGTERM: it exits exitWhenTerminated after 2 to 3 s, and no process of the child remains.\" },\n      { \"checkId\": \"T6\", \"promiseIds\": [\"H5\"], \"executionPath\": \"worker\", \"evidence\": \"configuration\", \"establishes\": \"The deployed facade configuration and the declared host settings hold every bound, the run concurrency and the waiting runs above. This compares settings and proves no behavior.\" },\n      { \"checkId\": \"T7\", \"promiseIds\": [\"H5\"], \"executionPath\": \"worker\", \"evidence\": \"execution\", \"establishes\": \"The request-path coordinator holds no worker slot. With both workers available, it admits three 5-second hold probes through the deployed HTTPS run API without waiting for any to finish. From the three completed runs' execution intervals, two overlap and the third starts only after one of them ends. The coordinator execution is excluded from the probe counts.\" }\n    ]\n  }\n}\n"
+              }
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-hosted-execution-profile-request.v1": {
+          "schemaRef": "read-hosted-execution-profile-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "hosted-execution-profile-reading.v1": {
+          "schemaRef": "hosted-execution-profile-reading.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contractId",
+              "profileId",
+              "profileVersion",
+              "profileDigest",
+              "profileText"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "hosted-execution-profile-reading.v1"
+              },
+              "profileId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "profileVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "profileDigest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "profileText": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-hosted-execution-profile-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-hosted-execution-profile",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-hosted-execution-profile",
+      "input_id": "read-hosted-execution-profile-request",
+      "event_id": "read-hosted-execution-profile-requested",
+      "responsibility": "the host's execution profile is read",
+      "outcome_id": "read-hosted-execution-profile-outcome",
+      "scenario_definition_digest": "tXzPM0oDy7VYSfZ4dG+9g+9jkbBuV0makto+5gLVU8E="
+    }
+  ]
+}
