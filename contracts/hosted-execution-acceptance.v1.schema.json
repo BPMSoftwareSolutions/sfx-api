@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hosted-execution-acceptance.v1.schema.json",
+  "title": "Hosted execution acceptance receipt",
+  "description": "The result of running the checks of profile sfx-api-hosted-csharp version 1 on one deployment, issued by accept-hosted-execution-profile. A receipt holds only for the profile, image, bundle, kernel and host files it names. Checks are keyed by checkId, so none can be missing, repeated or unknown. The evaluator refuses a receipt text with a repeated key before it validates it. A check is PASSED only when its observations meet the profile, and the receipt is ACCEPTED only when every check passed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractId", "profileId", "profileVersion", "profileDigest", "deployment", "executedAt", "evaluator", "checks", "status"],
+  "properties": {
+    "contractId": { "const": "hosted-execution-acceptance.v1" },
+    "profileId": { "const": "sfx-api-hosted-csharp" },
+    "profileVersion": { "const": 1 },
+    "profileDigest": { "const": "sha256:b387ad0c7321c6a1e4bbf063b54009ed3e917f8609de884f811d0eca01390efd" },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest"],
+      "properties": {
+        "host": { "const": "sfx-api-test" },
+        "imageDigest": {
+          "description": "Recorded by the deployer from the platform's configuration. The host cannot attest its own image.",
+          "$ref": "#/$defs/sha256"
+        },
+        "bundleDigest": {
+          "description": "The bundle's pin, as the host's provider authority names it.",
+          "type": "string",
+          "pattern": "^sha256-base64:[A-Za-z0-9+/]{43}=$"
+        },
+        "kernelArtifactDigest": {
+          "description": "The install root of the kernel that executed the checks.",
+          "$ref": "#/$defs/sha256"
+        },
+        "hostFilesDigest": {
+          "description": "Attested by the evaluator: the SHA-256 over the deployed facade, its configuration, the container start script, the kernel's boot configuration and the provider authority, in that order.",
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "executedAt": { "type": "string", "format": "date-time" },
+    "evaluator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilityId", "runId"],
+      "properties": {
+        "capabilityId": { "const": "accept-hosted-execution-profile" },
+        "runId": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["T1", "T2", "T3", "T4", "T5", "T6", "T7"],
+      "properties": {
+        "T1": { "$ref": "#/$defs/T1" },
+        "T2": { "$ref": "#/$defs/T2" },
+        "T3": { "$ref": "#/$defs/T3" },
+        "T4": { "$ref": "#/$defs/T4" },
+        "T5": { "$ref": "#/$defs/T5" },
+        "T6": { "$ref": "#/$defs/T6" },
+        "T7": { "$ref": "#/$defs/T7" }
+      }
+    },
+    "status": { "enum": ["ACCEPTED", "REJECTED"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "ACCEPTED" } }, "required": ["status"] },
+      "then": { "properties": { "checks": { "$ref": "#/$defs/allPassed" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "REJECTED" } }, "required": ["status"] },
+      "then": { "properties": { "checks": { "not": { "$ref": "#/$defs/allPassed" } } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "passed": { "properties": { "status": { "const": "PASSED" } }, "required": ["status"] },
+    "allPassed": {
+      "properties": {
+        "T1": { "$ref": "#/$defs/passed" }, "T2": { "$ref": "#/$defs/passed" }, "T3": { "$ref": "#/$defs/passed" },
+        "T4": { "$ref": "#/$defs/passed" }, "T5": { "$ref": "#/$defs/passed" }, "T6": { "$ref": "#/$defs/passed" },
+        "T7": { "$ref": "#/$defs/passed" }
+      }
+    },
+    "result": {
+      "description": "What every check answers. Its observed member is typed by the check.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "runIds", "observed"],
+      "properties": {
+        "status": { "enum": ["PASSED", "FAILED"] },
+        "runIds": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "minItems": 1, "uniqueItems": true },
+        "observed": { "type": "object" },
+        "finding": { "type": "string", "minLength": 1 }
+      },
+      "if": { "properties": { "status": { "const": "FAILED" } }, "required": ["status"] },
+      "then": { "required": ["finding"] }
+    },
+    "exited": {
+      "description": "A child run under timeout: what was asked, how it ended, and whether any process of it remains.",
+      "type": "object",
+      "required": ["timeoutSeconds", "exitCode", "elapsedMs", "childPid", "childRemaining"],
+      "properties": {
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "exitCode": { "type": "integer" },
+        "elapsedMs": { "type": "integer", "minimum": 0 },
+        "childPid": { "type": "integer", "minimum": 1 },
+        "childRemaining": { "type": "boolean" }
+      }
+    },
+    "T1": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runtimeLanguage", "user", "uid", "environmentKeys", "python", "temporaryStorage"],
+          "properties": {
+            "runtimeLanguage": { "type": "string" },
+            "user": { "type": "string" },
+            "uid": { "type": "integer" },
+            "environmentKeys": {
+              "description": "The variables the child saw. CPython sets LC_CTYPE itself when the locale is C.",
+              "type": "array", "items": { "type": "string" }
+            },
+            "python": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "implementation", "version", "soabi", "machine", "glibcVersion", "loadableTags"],
+              "properties": {
+                "path": { "type": "string" },
+                "implementation": { "type": "string" },
+                "version": { "type": "string" },
+                "soabi": { "type": "string" },
+                "machine": { "type": "string" },
+                "glibcVersion": { "type": "string" },
+                "loadableTags": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "temporaryStorage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "created", "written", "readBack", "deleted", "freeBytes"],
+              "properties": {
+                "path": { "type": "string" },
+                "created": { "type": "boolean" },
+                "written": { "type": "boolean" },
+                "readBack": { "type": "boolean" },
+                "deleted": { "type": "boolean" },
+                "freeBytes": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "runtimeLanguage": { "const": "csharp" },
+              "user": { "const": "sjones" },
+              "uid": { "const": 1000 },
+              "environmentKeys": { "items": { "enum": ["LC_CTYPE"] }, "maxItems": 1 },
+              "python": {
+                "properties": {
+                  "path": { "const": "/usr/local/bin/python3" },
+                  "implementation": { "const": "cpython" },
+                  "version": { "pattern": "^3\\.12\\.[0-9]+$" },
+                  "soabi": { "const": "cpython-312-x86_64-linux-gnu" },
+                  "machine": { "const": "x86_64" },
+                  "glibcVersion": { "pattern": "^(2\\.(1[7-9]|[2-9][0-9])|[3-9]\\.[0-9]+)(\\.[0-9]+)?$" },
+                  "loadableTags": {
+                    "allOf": [
+                      { "contains": { "const": "py3-none-any" } },
+                      { "contains": { "const": "cp38-abi3-manylinux_2_17_x86_64" } },
+                      { "contains": { "const": "cp312-cp312-manylinux_2_17_x86_64" } }
+                    ]
+                  }
+                }
+              },
+              "temporaryStorage": {
+                "properties": {
+                  "path": { "const": "/tmp" },
+                  "created": { "const": true },
+                  "written": { "const": true },
+                  "readBack": { "const": true },
+                  "deleted": { "const": true },
+                  "freeBytes": { "minimum": 67108864 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "T2": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "allOf": [{ "$ref": "#/$defs/exited" }],
+          "unevaluatedProperties": false,
+          "required": ["killAfterSeconds", "ignoredTermination"],
+          "properties": {
+            "killAfterSeconds": { "type": "integer", "minimum": 1 },
+            "ignoredTermination": { "type": "boolean" }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "timeoutSeconds": { "const": 2 },
+              "killAfterSeconds": { "const": 2 },
+              "ignoredTermination": { "const": true },
+              "exitCode": { "const": 137 },
+              "elapsedMs": { "minimum": 4000, "maximum": 5000 },
+              "childRemaining": { "const": false }
+            }
+          }
+        }
+      }
+    },
+    "T3": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["errorCode", "providerProfileId", "declaredLanguage", "runtimeLanguage"],
+          "properties": {
+            "errorCode": { "type": "string" },
+            "providerProfileId": { "type": "string" },
+            "declaredLanguage": { "type": "string" },
+            "runtimeLanguage": { "type": "string" }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "errorCode": { "const": "PROVIDER_LANGUAGE_UNAVAILABLE" },
+              "providerProfileId": { "const": "sfx-api-acceptance-python-only" },
+              "declaredLanguage": { "const": "python" },
+              "runtimeLanguage": { "const": "csharp" }
+            }
+          }
+        }
+      }
+    },
+    "T4": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expectedBytes", "receivedBytes", "expectedSha256", "receivedSha256"],
+          "properties": {
+            "expectedBytes": { "type": "integer", "minimum": 0 },
+            "receivedBytes": { "type": "integer", "minimum": 0 },
+            "expectedSha256": { "$ref": "#/$defs/sha256" },
+            "receivedSha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "description": "The payload is 393216 repetitions of the 16 UTF-8 bytes of \"aé€😀abcdef\".",
+            "properties": {
+              "expectedBytes": { "const": 6291456 },
+              "receivedBytes": { "const": 6291456 },
+              "expectedSha256": { "const": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc" },
+              "receivedSha256": { "const": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc" }
+            }
+          }
+        }
+      }
+    },
+    "T5": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "allOf": [{ "$ref": "#/$defs/exited" }],
+          "unevaluatedProperties": false,
+          "required": ["versionLine"],
+          "properties": { "versionLine": { "type": "string" } }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "versionLine": { "pattern": "^timeout \\(GNU coreutils\\) [0-9]+\\.[0-9]+" },
+              "timeoutSeconds": { "const": 2 },
+              "exitCode": { "const": 124 },
+              "elapsedMs": { "minimum": 2000, "maximum": 3000 },
+              "childRemaining": { "const": false }
+            }
+          }
+        }
+      }
+    },
+    "T6": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["configurationDigest", "settingsDigest", "request", "worker"],
+          "properties": {
+            "configurationDigest": { "description": "SHA-256 of the deployed sfx-api.config.json.", "$ref": "#/$defs/sha256" },
+            "settingsDigest": { "description": "SHA-256 of read-api-host-configuration's answer.", "$ref": "#/$defs/sha256" },
+            "request": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["waitForKernelMs", "deliveryBoundMs", "answerBoundMs"],
+              "properties": {
+                "waitForKernelMs": { "type": "integer" },
+                "deliveryBoundMs": { "type": "integer" },
+                "answerBoundMs": { "type": "integer" }
+              }
+            },
+            "worker": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["deliveryBoundMs", "answerBoundMs", "concurrentRuns", "waitingRuns"],
+              "properties": {
+                "deliveryBoundMs": { "type": "integer" },
+                "answerBoundMs": { "type": "integer" },
+                "concurrentRuns": { "type": "integer" },
+                "waitingRuns": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "request": {
+                "properties": {
+                  "waitForKernelMs": { "const": 30000 },
+                  "deliveryBoundMs": { "const": 195000 },
+                  "answerBoundMs": { "const": 198000 }
+                }
+              },
+              "worker": {
+                "properties": {
+                  "deliveryBoundMs": { "const": 3600000 },
+                  "answerBoundMs": { "const": 3605000 },
+                  "concurrentRuns": { "const": 2 },
+                  "waitingRuns": { "const": 64 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "T7": {
+      "$ref": "#/$defs/result",
+      "properties": {
+        "runIds": { "minItems": 3 },
+        "observed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["admitted", "maxConcurrent", "thirdStartedAfterAnEnd"],
+          "properties": {
+            "admitted": { "type": "integer", "minimum": 0 },
+            "maxConcurrent": { "type": "integer", "minimum": 0 },
+            "thirdStartedAfterAnEnd": { "type": "boolean" }
+          }
+        }
+      },
+      "if": { "$ref": "#/$defs/passed" },
+      "then": {
+        "properties": {
+          "observed": {
+            "properties": {
+              "admitted": { "const": 3 },
+              "maxConcurrent": { "const": 2 },
+              "thirdStartedAfterAnEnd": { "const": true }
+            }
+          }
+        }
+      }
+    }
+  }
+}

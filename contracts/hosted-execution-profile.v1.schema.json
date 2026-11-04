@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hosted-execution-profile.v1.schema.json",
+  "title": "Hosted execution profile",
+  "description": "What a host deployment promises to the capabilities it executes. A consumer requirement names a profile by profileId and profileVersion and checks it by profileDigest, the SHA-256 of the profile document's exact bytes. A change to any promise is a new profileVersion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractId", "profileId", "profileVersion", "host", "runtime", "providers", "childProcesses", "executionPaths", "results", "consumerObligations", "acceptance"],
+  "properties": {
+    "contractId": { "const": "hosted-execution-profile.v1" },
+    "profileId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,62}$" },
+    "profileVersion": { "type": "integer", "minimum": 1 },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deployment", "endpoint"],
+      "properties": {
+        "deployment": { "type": "string", "minLength": 1 },
+        "endpoint": { "type": "string", "pattern": "^https://" }
+      }
+    },
+    "runtime": {
+      "description": "H1. Every run this deployment executes runs in this language.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promiseId", "language", "kernel"],
+      "properties": {
+        "promiseId": { "const": "H1" },
+        "language": { "enum": ["csharp", "python", "node"] },
+        "kernel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["implementation", "sdaRevision", "rid"],
+          "properties": {
+            "implementation": { "const": "sda-scenario-kernel" },
+            "sdaRevision": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+            "rid": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "providers": {
+      "description": "H2. A provider in a run's closure with no entry for runtime.language fails the run with this refusal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promiseId", "selection", "refusal"],
+      "properties": {
+        "promiseId": { "const": "H2" },
+        "selection": { "const": "entry-for-runtime-language" },
+        "refusal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "names"],
+          "properties": {
+            "code": { "const": "PROVIDER_LANGUAGE_UNAVAILABLE" },
+            "names": {
+              "type": "array",
+              "items": { "enum": ["providerProfileId", "declaredLanguage", "runtimeLanguage"] },
+              "minItems": 3,
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    },
+    "childProcesses": {
+      "description": "H3. A provider program in runtime.language may start these executables, and they work under these conditions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promiseId", "identity", "environment", "temporaryStorage", "executables"],
+      "properties": {
+        "promiseId": { "const": "H3" },
+        "identity": {
+          "description": "The operating-system user every kernel and child runs as.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["user", "uid"],
+          "properties": {
+            "user": { "type": "string", "minLength": 1 },
+            "uid": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "environment": {
+          "description": "The executables work when the provider program clears the child's environment.",
+          "const": "works-when-cleared"
+        },
+        "temporaryStorage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "operations", "freeBytesAtAcceptance"],
+          "properties": {
+            "path": { "type": "string", "pattern": "^/" },
+            "operations": {
+              "type": "array",
+              "items": { "enum": ["create", "write", "read", "delete"] },
+              "minItems": 4,
+              "uniqueItems": true
+            },
+            "freeBytesAtAcceptance": {
+              "description": "Free space measured when acceptance runs. It is not reserved: concurrent runs share it, and a later invocation can find less (consumer obligation C4).",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["minimum", "lifetime"],
+              "properties": {
+                "minimum": { "type": "integer", "minimum": 0 },
+                "lifetime": { "const": "measured-at-acceptance-not-reserved" }
+              }
+            }
+          }
+        },
+        "executables": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/cpython" },
+              { "$ref": "#/$defs/gnuTimeout" }
+            ]
+          }
+        }
+      }
+    },
+    "executionPaths": {
+      "description": "H5. The bounds of each path a capability can execute on, in milliseconds, and the runs a worker path holds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promiseId", "request", "worker"],
+      "properties": {
+        "promiseId": { "const": "H5" },
+        "request": { "$ref": "#/$defs/requestPath" },
+        "worker": { "$ref": "#/$defs/workerPath" }
+      }
+    },
+    "results": {
+      "description": "H4. What the host preserves of a capability's answer.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promiseId", "preservation", "artifactBytes", "maximumResultBytes"],
+      "properties": {
+        "promiseId": { "const": "H4" },
+        "preservation": {
+          "description": "The declared result value reaches the caller through the API envelope unchanged.",
+          "const": "declared-result-value"
+        },
+        "artifactBytes": {
+          "description": "Artifact content is preserved as exact UTF-8 bytes, checked by SHA-256.",
+          "const": "utf-8-sha256"
+        },
+        "maximumResultBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "consumerObligations": {
+      "description": "What a consumer must meet for these promises to apply to its capabilities.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["obligationId", "statement"],
+        "properties": {
+          "obligationId": { "type": "string", "pattern": "^C[0-9]+$" },
+          "statement": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "acceptance": {
+      "description": "The checks that establish this profile on a deployment, and when they must run again. Every promise above is covered by at least one check.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receiptContract", "repeatWhenChanged", "checks"],
+      "properties": {
+        "receiptContract": { "const": "hosted-execution-acceptance.v1" },
+        "repeatWhenChanged": {
+          "type": "array",
+          "items": { "enum": ["imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest", "profileDigest"] },
+          "minItems": 5,
+          "uniqueItems": true
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["checkId", "promiseIds", "executionPath", "evidence", "establishes"],
+            "properties": {
+              "checkId": { "type": "string", "pattern": "^T[0-9]+$" },
+              "promiseIds": { "type": "array", "items": { "type": "string", "pattern": "^H[0-9]+$" }, "minItems": 1, "uniqueItems": true },
+              "executionPath": { "enum": ["request", "worker"] },
+              "evidence": {
+                "description": "execution: the check runs the behavior and measures it. configuration: the check compares the deployed settings with the profile, and proves no behavior.",
+                "enum": ["execution", "configuration"]
+              },
+              "establishes": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "cpython": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "implementation", "version", "soabi", "platform", "wheelTags", "flags"],
+      "properties": {
+        "kind": { "const": "cpython" },
+        "path": { "type": "string", "pattern": "^/" },
+        "implementation": { "const": "cpython" },
+        "version": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["major", "minor"],
+          "properties": {
+            "major": { "type": "integer" },
+            "minor": { "type": "integer" }
+          }
+        },
+        "soabi": { "type": "string", "minLength": 1 },
+        "platform": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["system", "machine", "libc", "libcMinimumVersion"],
+          "properties": {
+            "system": { "const": "Linux" },
+            "machine": { "type": "string", "minLength": 1 },
+            "libc": { "const": "glibc" },
+            "libcMinimumVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" }
+          }
+        },
+        "wheelTags": {
+          "description": "Wheel tags this interpreter can load, as the packaging specification defines them.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "flags": {
+          "type": "array",
+          "items": { "enum": ["-I", "-S", "-B"] },
+          "uniqueItems": true
+        }
+      }
+    },
+    "gnuTimeout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "identity", "exitWhenTerminated", "exitWhenKilled", "killAfterOption"],
+      "properties": {
+        "kind": { "const": "gnu-timeout" },
+        "path": { "type": "string", "pattern": "^/" },
+        "identity": {
+          "description": "What `timeout --version` prints first.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package", "versionLinePattern"],
+          "properties": {
+            "package": { "const": "GNU coreutils" },
+            "versionLinePattern": { "type": "string", "minLength": 1 }
+          }
+        },
+        "exitWhenTerminated": { "const": 124 },
+        "exitWhenKilled": { "const": 137 },
+        "killAfterOption": { "const": "--kill-after" }
+      }
+    },
+    "requestPath": {
+      "description": "platformBoundMs is App Service's front-end bound, not the host's. The host promises that waitForKernelMs plus answerBoundMs stays within it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["waitForKernelMs", "deliveryBoundMs", "answerBoundMs", "platformBoundMs"],
+      "properties": {
+        "waitForKernelMs": { "type": "integer", "minimum": 0 },
+        "deliveryBoundMs": { "type": "integer", "minimum": 1 },
+        "answerBoundMs": { "type": "integer", "minimum": 1 },
+        "platformBoundMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "workerPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deliveryBoundMs", "answerBoundMs", "concurrentRuns", "waitingRuns"],
+      "properties": {
+        "deliveryBoundMs": { "type": "integer", "minimum": 1 },
+        "answerBoundMs": { "type": "integer", "minimum": 1 },
+        "concurrentRuns": { "type": "integer", "minimum": 1 },
+        "waitingRuns": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
