@@ -110,3 +110,23 @@ Checked on the deployed host after the swap:
 
 Not checked yet: the coordinator itself. It needs the vault entry `sfx-api-acceptance-password`, which is not
 provisioned, and a caller signed in as `staging-release-acceptance`.
+
+## Profile version 3: the stored acceptance session (`db00da1`)
+
+The owner stored the `staging-release-acceptance` session with `store-credential` and directed: "The standard
+process was used. Stick to it." Store run `876426ad-0993-0e10-3386-433a07350202` answered `CREDENTIAL_STORED` for
+`SFX_API_ACCEPTANCE_SESSION` at 19:15:04 UTC, and reading the run back gave the same receipt, with no value.
+
+The coordinator now opens that entry instead of a password. It confirms that `GET /sfx/v1/session` names the
+acceptance principal, and it never signs in or revokes the session. Version 2's password sign-in is gone.
+
+- **Image:** `bpmaiengineacr.azurecr.io/sfx-api@sha256:a82ac13ae86faa201dc8f7a9029ad1e78c2401f8e171c5e12d3973186e810b7a`
+  (tag `sfx-api:db00da1`), ACR build `caay`. The bundle holds 27 documents under the pin
+  `aLbrAJnJJzkMRXedbX2nMTR9QPW6WOA7OiwoMlFCAjs=`.
+- **The swaps:** `SFX_API_IMAGE_DIGEST` was set at 19:23:34 UTC and the image at 19:25:53. Every probe answered
+  through both restarts. The rollback is `sfx-api:21e7499` (`sha256:9fb211e1…`).
+- **Checked:** `read-hosted-execution-profile`, run `9df5c018`, answered profile version 3,
+  `sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b`, with probeAuthority `stored-session`.
+  The text it answers hashes to that digest.
+
+Not run yet: the coordinator. Its route admits only a caller signed in as `staging-release-acceptance`.
