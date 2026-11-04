@@ -2,15 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "hosted-execution-acceptance.v1.schema.json",
   "title": "Hosted execution acceptance receipt",
-  "description": "The result of running the checks of profile sfx-api-hosted-csharp version 1 on one deployment, issued by accept-hosted-execution-profile. A receipt holds only for the profile, image, bundle, kernel and host files it names. Checks are keyed by checkId, so none can be missing, repeated or unknown. The evaluator refuses a receipt text with a repeated key before it validates it. A check is PASSED only when its observations meet the profile, and the receipt is ACCEPTED only when every check passed.",
+  "description": "The result of running the checks of profile sfx-api-hosted-csharp version 2 on one deployment, issued by accept-hosted-execution-profile. A receipt holds only for the profile, image, bundle, kernel and host files it names. Checks are keyed by checkId, so none can be missing, repeated or unknown. The evaluator refuses a receipt text with a repeated key before it validates it. A check is PASSED only when its observations meet the profile, and the receipt is ACCEPTED only when every check passed.",
   "type": "object",
   "additionalProperties": false,
   "required": ["contractId", "profileId", "profileVersion", "profileDigest", "deployment", "executedAt", "evaluator", "checks", "status"],
   "properties": {
     "contractId": { "const": "hosted-execution-acceptance.v1" },
     "profileId": { "const": "sfx-api-hosted-csharp" },
-    "profileVersion": { "const": 1 },
-    "profileDigest": { "const": "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804" },
+    "profileVersion": { "const": 2 },
+    "profileDigest": { "const": "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414" },
     "deployment": {
       "type": "object",
       "additionalProperties": false,

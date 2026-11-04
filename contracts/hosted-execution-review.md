@@ -1,14 +1,27 @@
 # Hosted execution contract for host review
 
-This consolidates the consumer's three requested corrections into the existing draft. The host can review and implement this revision as one change. No capability has been installed and no deployment acceptance is claimed here.
+The current amendment uses the existing dedicated acceptance principal and the deployed user-session mechanism. The host reports slices 1 and 2 deployed from commit `2aaceba`; slice 3 remains to be implemented. This amendment changes source contracts and their acceptance cases. It does not claim a new deployment or a completed acceptance receipt.
 
-The profile remains version 1 because it has not been adopted. Its exact UTF-8/LF bytes now have digest `sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804`. This replaces the unadopted draft with digest `sha256:b387ad0c7321c6a1e4bbf063b54009ed3e917f8609de884f811d0eca01390efd`. The receipt schema and canonical feature pin the new digest. Git attributes preserve JSON line endings across Windows and Linux checkouts.
+The profile is now **version 2**, because version 1 has been published by the host. Its exact UTF-8/LF bytes have digest `sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414`. The receipt schema and canonical feature pin it. The existing `.v1` contract identifiers and source filename denote the schema family; `profileVersion` carries this promise revision. The deployed version 1 bundle retains its original `7c555f52…` profile until the host regenerates and deploys the bundle. Git attributes preserve JSON line endings across Windows and Linux checkouts.
+
+## Session authority amendment
+
+The host resolves `staging-release-acceptance` to its existing immutable principal ID and login tuple through a trusted declaration in its pinned bundle. Only a live user session with that principal ID may start acceptance. Checking caller kind `user` alone, or trusting a caller-supplied account name, is insufficient.
+
+The coordinator releases the account password from host-vault reference **`sfx-api-acceptance-password`** at the declared credential pointer, then signs in over the deployed HTTPS `/sfx/v1/session` endpoint. It verifies the response principal ID and uses the returned bearer for its own probes, streams and readback during that invocation. Existing own-runs visibility applies. Password and bearer values never enter source, observations or receipts. A missing credential, rejected login, principal mismatch or expired session produces an explicit failure with no fallback identity.
+
+The host operator must provision that vault reference securely and bind the existing principal ID and login tuple before exercising slice 3. The credential value is not part of this repository. Operator `sfx-api login` renewal restores CLI probe access; it does not provision the coordinator's dedicated password.
+
+After provisioning, the host regenerates the profile reader and bundle for version 2, implements the coordinator, deploys, and reruns T1–T7 against the resulting deployment pins. The earlier measurements are useful probe evidence, but cannot be relabelled as a version 2 ACCEPTED receipt.
+
+The scratch judge's missing `kind` is addressed by the canonical receipt-projection scenario. A successful measurement is wrapped as `kind: OBSERVED` with its real `runIds` and only the check's typed measurement fields. `PASSED` is derived from the schema thresholds. Raw `probe` and `status: MEASURED` metadata are excluded from `observed`; failed execution uses the existing error variant. T6 still combines the facade configuration with the declared host settings before it has a complete observation.
 
 ## The agreed execution boundary
 
 | Concern | Concrete contract |
 | --- | --- |
 | Coordinator | The host interface declares authenticated `POST /sfx/v1/hosted-execution/acceptance` on the request path, bound to `accept-hosted-execution-profile`. It holds zero worker slots and uses the existing request deadline. |
+| Authority | Only the resolved `staging-release-acceptance` principal may invoke it. Probe requests use a dedicated session obtained with `sfx-api-acceptance-password`, with own-runs visibility. |
 | Worker probes | `probe-hosted-execution` supplies the ordinary checks and the three T7 holds. `probe-hosted-execution-language-refusal` isolates the Python-only T3 binding from every other closure. Both are private acceptance fixtures. |
 | Probe admission | A declared `sfx-api-host-http-request-port.v1` program submits the probes through the deployed HTTPS `POST /sfx/v1/runs` route. That lets the facade consume the admission directive and queue them. |
 | T4 readback | The same HTTP provider fetches the completed T4 run's `/output` through the public endpoint without redirects. It decodes the JSON string at `/output/payload`, then counts and hashes its UTF-8 bytes. A direct call to `serve-http-request` cannot supply this evidence. |
@@ -40,11 +53,11 @@ The suite validates both schemas and the profile, checks the exact profile pin a
 
 Files for review are [the feature](../features/hosted-execution-profile.feature), [the profile](sfx-api-hosted-csharp.v1.profile.json), [the profile schema](hosted-execution-profile.v1.schema.json), [the receipt schema](hosted-execution-acceptance.v1.schema.json), and [the regression suite](tests/test_hosted_execution_contract.py).
 
-## Host review, 2026-11-04
+## Prior host review, 2026-11-04
 
-The host accepts this revision, with four amendments. They give the profile digest
+The host accepted version 1 with four amendments. They gave the profile digest
 `sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804`, which the receipt schema and the feature
-pin.
+pinned by the deployed version 1 bundle. The two machine-authority amendments below are superseded by version 2's session authority. The two-request-kernel requirement, 150 s budget and stream completion policy remain in the current profile.
 
 | Amendment | Why | Where |
 | --- | --- | --- |
@@ -53,5 +66,4 @@ pin.
 | The request path declares `kernels: 2`, and the coordinator requires at least 2; T6 checks it | The coordinator holds one request kernel while its own HTTPS calls need another. With one, its calls would be refused `REQUEST_KERNEL_BUSY` after 30 s. | profile `executionPaths.request`, `acceptance.coordinator.requestKernelsRequired`, receipt T6 |
 | The coordinator has a 150 s budget, and waits on probes by reading each run's event stream to its end frame | It must issue its receipt before the 195 s delivery bound ends it. Declared programs have no loop or sleep, so a stream read is how it waits. | profile `acceptance.coordinator.budgetMs` and `probeCompletion`, feature |
 
-The regression suite adds `test_coordinator_authority_and_capacity`, and all 11 tests pass. `git diff --check` is
-clean. Nothing was deployed.
+That review added `test_coordinator_authority_and_capacity` and passed 11 local tests before slices 1 and 2 were deployed. The current suite additionally covers the dedicated session authority, the version change and the measured-probe receipt projection.

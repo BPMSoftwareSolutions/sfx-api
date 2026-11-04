@@ -183,22 +183,36 @@
             "workerSlotsHeld": { "const": 0 },
             "probeTransport": { "const": "deployed-https-api" },
             "admittedCallers": {
-              "description": "The interface's caller kinds that may invoke the coordinator. Its probes act with the machine caller's authority, so a user session may not start them.",
+              "description": "Only the authenticated user session of this dedicated principal may invoke the coordinator. The host resolves principalRef through a trusted deployment binding and compares the caller's resolved principalId, never a request-body identifier or display name.",
               "type": "array",
-              "items": { "const": "machine" },
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "principalRef", "match"],
+                "properties": {
+                  "kind": { "const": "user" },
+                  "principalRef": { "const": "staging-release-acceptance" },
+                  "match": { "const": "resolved-principal-id" }
+                }
+              },
               "minItems": 1,
               "maxItems": 1
             },
             "probeAuthority": {
-              "description": "How the coordinator authenticates the probes it submits and reads through the deployed API.",
+              "description": "The coordinator signs in over the deployed HTTPS session endpoint as the dedicated acceptance principal. Its password is released from the host vault only at the declared login pointer. It checks the login response principalId against the trusted principal binding, then uses that session for its own probes and readback.",
               "type": "object",
               "additionalProperties": false,
-              "required": ["caller", "credential", "release"],
+              "required": ["caller", "principalRef", "authentication", "loginPath", "credential", "release", "runVisibility", "sessionUse"],
               "properties": {
-                "caller": { "const": "machine" },
-                "credential": { "const": "host-machine-credential" },
+                "caller": { "const": "user" },
+                "principalRef": { "const": "staging-release-acceptance" },
+                "authentication": { "const": "https-session-login" },
+                "loginPath": { "const": "/sfx/v1/session" },
+                "credential": { "const": "sfx-api-acceptance-password" },
+                "runVisibility": { "const": "own-runs" },
+                "sessionUse": { "const": "acceptance-invocation" },
                 "release": {
-                  "description": "The credential is released at a declared credential pointer, and never reaches testimony, observations or the receipt.",
+                  "description": "The vault password and returned bearer are released only at declared credential pointers. Neither reaches source, testimony, observations or the receipt.",
                   "const": "declared-credential-pointer"
                 }
               }

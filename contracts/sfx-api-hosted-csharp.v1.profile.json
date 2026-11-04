@@ -1,7 +1,7 @@
 {
   "contractId": "hosted-execution-profile.v1",
   "profileId": "sfx-api-hosted-csharp",
-  "profileVersion": 1,
+  "profileVersion": 2,
   "host": {
     "deployment": "sfx-api-test",
     "endpoint": "https://sfx-api-test.azurewebsites.net"
@@ -95,8 +95,17 @@
       "path": "/sfx/v1/hosted-execution/acceptance",
       "workerSlotsHeld": 0,
       "probeTransport": "deployed-https-api",
-      "admittedCallers": ["machine"],
-      "probeAuthority": { "caller": "machine", "credential": "host-machine-credential", "release": "declared-credential-pointer" },
+      "admittedCallers": [{ "kind": "user", "principalRef": "staging-release-acceptance", "match": "resolved-principal-id" }],
+      "probeAuthority": {
+        "caller": "user",
+        "principalRef": "staging-release-acceptance",
+        "authentication": "https-session-login",
+        "loginPath": "/sfx/v1/session",
+        "credential": "sfx-api-acceptance-password",
+        "release": "declared-credential-pointer",
+        "runVisibility": "own-runs",
+        "sessionUse": "acceptance-invocation"
+      },
       "requestKernelsRequired": 2,
       "budgetMs": 150000,
       "probeCompletion": "run-event-stream-to-end"

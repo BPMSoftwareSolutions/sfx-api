@@ -3,7 +3,7 @@
 # @capability and @provider are on each scenario.
 # Sources:
 # - the contract: contracts/hosted-execution-profile.v1.schema.json, this deployment's profile
-#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804),
+#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414),
 #   and the receipt contract contracts/hosted-execution-acceptance.v1.schema.json;
 # - the consolidated host-consumer contract revision (2026-11-04), prepared for host review;
 # - sfx-api.config.json, deploy/Dockerfile and SDA's DeclaredProviderResolver.cs at 29355da, read from the code.
@@ -82,6 +82,16 @@ Feature: The host declares what it promises the capabilities it executes
 
     @status:not-built
     @capability:accept-hosted-execution-profile
+    Scenario: A measured probe is converted to the typed receipt form
+      Given a probe returns status MEASURED with its probe name and measured fields
+      When the evaluator projects the fields required by that check's observed schema
+      Then it supplies kind OBSERVED, the actual runIds and those observations to the receipt check
+      And it sets PASSED only after the observed values meet the schema's pass conditions
+      And the raw probe's status and probe metadata are not copied into observed
+      # MEASURED is a probe disposition, not an acceptance decision. The coordinator owns this declared projection.
+
+    @status:not-built
+    @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: The coordinator holds a request kernel and leaves both workers available
       Given the host's declared interface binds POST /sfx/v1/hosted-execution/acceptance to this capability on the request path
@@ -97,13 +107,45 @@ Feature: The host declares what it promises the capabilities it executes
     @status:not-built
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
-    Scenario: Only the machine caller starts acceptance, and its probes act with that authority
-      When a caller other than the interface's machine caller requests POST /sfx/v1/hosted-execution/acceptance
-      Then the request is refused, and no probe is submitted
-      And the probes the coordinator submits and reads authenticate as the machine caller with host-machine-credential
-      And that credential is released at a declared credential pointer, and reaches no testimony, observation or receipt
-      # sidefx-api-interface.v1 declares callers.machine: scheme bearer, credential host-machine-credential, runVisibility
-      # all-runs. A user session could otherwise start runs with that visibility.
+    Scenario: Only the dedicated acceptance principal starts the coordinator
+      Given a trusted declaration in the pinned host bundle resolves staging-release-acceptance to its existing immutable principalId
+      When a live user session requests POST /sfx/v1/hosted-execution/acceptance
+      Then the coordinator compares its authenticated principalId to that declared principalId before releasing a credential
+      And a different principal, missing binding, expired session or unauthenticated caller is refused before any probe
+      And a principal name or id supplied in the request body cannot grant admission
+      # The host's existing session resolution yields caller kind user. This declaration adds no machine-bearer resolver.
+
+    @status:not-built
+    @capability:accept-hosted-execution-profile
+    @provider:sfx-api-host-http-request-port.v1
+    @provider:sfx-vault-host-read-port.v1
+    @provider:sfx-vault-reference-carry-port.v1
+    Scenario: The coordinator signs in as the dedicated acceptance principal
+      Given the password is provisioned under sfx-api-acceptance-password in the host vault
+      And the trusted principal binding holds that account's existing login realm, identifier and sourceKey
+      When the admitted coordinator releases the password at the declared login credential pointer
+      Then it posts that login and password through HTTPS to the deployed /sfx/v1/session endpoint without redirects
+      And it accepts only AUTHENTICATED with a principalId equal to the declared staging-release-acceptance principalId
+      And it uses the returned bearer for the probes, event streams and readback belonging to that principal
+      And it retains that bearer only for this acceptance invocation and preserves the existing own-runs visibility
+      And neither the password nor the bearer reaches source, testimony, observations, the receipt or caller-controlled input
+
+    @status:not-built
+    @capability:accept-hosted-execution-profile
+    @provider:sfx-api-host-http-request-port.v1
+    Scenario Outline: Acceptance cannot proceed without its declared session authority
+      Given <defect>
+      When the coordinator tries to establish or use its acceptance session
+      Then it submits no further probes and reports an explicit authentication or credential failure
+      And unfinished checks are FAILED through the typed execution-error form when a receipt can be issued
+      And it never falls back to a machine token or another principal
+
+      Examples:
+        | defect                                                  |
+        | the host vault has no sfx-api-acceptance-password entry   |
+        | the dedicated login is rejected or throttled             |
+        | the login response names a different principalId         |
+        | the acceptance session expires or is revoked             |
 
     @status:not-built
     @capability:accept-hosted-execution-profile
@@ -210,6 +252,7 @@ Feature: The host declares what it promises the capabilities it executes
       When accept-hosted-execution-profile issues a receipt
       Then every runId the receipt cites comes from an actual admission on this deployment
       And every PASSED check cites terminal runs with verified capability, inputs and measurements
+      And every probe run belongs to the dedicated acceptance principal bound by that host bundle
       And a failed check preserves its known admission and attempt evidence when execution or collection could not finish
       And it verifies the coordinator's request executionId separately from the worker runIds
       And T4's URL names its verified payload run and T7's intervals name exactly its three verified hold runs
@@ -264,9 +307,13 @@ Feature: The host declares what it promises the capabilities it executes
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     @provider:read-run-state
+    @provider:sfx-vault-host-read-port.v1
+    @provider:sfx-vault-reference-carry-port.v1
     Scenario: Each step honors its provider binding, proved by the run
       Given these steps depend on these provider bindings:
         | calls                                     | provider capability the step needs                                   | result it must produce here                          | run evidence that proves it                    |
+        | acceptance password release              | sfx-vault-host-read-port.v1 and sfx-vault-reference-carry-port.v1      | the declared vault credential at the login pointer    | credential-release disposition without its value |
+        | dedicated acceptance sign-in             | sfx-api-host-http-request-port.v1                                    | authenticated session for the bound principal          | sign-in disposition and principalId without bearer |
         | probe admission and output/state HTTP reads | sfx-api-host-http-request-port.v1, provider sfx-api-host-http-request | deployed HTTPS response or explicit transport failure | HTTP provider testimony in the coordinator's request |
         | the runs every check cites                | read-run-state                                                       | run state and available evidence; terminal intervals for passing checks | the nested deliveries' testimony |
       When accept-hosted-execution-profile runs

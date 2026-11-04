@@ -223,6 +223,15 @@ class HostedExecutionContractTests(unittest.TestCase):
         value["checks"]["T2"]["observed"]["exitCode"] = 0
         self.assert_valid(value)
 
+    def test_raw_probe_requires_the_receipt_projection(self):
+        value = copy.deepcopy(self.good)
+        del value["checks"]["T1"]["kind"]
+        self.assertFalse(self.validator.is_valid(value))
+        value = copy.deepcopy(self.good)
+        value["checks"]["T1"]["observed"].update(probe="runtime", status="MEASURED")
+        self.assertFalse(self.validator.is_valid(value))
+        self.assert_valid(self.good)
+
     def test_early_errors_are_honest_rejections_for_every_check(self):
         for name in CHECKS:
             for stage in ("precondition", "admission", "execution", "collection", "verification"):
@@ -294,6 +303,52 @@ class HostedExecutionContractTests(unittest.TestCase):
         self.assertLess(coordinator["budgetMs"], request["deliveryBoundMs"])
         value = copy.deepcopy(self.good)
         value["checks"]["T6"]["observed"]["request"]["kernels"] = 1
+        self.assertFalse(self.validator.is_valid(value))
+
+    def test_dedicated_session_authority_is_narrow(self):
+        coordinator = self.profile["acceptance"]["coordinator"]
+        self.assertEqual(coordinator["admittedCallers"], [
+            {"kind": "user", "principalRef": "staging-release-acceptance", "match": "resolved-principal-id"}
+        ])
+        authority = coordinator["probeAuthority"]
+        self.assertEqual(authority["principalRef"], coordinator["admittedCallers"][0]["principalRef"])
+        self.assertEqual(authority["caller"], "user")
+        self.assertEqual(authority["authentication"], "https-session-login")
+        self.assertEqual(authority["credential"], "sfx-api-acceptance-password")
+        validator = Draft202012Validator(self.profile_schema)
+        mutations = [
+            ("admittedCallers.0.kind", "machine"),
+            ("admittedCallers.0.principalRef", "another-user"),
+            ("admittedCallers.0.match", "request-body-name"),
+            ("probeAuthority.caller", "machine"),
+            ("probeAuthority.principalRef", "another-user"),
+            ("probeAuthority.authentication", "machine-bearer"),
+            ("probeAuthority.loginPath", "/other-login"),
+            ("probeAuthority.credential", "host-machine-credential"),
+            ("probeAuthority.release", "request-body"),
+            ("probeAuthority.runVisibility", "all-runs"),
+            ("probeAuthority.sessionUse", "persistent-shared-session"),
+        ]
+        for path, replacement in mutations:
+            with self.subTest(path=path):
+                profile = copy.deepcopy(self.profile)
+                target = profile["acceptance"]["coordinator"]
+                parts = path.split(".")
+                for part in parts[:-1]:
+                    target = target[int(part)] if isinstance(target, list) else target[part]
+                target[parts[-1]] = replacement
+                self.assertFalse(validator.is_valid(profile))
+        for field in authority:
+            with self.subTest(missing_authority_field=field):
+                profile = copy.deepcopy(self.profile)
+                del profile["acceptance"]["coordinator"]["probeAuthority"][field]
+                self.assertFalse(validator.is_valid(profile))
+
+    def test_published_version_one_cannot_be_relabelled_as_current(self):
+        self.assertEqual(self.profile["profileVersion"], 2)
+        value = copy.deepcopy(self.good)
+        value["profileVersion"] = 1
+        value["profileDigest"] = "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804"
         self.assertFalse(self.validator.is_valid(value))
 
 
