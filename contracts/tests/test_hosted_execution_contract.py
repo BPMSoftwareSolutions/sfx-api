@@ -82,7 +82,7 @@ def fixture(profile):
         "T6": {
             "configurationDigest": SYNTHETIC_DIGEST, "settingsDigest": SYNTHETIC_DIGEST,
             "request": {key: profile["executionPaths"]["request"][key] for key in
-                        ("waitForKernelMs", "deliveryBoundMs", "answerBoundMs")},
+                        ("kernels", "waitForKernelMs", "deliveryBoundMs", "answerBoundMs")},
             "worker": profile["executionPaths"]["worker"],
         },
         "T7": {
@@ -277,6 +277,24 @@ class HostedExecutionContractTests(unittest.TestCase):
             profile = copy.deepcopy(self.profile)
             profile["acceptance"]["coordinator"][field] = replacement
             self.assertFalse(Draft202012Validator(self.profile_schema).is_valid(profile))
+
+    def test_coordinator_authority_and_capacity(self):
+        """The host's amendments: who may start the probes, with what authority, on how many request kernels, by when."""
+        for field, replacement in (("admittedCallers", ["user"]), ("admittedCallers", ["machine", "user"]),
+                                   ("probeAuthority", {"caller": "user", "credential": "host-machine-credential",
+                                                       "release": "declared-credential-pointer"}),
+                                   ("probeAuthority", {"caller": "machine", "credential": "host-machine-credential",
+                                                       "release": "input"}),
+                                   ("requestKernelsRequired", 1), ("probeCompletion", "poll")):
+            profile = copy.deepcopy(self.profile)
+            profile["acceptance"]["coordinator"][field] = replacement
+            self.assertFalse(Draft202012Validator(self.profile_schema).is_valid(profile), field)
+        coordinator, request = self.profile["acceptance"]["coordinator"], self.profile["executionPaths"]["request"]
+        self.assertLessEqual(coordinator["requestKernelsRequired"], request["kernels"])
+        self.assertLess(coordinator["budgetMs"], request["deliveryBoundMs"])
+        value = copy.deepcopy(self.good)
+        value["checks"]["T6"]["observed"]["request"]["kernels"] = 1
+        self.assertFalse(self.validator.is_valid(value))
 
 
 if __name__ == "__main__":

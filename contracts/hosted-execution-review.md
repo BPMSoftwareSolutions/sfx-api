@@ -2,7 +2,7 @@
 
 This consolidates the consumer's three requested corrections into the existing draft. The host can review and implement this revision as one change. No capability has been installed and no deployment acceptance is claimed here.
 
-The profile remains version 1 because it has not been adopted. Its exact UTF-8/LF bytes now have digest `sha256:5c0fd449b0ceac361d943892fafa301913a3240a4df4304fe1970efd4f2dda1e`. This replaces the unadopted draft with digest `sha256:b387ad0c7321c6a1e4bbf063b54009ed3e917f8609de884f811d0eca01390efd`. The receipt schema and canonical feature pin the new digest. Git attributes preserve JSON line endings across Windows and Linux checkouts.
+The profile remains version 1 because it has not been adopted. Its exact UTF-8/LF bytes now have digest `sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804`. This replaces the unadopted draft with digest `sha256:b387ad0c7321c6a1e4bbf063b54009ed3e917f8609de884f811d0eca01390efd`. The receipt schema and canonical feature pin the new digest. Git attributes preserve JSON line endings across Windows and Linux checkouts.
 
 ## The agreed execution boundary
 
@@ -39,3 +39,19 @@ python -B -m unittest discover -s contracts/tests -v
 The suite validates both schemas and the profile, checks the exact profile pin and Unicode payload digest, repeats the original negative cases, rejects in-process T4 and worker-occupied T7 claims, and exercises early failures for all seven checks. It also refuses duplicate keys and malformed timestamps. These are authoring checks only; the deployed implementation remains declared capability work owned by the host.
 
 Files for review are [the feature](../features/hosted-execution-profile.feature), [the profile](sfx-api-hosted-csharp.v1.profile.json), [the profile schema](hosted-execution-profile.v1.schema.json), [the receipt schema](hosted-execution-acceptance.v1.schema.json), and [the regression suite](tests/test_hosted_execution_contract.py).
+
+## Host review, 2026-11-04
+
+The host accepts this revision, with four amendments. They give the profile digest
+`sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804`, which the receipt schema and the feature
+pin.
+
+| Amendment | Why | Where |
+| --- | --- | --- |
+| Only the interface's machine caller may invoke the coordinator (`admittedCallers: ["machine"]`) | The probes act with the machine caller's authority, which sees all runs. A user session must not start them. | profile `acceptance.coordinator`, feature |
+| The probes authenticate as the machine caller with `host-machine-credential`, released at a declared credential pointer | "The existing authentication mechanism" names the interface's `callers.machine`. The credential reaches no testimony, observation or receipt. | profile `acceptance.coordinator.probeAuthority` |
+| The request path declares `kernels: 2`, and the coordinator requires at least 2; T6 checks it | The coordinator holds one request kernel while its own HTTPS calls need another. With one, its calls would be refused `REQUEST_KERNEL_BUSY` after 30 s. | profile `executionPaths.request`, `acceptance.coordinator.requestKernelsRequired`, receipt T6 |
+| The coordinator has a 150 s budget, and waits on probes by reading each run's event stream to its end frame | It must issue its receipt before the 195 s delivery bound ends it. Declared programs have no loop or sleep, so a stream read is how it waits. | profile `acceptance.coordinator.budgetMs` and `probeCompletion`, feature |
+
+The regression suite adds `test_coordinator_authority_and_capacity`, and all 11 tests pass. `git diff --check` is
+clean. Nothing was deployed.

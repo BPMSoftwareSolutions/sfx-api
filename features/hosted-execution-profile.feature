@@ -3,7 +3,7 @@
 # @capability and @provider are on each scenario.
 # Sources:
 # - the contract: contracts/hosted-execution-profile.v1.schema.json, this deployment's profile
-#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:5c0fd449b0ceac361d943892fafa301913a3240a4df4304fe1970efd4f2dda1e),
+#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804),
 #   and the receipt contract contracts/hosted-execution-acceptance.v1.schema.json;
 # - the consolidated host-consumer contract revision (2026-11-04), prepared for host review;
 # - sfx-api.config.json, deploy/Dockerfile and SDA's DeclaredProviderResolver.cs at 29355da, read from the code.
@@ -93,6 +93,29 @@ Feature: The host declares what it promises the capabilities it executes
       And no in-process invocation of admit-api-run-live substitutes for submitting a probe through the facade
       # The host's existing authentication applies. Credentials are never copied into the acceptance receipt.
       # The coordinator's request executionId is distinct from the admitted worker runIds it cites.
+
+    @status:not-built
+    @capability:accept-hosted-execution-profile
+    @provider:sfx-api-host-http-request-port.v1
+    Scenario: Only the machine caller starts acceptance, and its probes act with that authority
+      When a caller other than the interface's machine caller requests POST /sfx/v1/hosted-execution/acceptance
+      Then the request is refused, and no probe is submitted
+      And the probes the coordinator submits and reads authenticate as the machine caller with host-machine-credential
+      And that credential is released at a declared credential pointer, and reaches no testimony, observation or receipt
+      # sidefx-api-interface.v1 declares callers.machine: scheme bearer, credential host-machine-credential, runVisibility
+      # all-runs. A user session could otherwise start runs with that visibility.
+
+    @status:not-built
+    @capability:accept-hosted-execution-profile
+    @provider:sfx-api-host-http-request-port.v1
+    Scenario: The coordinator needs a second request kernel and finishes within its budget
+      Given the request path runs 2 kernels, as the profile declares
+      When the coordinator holds one of them for the whole acceptance
+      Then each of its own HTTPS calls is answered by another request kernel
+      And it waits for each probe by reading that run's event stream until its end frame
+      And it stops measuring by 150 s and issues the receipt, a check it could not finish FAILED as an execution error
+      # With one request kernel, the coordinator's own calls would wait behind it until the declared 30 s and be refused
+      # REQUEST_KERNEL_BUSY. The 195 s delivery bound would end the coordinator itself with no receipt.
 
     @status:not-built
     @capability:probe-hosted-execution

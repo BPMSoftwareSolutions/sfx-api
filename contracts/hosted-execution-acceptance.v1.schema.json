@@ -10,7 +10,7 @@
     "contractId": { "const": "hosted-execution-acceptance.v1" },
     "profileId": { "const": "sfx-api-hosted-csharp" },
     "profileVersion": { "const": 1 },
-    "profileDigest": { "const": "sha256:5c0fd449b0ceac361d943892fafa301913a3240a4df4304fe1970efd4f2dda1e" },
+    "profileDigest": { "const": "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804" },
     "deployment": {
       "type": "object",
       "additionalProperties": false,
@@ -359,8 +359,9 @@
             "request": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["waitForKernelMs", "deliveryBoundMs", "answerBoundMs"],
+              "required": ["kernels", "waitForKernelMs", "deliveryBoundMs", "answerBoundMs"],
               "properties": {
+                "kernels": { "type": "integer" },
                 "waitForKernelMs": { "type": "integer" },
                 "deliveryBoundMs": { "type": "integer" },
                 "answerBoundMs": { "type": "integer" }
@@ -387,6 +388,7 @@
             "properties": {
               "request": {
                 "properties": {
+                  "kernels": { "const": 2 },
                   "waitForKernelMs": { "const": 30000 },
                   "deliveryBoundMs": { "const": 195000 },
                   "answerBoundMs": { "const": 198000 }
