@@ -1201,6 +1201,29 @@
                               "3": "hosted-execution",
                               "4": "profile"
                             }
+                          },
+                          {
+                            "operationId": "accept-hosted-execution-profile",
+                            "method": "POST",
+                            "path": "/hosted-execution/acceptance",
+                            "callers": [
+                              "user"
+                            ],
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "accept-hosted-execution-profile"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId"
+                            },
+                            "meaning": "Accept this deployment against its execution profile: only the dedicated acceptance principal's session starts it; it runs T1 to T7 through the deployed HTTPS API and answers the hosted-execution-acceptance.v1 receipt.",
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "hosted-execution",
+                              "4": "acceptance"
+                            }
                           }
                         ]
                       }

@@ -2,6 +2,12 @@
   "contractId": "sfx-api-host-bundle.v1",
   "capabilities": [
     {
+      "capabilityId": "accept-hosted-execution-profile",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/accept-hosted-execution-profile.json",
+      "sha256Base64": "QNggFeb4VMj2MXG+X5CwEXk2jx0PnECiKuHTdZjCdLc="
+    },
+    {
       "capabilityId": "admit-api-run-live",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/admit-api-run-live.json",
@@ -95,7 +101,7 @@
       "capabilityId": "read-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-hosted-execution-profile.json",
-      "sha256Base64": "WpsXcex6yA1qXt9xnQ0FPOASdckgTPhga9T5f4n3UQU="
+      "sha256Base64": "mxmNJM7LlTz7Fhk2F8mjuK67uvDv3R05d2yqHWg8oJQ="
     },
     {
       "capabilityId": "read-run-graphs",
@@ -137,7 +143,7 @@
       "capabilityId": "serve-api-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-api-request.json",
-      "sha256Base64": "sNV439JKW41fPIAbHcVXzV9PAgEav6oKA9DpQeeFMR4="
+      "sha256Base64": "rARND5Jjju+2t0IMk4hqm4jSskT5rt8jEaBxdOPiuDI="
     },
     {
       "capabilityId": "serve-http-request",

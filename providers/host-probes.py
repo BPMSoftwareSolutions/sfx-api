@@ -18,6 +18,7 @@ import time
 PYTHON = "/usr/local/bin/python3"
 TIMEOUT = "/usr/bin/timeout"
 CONFIGURATION = "/opt/sfx/sfx-api.config.json"
+SETTINGS = "/opt/sfx/authorities/host-bundle/capabilities/read-api-host-configuration.json"
 
 
 def remaining(pid):
@@ -118,14 +119,23 @@ def hold(language):
 
 
 def configuration(language):
+    """The deployed facade configuration and the deployed bundle's declared host settings, read from their files.
+    settingsDigest is the SHA-256 of read-api-host-configuration's literal answer as canonical JSON (keys sorted, no
+    whitespace, UTF-8)."""
     raw = open(CONFIGURATION, "rb").read()
     host = json.loads(raw)
     bound = lambda kind: int(host[kind]["command"][host[kind]["command"].index("--timeout") + 1])
+    declared = json.loads(open(SETTINGS, "rb").read())
+    answer = next(binding["configuration"]["expression"]["value"]
+                  for binding in declared["graphSource"]["interfaceAuthority"]["portBindings"]
+                  if binding["portId"] == "read-api-host-configuration-answer")
+    canonical = json.dumps(answer, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return {"configurationDigest": "sha256:" + hashlib.sha256(raw).hexdigest(),
-            "request": {"kernels": host["kernel"]["instances"], "deliveryBoundMs": bound("kernel"),
-                        "answerBoundMs": host["kernel"]["answerTimeoutMs"]},
+            "settingsDigest": "sha256:" + hashlib.sha256(canonical).hexdigest(),
+            "request": {"kernels": host["kernel"]["instances"], "waitForKernelMs": answer["request"]["waitMilliseconds"],
+                        "deliveryBoundMs": bound("kernel"), "answerBoundMs": host["kernel"]["answerTimeoutMs"]},
             "worker": {"deliveryBoundMs": bound("workers"), "answerBoundMs": host["workers"]["answerTimeoutMs"],
-                       "concurrentRuns": host["workers"]["instances"]}}
+                       "concurrentRuns": host["workers"]["instances"], "waitingRuns": answer["runs"]["queue"]["waiting"]}}
 
 
 PROBES = {"runtime": runtime, "forced-termination": forced_termination, "graceful-termination": graceful_termination,

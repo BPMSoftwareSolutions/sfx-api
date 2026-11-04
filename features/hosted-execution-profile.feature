@@ -22,6 +22,32 @@
 #   sfx-api-acceptance-python-only-port.v1
 #                                        provider sfx-api-acceptance-python-only: declared only for python, so a csharp
 #                                        worker must refuse it
+#
+# Slice 3 as built (2026-11-04), for the owner's review with the build:
+# - accept-hosted-execution-profile runs authorize > vault (sfx-vault-host-read-port.v1) > reference > open
+#   (sfx-vault-reference-carry-port.v1) > exchange (sfx-api-host-http-request-port.v1) > evaluate, on the request path,
+#   routed POST /sfx/v1/hosted-execution/acceptance for callers user with input {principalId: $caller.principalId}.
+# - authorize admits only principalId 00e053bd-b090-4ff9-be25-64089d170fb2 (staging-release-acceptance, identifier
+#   staging-release-acceptance) and declares the plan; reference requires the vault entry sfx-api-acceptance-password.
+#   Each leaves an admission code. A declared expression cannot fail its cell on this kernel (SDA
+#   SemanticExecutionGraphMechanicProvider passes a refusing expression's input through), so the HTTPS program's first
+#   step fails on any code but ADMITTED, before it opens an entry: the API answers 422 CELL_EXECUTION_FAILED naming
+#   ACCEPTANCE_PRINCIPAL_REQUIRED or ACCEPTANCE_CREDENTIAL_NOT_PROVISIONED.
+# - sfx-api-host-http-request opens the entry inside its own call (ADR-0019) and runs providers/host-acceptance.py under
+#   /usr/bin/timeout --kill-after=5 175 with an environment that holds only the password and SFX_API_IMAGE_DIGEST. The
+#   script attests the deployment (hostFilesDigest over serve.py, sfx-api.config.json, start.sh, kernel-host.json and
+#   the provider authority, in that order; the bundle pin checked against the deployed manifest; the kernel root it
+#   runs in), signs in, submits T4, T1, T2, T5, T6 and T3 at once, follows each stream to its end frame, reads state
+#   and output, measures T4, then submits the three T7 holds, and signs out. The password and the bearer stay in it.
+# - The image digest is the App Service setting SFX_API_IMAGE_DIGEST, which the deployer sets to the digest it deploys.
+#   A host without it fails the exchange step and issues no receipt.
+# - T6's settingsDigest is the SHA-256 of read-api-host-configuration's literal answer as canonical JSON (keys sorted,
+#   no whitespace, UTF-8), read by the configuration probe from the deployed bundle with the request wait and the
+#   waiting runs.
+# - evaluate derives each check from the client's observations with the profile's and the receipt schema's values,
+#   and answers the receipt; without the client's observations or an established deployment it answers 422 with
+#   ACCEPTANCE_CLIENT_FAILED or ACCEPTANCE_DEPLOYMENT_UNESTABLISHED. T7's arithmetic covers exactly the three holds.
+# - Known limit: a failure of the program itself (vault open, start of the child) fails the request with no receipt.
 
 @project:sfx-api
 @status:proposed-for-review
@@ -35,7 +61,7 @@ Feature: The host declares what it promises the capabilities it executes
 
   Rule: The profile is a declared, versioned contract that consumers can read
 
-    @status:not-built
+    @status:installed
     @capability:read-hosted-execution-profile
     Scenario: The deployment answers its profile
       When a consumer reads the host's execution profile
@@ -80,7 +106,7 @@ Feature: The host declares what it promises the capabilities it executes
 
   Rule: The acceptance capability runs every check of the pinned profile and derives each disposition
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     Scenario: A measured probe is converted to the typed receipt form
       Given a probe returns status MEASURED with its probe name and measured fields
@@ -90,7 +116,7 @@ Feature: The host declares what it promises the capabilities it executes
       And the raw probe's status and probe metadata are not copied into observed
       # MEASURED is a probe disposition, not an acceptance decision. The coordinator owns this declared projection.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: The coordinator holds a request kernel and leaves both workers available
@@ -104,7 +130,7 @@ Feature: The host declares what it promises the capabilities it executes
       # The host's existing authentication applies. Credentials are never copied into the acceptance receipt.
       # The coordinator's request executionId is distinct from the admitted worker runIds it cites.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: Only the dedicated acceptance principal starts the coordinator
@@ -115,7 +141,7 @@ Feature: The host declares what it promises the capabilities it executes
       And a principal name or id supplied in the request body cannot grant admission
       # The host's existing session resolution yields caller kind user. This declaration adds no machine-bearer resolver.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     @provider:sfx-vault-host-read-port.v1
@@ -130,7 +156,7 @@ Feature: The host declares what it promises the capabilities it executes
       And it retains that bearer only for this acceptance invocation and preserves the existing own-runs visibility
       And neither the password nor the bearer reaches source, testimony, observations, the receipt or caller-controlled input
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario Outline: Acceptance cannot proceed without its declared session authority
@@ -147,7 +173,7 @@ Feature: The host declares what it promises the capabilities it executes
         | the login response names a different principalId         |
         | the acceptance session expires or is revoked             |
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: The coordinator needs a second request kernel and finishes within its budget
@@ -159,7 +185,7 @@ Feature: The host declares what it promises the capabilities it executes
       # With one request kernel, the coordinator's own calls would wait behind it until the declared 30 s and be refused
       # REQUEST_KERNEL_BUSY. The 195 s delivery bound would end the coordinator itself with no receipt.
 
-    @status:not-built
+    @status:installed
     @capability:probe-hosted-execution
     @provider:sfx-api-host-child-process-port.v1
     Scenario Outline: A check measures what its promise needs
@@ -173,7 +199,7 @@ Feature: The host declares what it promises the capabilities it executes
         | T2    | timeout --kill-after=2 2 around a child that ignores SIGTERM: its exit code, elapsed time, the child's pid, and whether any process of it remains |
         | T5    | timeout's first version line; timeout 2 around a child that stops on SIGTERM: its exit code, elapsed time, the child's pid, and whether any process of it remains |
 
-    @status:not-built
+    @status:installed
     @capability:probe-hosted-execution
     @provider:sfx-api-host-child-process-port.v1
     @provider:read-api-host-configuration
@@ -183,7 +209,7 @@ Feature: The host declares what it promises the capabilities it executes
       And those settings must match the profile
       # T6 compares settings and proves no behavior. Its evidence is "configuration" in the profile.
 
-    @status:not-built
+    @status:installed
     @capability:probe-hosted-execution-language-refusal
     @provider:sfx-api-acceptance-python-only-port.v1
     Scenario: T3 observes the refusal of a provider with no csharp entry
@@ -192,7 +218,7 @@ Feature: The host declares what it promises the capabilities it executes
       And this expected failed probe is evaluated as a passing T3 observation
       # The Python-only binding belongs only to this probe's closure. It is absent from the coordinator's closure.
 
-    @status:not-built
+    @status:installed
     @capability:probe-hosted-execution
     @provider:sfx-api-host-child-process-port.v1
     Scenario: T4 produces the declared payload on a worker
@@ -200,7 +226,7 @@ Feature: The host declares what it promises the capabilities it executes
       When the T4 probe returns
       Then its declared result is a JSON object with that string in its payload member
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: T4 measures a large Unicode answer through the API
@@ -214,7 +240,7 @@ Feature: The host declares what it promises the capabilities it executes
       # JSON envelope bytes, JSON escaping and HTTP framing are excluded from the payload digest.
       # The URL's runId must be the T4 runId verified by the evaluator, not another run with the same payload.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     @provider:read-run-state
@@ -229,14 +255,14 @@ Feature: The host declares what it promises the capabilities it executes
       # A worker running the coordinator does not count as a second probe. Non-overlapping intervals cannot pass.
       # Missing or invalid intervals produce EXECUTION_ERROR; measured concurrency below or above two produces FAILED.
 
-    @status:not-built
+    @status:installed
     @capability:probe-hosted-execution
     @provider:sfx-api-host-child-process-port.v1
     Scenario: A T7 probe holds one worker
       When a T7 hold probe begins executing on its assigned worker
       Then it holds that worker for 5 seconds and returns
 
-    @status:not-built
+    @status:installed
     @capability:sfx-api-host-http-request-port.v1
     Scenario: The HTTP provider exercises the deployed route
       When its declared program receives an allowed probe admission, state or output request
@@ -245,7 +271,7 @@ Feature: The host declares what it promises the capabilities it executes
       # Its implementation is declared through the profile schema boundary, using the host's normal authentication.
       # A caller-provided observation or a direct capability return is never substituted for the HTTP response.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:read-run-state
     Scenario: The evaluator verifies the runs it cites and the deployment it ran on
@@ -261,7 +287,7 @@ Feature: The host declares what it promises the capabilities it executes
         files, which the evaluator reads itself
       And it names the image digest the deployer recorded, which the host cannot attest about itself
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     Scenario Outline: A check that cannot obtain observations fails without inventing them
       Given a check encounters <failure>
@@ -281,7 +307,7 @@ Feature: The host declares what it promises the capabilities it executes
       # Complete passing observations remain mandatory for every PASSED check. Errors cannot authorize acceptance.
       # If deployment identity itself cannot be established, the capability fails and issues no acceptance receipt.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     Scenario Outline: A receipt that does not prove the profile is refused
       When a receipt <defect>
@@ -303,7 +329,7 @@ Feature: The host declares what it promises the capabilities it executes
       # Local authoring regression cases are in contracts/tests/test_hosted_execution_contract.py.
       # Duplicate-key rejection happens before schema validation; date-time format assertions are enabled.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     @provider:read-run-state
@@ -329,7 +355,7 @@ Feature: The host declares what it promises the capabilities it executes
       Then T1 to T7 run again on the deployed host, and a new receipt is issued
       And only an ACCEPTED receipt naming the current digests authorizes a consumer to rely on the profile
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     Scenario: Free temporary storage is a measurement at acceptance, not a reservation
       Then T1's free bytes hold when the receipt was issued, and concurrent runs share them
