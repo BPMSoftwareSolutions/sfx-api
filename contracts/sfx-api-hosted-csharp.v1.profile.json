@@ -61,6 +61,7 @@
   "executionPaths": {
     "promiseId": "H5",
     "request": {
+      "kernels": 2,
       "waitForKernelMs": 30000,
       "deliveryBoundMs": 195000,
       "answerBoundMs": 198000,
@@ -87,15 +88,28 @@
   ],
   "acceptance": {
     "receiptContract": "hosted-execution-acceptance.v1",
+    "coordinator": {
+      "capabilityId": "accept-hosted-execution-profile",
+      "executionPath": "request",
+      "method": "POST",
+      "path": "/sfx/v1/hosted-execution/acceptance",
+      "workerSlotsHeld": 0,
+      "probeTransport": "deployed-https-api",
+      "admittedCallers": ["machine"],
+      "probeAuthority": { "caller": "machine", "credential": "host-machine-credential", "release": "declared-credential-pointer" },
+      "requestKernelsRequired": 2,
+      "budgetMs": 150000,
+      "probeCompletion": "run-event-stream-to-end"
+    },
     "repeatWhenChanged": ["imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest", "profileDigest"],
     "checks": [
       { "checkId": "T1", "promiseIds": ["H1", "H3"], "executionPath": "worker", "evidence": "execution", "establishes": "The run reports runtime.language. Under the worker identity, with a cleared environment, CPython at its path reports its implementation, version, SOABI, machine and glibc version, and each wheel tag above is among the tags that interpreter can load. Temporary storage at its path allows create, write, read and delete, with at least freeBytesAtAcceptance.minimum free." },
       { "checkId": "T2", "promiseIds": ["H3"], "executionPath": "worker", "evidence": "execution", "establishes": "timeout --kill-after=2 2 ends a child that ignores SIGTERM: it exits exitWhenKilled after 4 to 5 s, and no process of the child remains." },
       { "checkId": "T3", "promiseIds": ["H2"], "executionPath": "worker", "evidence": "execution", "establishes": "A run whose closure has a provider with no entry for runtime.language fails with PROVIDER_LANGUAGE_UNAVAILABLE, naming the provider, its declared language and runtime.language." },
-      { "checkId": "T4", "promiseIds": ["H4"], "executionPath": "worker", "evidence": "execution", "establishes": "A provider's answer of maximumResultBytes UTF-8 bytes, multi-byte characters included, reaches the caller through the API with the SHA-256 the provider declared for it." },
+      { "checkId": "T4", "promiseIds": ["H4"], "executionPath": "worker", "evidence": "execution", "establishes": "A worker probe returns a JSON object with a payload string of maximumResultBytes UTF-8 bytes. The coordinator makes an authenticated HTTPS GET to host.endpoint + /sfx/v1/runs/{runId}/output, without redirects, and decodes /output/payload from the response JSON. Those UTF-8 bytes have the declared byte count and SHA-256. Calling serve-http-request in process does not establish this check." },
       { "checkId": "T5", "promiseIds": ["H3"], "executionPath": "worker", "evidence": "execution", "establishes": "timeout at its path prints a first version line matching its identity, and timeout 2 ends a child that stops on SIGTERM: it exits exitWhenTerminated after 2 to 3 s, and no process of the child remains." },
       { "checkId": "T6", "promiseIds": ["H5"], "executionPath": "worker", "evidence": "configuration", "establishes": "The deployed facade configuration and the declared host settings hold every bound, the run concurrency and the waiting runs above. This compares settings and proves no behavior." },
-      { "checkId": "T7", "promiseIds": ["H5"], "executionPath": "worker", "evidence": "execution", "establishes": "Of three runs admitted together, two execute at once and the third starts only after one of them ends." }
+      { "checkId": "T7", "promiseIds": ["H5"], "executionPath": "worker", "evidence": "execution", "establishes": "The request-path coordinator holds no worker slot. With both workers available, it admits three 5-second hold probes through the deployed HTTPS run API without waiting for any to finish. From the three completed runs' execution intervals, two overlap and the third starts only after one of them ends. The coordinator execution is excluded from the probe counts." }
     ]
   }
 }

@@ -167,9 +167,58 @@
       "description": "The checks that establish this profile on a deployment, and when they must run again. Every promise above is covered by at least one check.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["receiptContract", "repeatWhenChanged", "checks"],
+      "required": ["receiptContract", "coordinator", "repeatWhenChanged", "checks"],
       "properties": {
         "receiptContract": { "const": "hosted-execution-acceptance.v1" },
+        "coordinator": {
+          "description": "The host's declared request entry coordinates worker probes through its deployed HTTPS API. It never holds a worker slot while waiting for them.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capabilityId", "executionPath", "method", "path", "workerSlotsHeld", "probeTransport", "admittedCallers", "probeAuthority", "requestKernelsRequired", "budgetMs", "probeCompletion"],
+          "properties": {
+            "capabilityId": { "const": "accept-hosted-execution-profile" },
+            "executionPath": { "const": "request" },
+            "method": { "const": "POST" },
+            "path": { "const": "/sfx/v1/hosted-execution/acceptance" },
+            "workerSlotsHeld": { "const": 0 },
+            "probeTransport": { "const": "deployed-https-api" },
+            "admittedCallers": {
+              "description": "The interface's caller kinds that may invoke the coordinator. Its probes act with the machine caller's authority, so a user session may not start them.",
+              "type": "array",
+              "items": { "const": "machine" },
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "probeAuthority": {
+              "description": "How the coordinator authenticates the probes it submits and reads through the deployed API.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["caller", "credential", "release"],
+              "properties": {
+                "caller": { "const": "machine" },
+                "credential": { "const": "host-machine-credential" },
+                "release": {
+                  "description": "The credential is released at a declared credential pointer, and never reaches testimony, observations or the receipt.",
+                  "const": "declared-credential-pointer"
+                }
+              }
+            },
+            "requestKernelsRequired": {
+              "description": "The coordinator holds one request kernel while its own API calls need another, so the request path needs at least this many kernels.",
+              "type": "integer",
+              "minimum": 2
+            },
+            "budgetMs": {
+              "description": "The coordinator stops measuring by this time and issues its receipt, leaving margin within the request path's delivery bound. A check it could not finish is FAILED as an execution error.",
+              "type": "integer",
+              "minimum": 1
+            },
+            "probeCompletion": {
+              "description": "The coordinator waits for a probe by reading that run's event stream through the deployed API until the stream's end frame.",
+              "const": "run-event-stream-to-end"
+            }
+          }
+        },
         "repeatWhenChanged": {
           "type": "array",
           "items": { "enum": ["imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest", "profileDigest"] },
@@ -186,7 +235,7 @@
             "properties": {
               "checkId": { "type": "string", "pattern": "^T[0-9]+$" },
               "promiseIds": { "type": "array", "items": { "type": "string", "pattern": "^H[0-9]+$" }, "minItems": 1, "uniqueItems": true },
-              "executionPath": { "enum": ["request", "worker"] },
+              "executionPath": { "description": "The path of the probe being tested, distinct from the coordinator's request path.", "enum": ["request", "worker"] },
               "evidence": {
                 "description": "execution: the check runs the behavior and measures it. configuration: the check compares the deployed settings with the profile, and proves no behavior.",
                 "enum": ["execution", "configuration"]
@@ -268,8 +317,9 @@
       "description": "platformBoundMs is App Service's front-end bound, not the host's. The host promises that waitForKernelMs plus answerBoundMs stays within it.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["waitForKernelMs", "deliveryBoundMs", "answerBoundMs", "platformBoundMs"],
+      "required": ["kernels", "waitForKernelMs", "deliveryBoundMs", "answerBoundMs", "platformBoundMs"],
       "properties": {
+        "kernels": { "type": "integer", "minimum": 1 },
         "waitForKernelMs": { "type": "integer", "minimum": 0 },
         "deliveryBoundMs": { "type": "integer", "minimum": 1 },
         "answerBoundMs": { "type": "integer", "minimum": 1 },

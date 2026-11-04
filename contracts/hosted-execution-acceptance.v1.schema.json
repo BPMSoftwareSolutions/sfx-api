@@ -10,7 +10,7 @@
     "contractId": { "const": "hosted-execution-acceptance.v1" },
     "profileId": { "const": "sfx-api-hosted-csharp" },
     "profileVersion": { "const": 1 },
-    "profileDigest": { "const": "sha256:b387ad0c7321c6a1e4bbf063b54009ed3e917f8609de884f811d0eca01390efd" },
+    "profileDigest": { "const": "sha256:5c0fd449b0ceac361d943892fafa301913a3240a4df4304fe1970efd4f2dda1e" },
     "deployment": {
       "type": "object",
       "additionalProperties": false,
@@ -40,10 +40,11 @@
     "evaluator": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["capabilityId", "runId"],
+      "required": ["capabilityId", "executionPath", "executionId"],
       "properties": {
         "capabilityId": { "const": "accept-hosted-execution-profile" },
-        "runId": { "$ref": "#/$defs/uuid" }
+        "executionPath": { "const": "request" },
+        "executionId": { "description": "The coordinator's request delivery identity. Worker run identities are recorded in each check's runIds.", "$ref": "#/$defs/uuid" }
       }
     },
     "checks": {
@@ -51,13 +52,13 @@
       "additionalProperties": false,
       "required": ["T1", "T2", "T3", "T4", "T5", "T6", "T7"],
       "properties": {
-        "T1": { "$ref": "#/$defs/T1" },
-        "T2": { "$ref": "#/$defs/T2" },
-        "T3": { "$ref": "#/$defs/T3" },
-        "T4": { "$ref": "#/$defs/T4" },
-        "T5": { "$ref": "#/$defs/T5" },
-        "T6": { "$ref": "#/$defs/T6" },
-        "T7": { "$ref": "#/$defs/T7" }
+        "T1": { "oneOf": [{ "$ref": "#/$defs/T1" }, { "$ref": "#/$defs/executionError" }] },
+        "T2": { "oneOf": [{ "$ref": "#/$defs/T2" }, { "$ref": "#/$defs/executionError" }] },
+        "T3": { "oneOf": [{ "$ref": "#/$defs/T3" }, { "$ref": "#/$defs/executionError" }] },
+        "T4": { "oneOf": [{ "$ref": "#/$defs/T4" }, { "$ref": "#/$defs/executionError" }] },
+        "T5": { "oneOf": [{ "$ref": "#/$defs/T5" }, { "$ref": "#/$defs/executionError" }] },
+        "T6": { "oneOf": [{ "$ref": "#/$defs/T6" }, { "$ref": "#/$defs/executionError" }] },
+        "T7": { "oneOf": [{ "$ref": "#/$defs/T7" }, { "$ref": "#/$defs/executionError" }] }
       }
     },
     "status": { "enum": ["ACCEPTED", "REJECTED"] }
@@ -84,11 +85,12 @@
       }
     },
     "result": {
-      "description": "What every check answers. Its observed member is typed by the check.",
+      "description": "A check that obtained its complete measurements. Its observed member is typed by the check. Incomplete measurements use executionError, without fabricated observed values.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "runIds", "observed"],
+      "required": ["kind", "status", "runIds", "observed"],
       "properties": {
+        "kind": { "const": "OBSERVED" },
         "status": { "enum": ["PASSED", "FAILED"] },
         "runIds": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "minItems": 1, "uniqueItems": true },
         "observed": { "type": "object" },
@@ -96,6 +98,30 @@
       },
       "if": { "properties": { "status": { "const": "FAILED" } }, "required": ["status"] },
       "then": { "required": ["finding"] }
+    },
+    "executionError": {
+      "description": "A check could not obtain complete observations. The attemptId identifies its attempted operation in the coordinator's evidence. List only real admitted runs; admission or precondition failures may have none. This variant can never pass.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "status", "attemptId", "runIds", "error"],
+      "properties": {
+        "kind": { "const": "EXECUTION_ERROR" },
+        "status": { "const": "FAILED" },
+        "attemptId": { "$ref": "#/$defs/uuid" },
+        "runIds": { "type": "array", "items": { "$ref": "#/$defs/uuid" }, "uniqueItems": true },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stage", "code", "message"],
+          "properties": {
+            "stage": { "enum": ["precondition", "admission", "execution", "collection", "verification"] },
+            "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+            "message": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "if": { "properties": { "error": { "properties": { "stage": { "enum": ["execution", "collection", "verification"] } } } } },
+      "then": { "properties": { "runIds": { "minItems": 1 } } }
     },
     "exited": {
       "description": "A child run under timeout: what was asked, how it ended, and whether any process of it remains.",
@@ -259,8 +285,14 @@
         "observed": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["expectedBytes", "receivedBytes", "expectedSha256", "receivedSha256"],
+          "required": ["transport", "method", "url", "statusCode", "redirected", "payloadPointer", "expectedBytes", "receivedBytes", "expectedSha256", "receivedSha256"],
           "properties": {
+            "transport": { "type": "string" },
+            "method": { "type": "string" },
+            "url": { "type": "string" },
+            "statusCode": { "type": "integer" },
+            "redirected": { "type": "boolean" },
+            "payloadPointer": { "type": "string" },
             "expectedBytes": { "type": "integer", "minimum": 0 },
             "receivedBytes": { "type": "integer", "minimum": 0 },
             "expectedSha256": { "$ref": "#/$defs/sha256" },
@@ -274,6 +306,12 @@
           "observed": {
             "description": "The payload is 393216 repetitions of the 16 UTF-8 bytes of \"aé€😀abcdef\".",
             "properties": {
+              "transport": { "const": "https" },
+              "method": { "const": "GET" },
+              "url": { "pattern": "^https://sfx-api-test\\.azurewebsites\\.net/sfx/v1/runs/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/output$" },
+              "statusCode": { "const": 200 },
+              "redirected": { "const": false },
+              "payloadPointer": { "const": "/output/payload" },
               "expectedBytes": { "const": 6291456 },
               "receivedBytes": { "const": 6291456 },
               "expectedSha256": { "const": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc" },
@@ -370,12 +408,27 @@
     "T7": {
       "$ref": "#/$defs/result",
       "properties": {
-        "runIds": { "minItems": 3 },
+        "runIds": { "minItems": 3, "maxItems": 3 },
         "observed": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["admitted", "maxConcurrent", "thirdStartedAfterAnEnd"],
+          "required": ["coordinatorExecutionPath", "coordinatorWorkerSlots", "runs", "admitted", "maxConcurrent", "thirdStartedAfterAnEnd"],
           "properties": {
+            "coordinatorExecutionPath": { "type": "string" },
+            "coordinatorWorkerSlots": { "type": "integer", "minimum": 0 },
+            "runs": {
+              "description": "The three probe execution intervals, in admission order, read from their retained worker evidence. The evaluator matches these IDs to runIds and derives the concurrency values from these intervals.",
+              "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["runId", "startedAt", "endedAt"],
+                "properties": {
+                  "runId": { "$ref": "#/$defs/uuid" },
+                  "startedAt": { "type": "string", "format": "date-time" },
+                  "endedAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            },
             "admitted": { "type": "integer", "minimum": 0 },
             "maxConcurrent": { "type": "integer", "minimum": 0 },
             "thirdStartedAfterAnEnd": { "type": "boolean" }
@@ -387,6 +440,8 @@
         "properties": {
           "observed": {
             "properties": {
+              "coordinatorExecutionPath": { "const": "request" },
+              "coordinatorWorkerSlots": { "const": 0 },
               "admitted": { "const": 3 },
               "maxConcurrent": { "const": 2 },
               "thirdStartedAfterAnEnd": { "const": true }
