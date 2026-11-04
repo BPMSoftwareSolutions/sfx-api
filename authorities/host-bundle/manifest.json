@@ -44,12 +44,6 @@
       "sha256Base64": "NDY+FplGjRprQef71Mw6uMicxNUy8JosSUQ+VH4PLR4="
     },
     {
-      "capabilityId": "open-api-session",
-      "namespaceId": "sidefx:capabilities",
-      "document": "capabilities/open-api-session.json",
-      "sha256Base64": "bIrvuNw3L+O8qGHizRYqlXl2z6GJRKhNpEVm80cQ9gs="
-    },
-    {
       "capabilityId": "probe-hosted-execution",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/probe-hosted-execution.json",
