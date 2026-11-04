@@ -313,8 +313,9 @@ class HostedExecutionContractTests(unittest.TestCase):
         authority = coordinator["probeAuthority"]
         self.assertEqual(authority["principalRef"], coordinator["admittedCallers"][0]["principalRef"])
         self.assertEqual(authority["caller"], "user")
-        self.assertEqual(authority["authentication"], "https-session-login")
-        self.assertEqual(authority["credential"], "sfx-api-acceptance-password")
+        self.assertEqual(authority["authentication"], "stored-session")
+        self.assertEqual(authority["credential"], "SFX_API_ACCEPTANCE_SESSION")
+        self.assertEqual(authority["provisioning"], "store-credential")
         validator = Draft202012Validator(self.profile_schema)
         mutations = [
             ("admittedCallers.0.kind", "machine"),
@@ -322,12 +323,13 @@ class HostedExecutionContractTests(unittest.TestCase):
             ("admittedCallers.0.match", "request-body-name"),
             ("probeAuthority.caller", "machine"),
             ("probeAuthority.principalRef", "another-user"),
-            ("probeAuthority.authentication", "machine-bearer"),
-            ("probeAuthority.loginPath", "/other-login"),
-            ("probeAuthority.credential", "host-machine-credential"),
+            ("probeAuthority.authentication", "https-session-login"),
+            ("probeAuthority.credential", "sfx-api-acceptance-password"),
+            ("probeAuthority.provisioning", "operator-script"),
+            ("probeAuthority.sessionCheckPath", "/other-session"),
             ("probeAuthority.release", "request-body"),
             ("probeAuthority.runVisibility", "all-runs"),
-            ("probeAuthority.sessionUse", "persistent-shared-session"),
+            ("probeAuthority.sessionUse", "acceptance-invocation"),
         ]
         for path, replacement in mutations:
             with self.subTest(path=path):
@@ -345,11 +347,14 @@ class HostedExecutionContractTests(unittest.TestCase):
                 self.assertFalse(validator.is_valid(profile))
 
     def test_published_version_one_cannot_be_relabelled_as_current(self):
-        self.assertEqual(self.profile["profileVersion"], 2)
-        value = copy.deepcopy(self.good)
-        value["profileVersion"] = 1
-        value["profileDigest"] = "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804"
-        self.assertFalse(self.validator.is_valid(value))
+        self.assertEqual(self.profile["profileVersion"], 3)
+        for version, digest in ((1, "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804"),
+                                (2, "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414")):
+            with self.subTest(version=version):
+                value = copy.deepcopy(self.good)
+                value["profileVersion"] = version
+                value["profileDigest"] = digest
+                self.assertFalse(self.validator.is_valid(value))
 
 
 if __name__ == "__main__":

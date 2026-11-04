@@ -5,7 +5,7 @@
       "capabilityId": "accept-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/accept-hosted-execution-profile.json",
-      "sha256Base64": "uul2rABIAM9nLrK43q5pUk95kUz0W8r17skwAr8vH0Q="
+      "sha256Base64": "XjNT3KO2Db5AnwD2uOoi1FBbpzPVUIayc/n6/CBBD0w="
     },
     {
       "capabilityId": "admit-api-run-live",
@@ -101,7 +101,7 @@
       "capabilityId": "read-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-hosted-execution-profile.json",
-      "sha256Base64": "mxmNJM7LlTz7Fhk2F8mjuK67uvDv3R05d2yqHWg8oJQ="
+      "sha256Base64": "MKph4ithK3NzwcYzSeOsBwMngSMTn1kuYSK32C0zhBk="
     },
     {
       "capabilityId": "read-run-graphs",

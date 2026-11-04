@@ -1,7 +1,7 @@
 {
   "contractId": "hosted-execution-profile.v1",
   "profileId": "sfx-api-hosted-csharp",
-  "profileVersion": 2,
+  "profileVersion": 3,
   "host": {
     "deployment": "sfx-api-test",
     "endpoint": "https://sfx-api-test.azurewebsites.net"
@@ -99,12 +99,13 @@
       "probeAuthority": {
         "caller": "user",
         "principalRef": "staging-release-acceptance",
-        "authentication": "https-session-login",
-        "loginPath": "/sfx/v1/session",
-        "credential": "sfx-api-acceptance-password",
+        "authentication": "stored-session",
+        "credential": "SFX_API_ACCEPTANCE_SESSION",
+        "provisioning": "store-credential",
+        "sessionCheckPath": "/sfx/v1/session",
         "release": "declared-credential-pointer",
         "runVisibility": "own-runs",
-        "sessionUse": "acceptance-invocation"
+        "sessionUse": "stored-until-expiry"
       },
       "requestKernelsRequired": 2,
       "budgetMs": 150000,

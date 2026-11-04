@@ -9,8 +9,8 @@
   "properties": {
     "contractId": { "const": "hosted-execution-acceptance.v1" },
     "profileId": { "const": "sfx-api-hosted-csharp" },
-    "profileVersion": { "const": 2 },
-    "profileDigest": { "const": "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414" },
+    "profileVersion": { "const": 3 },
+    "profileDigest": { "const": "sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b" },
     "deployment": {
       "type": "object",
       "additionalProperties": false,

@@ -1,20 +1,20 @@
 """The HTTPS client of accept-hosted-execution-profile (contracts/sfx-api-hosted-csharp.v1.profile.json, acceptance).
 
-The C# program of sfx-api-host-http-request opens the host-vault entry sfx-api-acceptance-password inside its own call
-and starts this script under /usr/bin/timeout in an empty environment that holds only SFX_ACCEPTANCE_PASSWORD and
-SFX_API_IMAGE_DIGEST. argv[1] is the acceptance plan the coordinator declares. The script:
+The C# program of sfx-api-host-http-request opens the host-vault entry SFX_API_ACCEPTANCE_SESSION, which the operator
+stores with store-credential, inside its own call. It starts this script under /usr/bin/timeout in an empty environment
+that holds only SFX_ACCEPTANCE_SESSION and SFX_API_IMAGE_DIGEST. argv[1] is the acceptance plan the coordinator declares.
+The script:
 
 - attests the deployment it runs on: the deployer's recorded image digest, the bundle pin, the kernel install root it
   runs in, and the SHA-256 over the deployed host files;
-- signs in over HTTPS as the plan's principal and accepts only AUTHENTICATED with the plan's principalId;
+- confirms over HTTPS that GET /sfx/v1/session names the plan's principalId for the stored session;
 - submits each probe of the plan through POST /sfx/v1/runs, follows each run's event stream to its end frame, and reads
   its state and its output through the same endpoint, without following redirects;
-- measures the payload probe's /output/payload from the HTTPS response, as UTF-8 bytes and their SHA-256;
-- signs out.
+- measures the payload probe's /output/payload from the HTTPS response, as UTF-8 bytes and their SHA-256.
 
-It answers one JSON object of observations: what each request answered, or the stage and code at which a check could
-not be observed. It decides no disposition: the coordinator's declared evaluation does. The password and the bearer
-never leave this process.
+It never signs in and never revokes the stored session. It answers one JSON object of observations: what each request
+answered, or the stage and code at which a check could not be observed. It decides no disposition: the coordinator's
+declared evaluation does. The session never leaves this process.
 """
 import hashlib
 import http.client
@@ -156,23 +156,21 @@ class Client:
         return status, document
 
 
-def sign_in(client, plan, password):
-    """The plan principal's session, or Failure at precondition."""
-    if not password:
-        raise Failure("precondition", "ACCEPTANCE_CREDENTIAL_UNAVAILABLE", "the host vault released no acceptance password")
-    status, answer = client.json("precondition", "POST", "/sfx/v1/session",
-                                 {"identifier": plan["identifier"], "password": password})
-    disposition = answer.get("status") if isinstance(answer, dict) else None
-    if status != 200 or disposition != "AUTHENTICATED":
-        code = {"THROTTLED": "ACCEPTANCE_SIGN_IN_THROTTLED"}.get(disposition, "ACCEPTANCE_SIGN_IN_REJECTED")
-        raise Failure("precondition", code, "the acceptance sign-in answered %d %s" % (status, disposition))
+def session_check(client, plan, session):
+    """The stored session, confirmed by GET /sfx/v1/session to be the plan principal's, or Failure at precondition."""
+    if not session:
+        raise Failure("precondition", "ACCEPTANCE_CREDENTIAL_UNAVAILABLE", "the host vault released no acceptance session")
+    client.bearer = session
+    status, answer = client.json("precondition", "GET", "/sfx/v1/session")
+    if status != 200 or not isinstance(answer, dict) or answer.get("status") != "READ":
+        client.bearer = None
+        raise Failure("precondition", "ACCEPTANCE_SESSION_REJECTED",
+                      "the stored acceptance session was not accepted: GET /sfx/v1/session answered %d" % status)
     principal = str(answer.get("principalId", "")).lower()
     if principal != plan["principalId"]:
-        raise Failure("precondition", "ACCEPTANCE_PRINCIPAL_MISMATCH", "the acceptance sign-in named another principal")
-    client.bearer = answer.get("token")
-    if not client.bearer:
-        raise Failure("precondition", "ACCEPTANCE_SIGN_IN_REJECTED", "the acceptance sign-in answered no bearer")
-    return {"disposition": "AUTHENTICATED", "principalId": principal}
+        client.bearer = None
+        raise Failure("precondition", "ACCEPTANCE_PRINCIPAL_MISMATCH", "the stored acceptance session names another principal")
+    return {"disposition": "CONFIRMED", "principalId": principal, "sessionExpiresAt": answer.get("sessionExpiresAt")}
 
 
 def admit(client, probe, attempt):
@@ -336,9 +334,9 @@ def main():
     plan = json.loads(sys.argv[1])
     answer = {"contractId": "hosted-acceptance-observations.v1", "executionId": str(uuid.uuid4()), "executedAt": now()}
     answer["deployment"] = deployment()
-    password = os.environ.pop("SFX_ACCEPTANCE_PASSWORD", "")
+    session = os.environ.pop("SFX_ACCEPTANCE_SESSION", "")
     if not answer["deployment"]["established"]:
-        # No receipt can name an unestablished deployment, so nothing is signed in or submitted.
+        # No receipt can name an unestablished deployment, so the session is not used and nothing is submitted.
         return answer
     try:
         path = execution_path()
@@ -346,30 +344,28 @@ def main():
         path = "unknown: " + type(failure).__name__
     answer["coordinator"] = {"executionPath": path, "workerSlots": 0 if path == "request" else 1 if path == "worker" else -1}
     if path != "request":
-        # Only the request path's acceptance route admits the caller by its session: anywhere else, nothing is signed in.
+        # Only the request path's acceptance route admits the caller by its session: anywhere else, the stored session
+        # is not used.
         answer["deployment"] = {"established": False, "code": "ACCEPTANCE_NOT_ON_REQUEST_PATH",
                                 "message": "the coordinator runs on the %s path, not the request path" % path}
         return answer
     client = Client(plan["endpoint"], STARTED + plan["budgetMs"] / 1000)
     try:
-        answer["signIn"] = sign_in(client, plan, password)
+        answer["session"] = session_check(client, plan, session)
     except Failure as failure:
         # No probe is submitted without the session: every check is unobserved at its precondition.
-        answer["signIn"] = {"disposition": "FAILED", "code": failure.code, "message": failure.message}
+        answer["session"] = {"disposition": "FAILED", "code": failure.code, "message": failure.message}
         answer["checks"] = {check: {"attemptId": str(uuid.uuid4()), "runIds": [], "error": error(failure, [])}
                             for check in [probe["checkId"] for probe in plan["probes"]] + [plan["concurrency"]["checkId"]]}
         answer["elapsedMs"] = int((time.monotonic() - STARTED) * 1000)
         return answer
     finally:
-        password = None
+        session = None
     try:
         answer["checks"] = observe_checks(client, plan)
         answer["checks"][plan["concurrency"]["checkId"]] = observe_concurrency(client, plan)
     finally:
-        try:
-            client.request("collection", "POST", "/sfx/v1/session/logout")
-        except Failure:
-            pass
+        # The stored session serves later acceptances until it expires: it is never revoked here.
         client.bearer = None
     answer["elapsedMs"] = int((time.monotonic() - STARTED) * 1000)
     return answer

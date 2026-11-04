@@ -136,7 +136,6 @@
                     "op": "literal",
                     "value": {
                       "endpoint": "https://sfx-api-test.azurewebsites.net",
-                      "identifier": "staging-release-acceptance",
                       "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
                       "budgetMs": 150000,
                       "probes": [
@@ -240,7 +239,7 @@
                   "fields": {
                     "credentialReference": {
                       "op": "literal",
-                      "value": "sfx-api-acceptance-password"
+                      "value": "SFX_API_ACCEPTANCE_SESSION"
                     },
                     "context": {
                       "op": "merge",
@@ -288,7 +287,7 @@
                                     "op": "type",
                                     "value": {
                                       "op": "path",
-                                      "path": "vault.entries.sfx-api-acceptance-password"
+                                      "path": "vault.entries.SFX_API_ACCEPTANCE_SESSION"
                                     }
                                   },
                                   "right": {
@@ -5336,11 +5335,11 @@
                       },
                       "profileVersion": {
                         "op": "literal",
-                        "value": 2
+                        "value": 3
                       },
                       "profileDigest": {
                         "op": "literal",
-                        "value": "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414"
+                        "value": "sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b"
                       },
                       "deployment": {
                         "op": "object",

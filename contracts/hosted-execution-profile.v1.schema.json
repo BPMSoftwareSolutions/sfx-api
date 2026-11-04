@@ -199,20 +199,24 @@
               "maxItems": 1
             },
             "probeAuthority": {
-              "description": "The coordinator signs in over the deployed HTTPS session endpoint as the dedicated acceptance principal. Its password is released from the host vault only at the declared login pointer. It checks the login response principalId against the trusted principal binding, then uses that session for its own probes and readback.",
+              "description": "The coordinator uses the dedicated acceptance principal's session, which the operator stores in the host vault with the standard store-credential capability. It is released from the vault only at the declared credential pointer. Before any probe, the coordinator confirms that the deployed HTTPS session check names the trusted principal binding's principalId. It then uses that session for its own probes and readback. It never signs in and never revokes the stored session.",
               "type": "object",
               "additionalProperties": false,
-              "required": ["caller", "principalRef", "authentication", "loginPath", "credential", "release", "runVisibility", "sessionUse"],
+              "required": ["caller", "principalRef", "authentication", "credential", "provisioning", "sessionCheckPath", "release", "runVisibility", "sessionUse"],
               "properties": {
                 "caller": { "const": "user" },
                 "principalRef": { "const": "staging-release-acceptance" },
-                "authentication": { "const": "https-session-login" },
-                "loginPath": { "const": "/sfx/v1/session" },
-                "credential": { "const": "sfx-api-acceptance-password" },
+                "authentication": { "const": "stored-session" },
+                "credential": { "const": "SFX_API_ACCEPTANCE_SESSION" },
+                "provisioning": { "const": "store-credential" },
+                "sessionCheckPath": { "const": "/sfx/v1/session" },
                 "runVisibility": { "const": "own-runs" },
-                "sessionUse": { "const": "acceptance-invocation" },
+                "sessionUse": {
+                  "description": "The stored session serves every acceptance until it expires or is revoked. The operator stores a new one with store-credential.",
+                  "const": "stored-until-expiry"
+                },
                 "release": {
-                  "description": "The vault password and returned bearer are released only at declared credential pointers. Neither reaches source, testimony, observations or the receipt.",
+                  "description": "The stored session bearer is released only at the declared credential pointer. It never reaches source, testimony, observations or the receipt.",
                   "const": "declared-credential-pointer"
                 }
               }

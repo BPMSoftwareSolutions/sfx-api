@@ -3,7 +3,7 @@
 # @capability and @provider are on each scenario.
 # Sources:
 # - the contract: contracts/hosted-execution-profile.v1.schema.json, this deployment's profile
-#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414),
+#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b),
 #   and the receipt contract contracts/hosted-execution-acceptance.v1.schema.json;
 # - the consolidated host-consumer contract revision (2026-11-04), prepared for host review;
 # - sfx-api.config.json, deploy/Dockerfile and SDA's DeclaredProviderResolver.cs at 29355da, read from the code.
@@ -28,17 +28,18 @@
 #   (sfx-vault-reference-carry-port.v1) > exchange (sfx-api-host-http-request-port.v1) > evaluate, on the request path,
 #   routed POST /sfx/v1/hosted-execution/acceptance for callers user with input {principalId: $caller.principalId}.
 # - authorize admits only principalId 00e053bd-b090-4ff9-be25-64089d170fb2 (staging-release-acceptance, identifier
-#   staging-release-acceptance) and declares the plan; reference requires the vault entry sfx-api-acceptance-password.
+#   staging-release-acceptance) and declares the plan; reference requires the vault entry SFX_API_ACCEPTANCE_SESSION.
 #   Each leaves an admission code. A declared expression cannot fail its cell on this kernel (SDA
 #   SemanticExecutionGraphMechanicProvider passes a refusing expression's input through), so the HTTPS program's first
 #   step fails on any code but ADMITTED, before it opens an entry: the API answers 422 CELL_EXECUTION_FAILED naming
 #   ACCEPTANCE_PRINCIPAL_REQUIRED or ACCEPTANCE_CREDENTIAL_NOT_PROVISIONED.
 # - sfx-api-host-http-request opens the entry inside its own call (ADR-0019) and runs providers/host-acceptance.py under
-#   /usr/bin/timeout --kill-after=5 175 with an environment that holds only the password and SFX_API_IMAGE_DIGEST. The
+#   /usr/bin/timeout --kill-after=5 175 with an environment that holds only the stored session and SFX_API_IMAGE_DIGEST. The
 #   script attests the deployment (hostFilesDigest over serve.py, sfx-api.config.json, start.sh, kernel-host.json and
 #   the provider authority, in that order; the bundle pin checked against the deployed manifest; the kernel root it
-#   runs in), signs in, submits T4, T1, T2, T5, T6 and T3 at once, follows each stream to its end frame, reads state
-#   and output, measures T4, then submits the three T7 holds, and signs out. The password and the bearer stay in it.
+#   runs in), confirms GET /sfx/v1/session names the acceptance principal, submits T4, T1, T2, T5, T6 and T3 at once,
+#   follows each stream to its end frame, reads state and output, measures T4, then submits the three T7 holds. It never
+#   signs in and never revokes the stored session, which stays in it.
 # - The image digest is the App Service setting SFX_API_IMAGE_DIGEST, which the deployer sets to the digest it deploys.
 #   A host without it fails the exchange step and issues no receipt.
 # - T6's settingsDigest is the SHA-256 of read-api-host-configuration's literal answer as canonical JSON (keys sorted,
@@ -48,8 +49,8 @@
 #   and answers the receipt; without the client's observations or an established deployment it answers 422 with
 #   ACCEPTANCE_CLIENT_FAILED or ACCEPTANCE_DEPLOYMENT_UNESTABLISHED. T7's arithmetic covers exactly the three holds.
 # - Run admission refuses accept-hosted-execution-profile (ADMISSION_REQUEST_PATH_ONLY, admit-api-run-live.feature): a
-#   run's input could claim any principal. The client also reads the kernel it runs under from /proc and signs in
-#   only on the request path, so T7's coordinatorExecutionPath and coordinatorWorkerSlots are measured; elsewhere it
+#   run's input could claim any principal. The client also reads the kernel it runs under from /proc and uses the
+#   session only on the request path, so T7's coordinatorExecutionPath and coordinatorWorkerSlots are measured; elsewhere it
 #   answers ACCEPTANCE_NOT_ON_REQUEST_PATH and no receipt.
 # - Known limit: a failure of the program itself (vault open, start of the child) fails the request with no receipt.
 
@@ -150,15 +151,16 @@ Feature: The host declares what it promises the capabilities it executes
     @provider:sfx-api-host-http-request-port.v1
     @provider:sfx-vault-host-read-port.v1
     @provider:sfx-vault-reference-carry-port.v1
-    Scenario: The coordinator signs in as the dedicated acceptance principal
-      Given the password is provisioned under sfx-api-acceptance-password in the host vault
-      And the trusted principal binding holds that account's existing login realm, identifier and sourceKey
-      When the admitted coordinator releases the password at the declared login credential pointer
-      Then it posts that login and password through HTTPS to the deployed /sfx/v1/session endpoint without redirects
-      And it accepts only AUTHENTICATED with a principalId equal to the declared staging-release-acceptance principalId
-      And it uses the returned bearer for the probes, event streams and readback belonging to that principal
-      And it retains that bearer only for this acceptance invocation and preserves the existing own-runs visibility
-      And neither the password nor the bearer reaches source, testimony, observations, the receipt or caller-controlled input
+    Scenario: The coordinator uses the dedicated acceptance principal's stored session
+      Given the operator stored that principal's session with store-credential under SFX_API_ACCEPTANCE_SESSION
+      When the admitted coordinator releases it at the declared credential pointer
+      Then it confirms through HTTPS that GET /sfx/v1/session names the declared staging-release-acceptance principalId
+      And it uses that session for the probes, event streams and readback belonging to that principal
+      And it never signs in, never revokes the stored session and preserves the existing own-runs visibility
+      And the session never reaches source, testimony, observations, the receipt or caller-controlled input
+      # The owner, 2026-11-04: "The standard process was used. Stick to it." Store run 876426ad answered
+      # CREDENTIAL_STORED for SFX_API_ACCEPTANCE_SESSION at 19:15:04 UTC. Profile version 3 replaced version 2's password
+      # sign-in, which no owner approval covered.
 
     @status:installed
     @capability:accept-hosted-execution-profile
@@ -172,10 +174,10 @@ Feature: The host declares what it promises the capabilities it executes
 
       Examples:
         | defect                                                  |
-        | the host vault has no sfx-api-acceptance-password entry   |
-        | the dedicated login is rejected or throttled             |
-        | the login response names a different principalId         |
-        | the acceptance session expires or is revoked             |
+        | the host vault has no SFX_API_ACCEPTANCE_SESSION entry    |
+        | the stored session is rejected: expired or revoked       |
+        | the stored session names a different principalId         |
+        | the acceptance session expires or is revoked during the run |
 
     @status:installed
     @capability:accept-hosted-execution-profile
@@ -342,8 +344,8 @@ Feature: The host declares what it promises the capabilities it executes
     Scenario: Each step honors its provider binding, proved by the run
       Given these steps depend on these provider bindings:
         | calls                                     | provider capability the step needs                                   | result it must produce here                          | run evidence that proves it                    |
-        | acceptance password release              | sfx-vault-host-read-port.v1 and sfx-vault-reference-carry-port.v1      | the declared vault credential at the login pointer    | credential-release disposition without its value |
-        | dedicated acceptance sign-in             | sfx-api-host-http-request-port.v1                                    | authenticated session for the bound principal          | sign-in disposition and principalId without bearer |
+        | acceptance session release               | sfx-vault-host-read-port.v1 and sfx-vault-reference-carry-port.v1      | the stored session at the declared credential pointer | credential-release disposition without its value |
+        | acceptance session check                 | sfx-api-host-http-request-port.v1                                    | the stored session names the bound principal           | session-check disposition and principalId without bearer |
         | probe admission and output/state HTTP reads | sfx-api-host-http-request-port.v1, provider sfx-api-host-http-request | deployed HTTPS response or explicit transport failure | HTTP provider testimony in the coordinator's request |
         | the runs every check cites                | read-run-state                                                       | run state and available evidence; terminal intervals for passing checks | the nested deliveries' testimony |
       When accept-hosted-execution-profile runs
