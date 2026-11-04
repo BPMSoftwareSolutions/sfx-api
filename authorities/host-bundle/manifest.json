@@ -5,13 +5,13 @@
       "capabilityId": "accept-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/accept-hosted-execution-profile.json",
-      "sha256Base64": "QNggFeb4VMj2MXG+X5CwEXk2jx0PnECiKuHTdZjCdLc="
+      "sha256Base64": "uul2rABIAM9nLrK43q5pUk95kUz0W8r17skwAr8vH0Q="
     },
     {
       "capabilityId": "admit-api-run-live",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/admit-api-run-live.json",
-      "sha256Base64": "guFOHubqkg5k7FklC4sSg1M2r0o7lfk0Oe6Kcq84KMY="
+      "sha256Base64": "f1ZMeqN7OuvqeEIAFEdgOkfs6BJAmErh9xa0GLNGVH4="
     },
     {
       "capabilityId": "answer-api-response",

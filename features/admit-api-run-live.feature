@@ -38,6 +38,16 @@ Feature: A run is admitted with its whole plan declared
       # (authored 2026-11-02) declares all of them in sfx-api-host-directive.v1, the run's own execution published and no
       # other, and the 202 as respond.raw (host-facade.feature).
 
+    @status:installed
+    @capability:admit-api-run-live
+    Scenario: A capability that runs only on the request path is not admitted as a run
+      When an admission names accept-hosted-execution-profile
+      Then it is refused ADMISSION_REQUEST_PATH_ONLY before any run is registered
+      # authorities/host-bundle/capabilities/admit-api-run-live.json, register statement. The coordinator admits its caller
+      # by the session the acceptance route resolves (hosted-execution-profile.feature). A run's input is the caller's own
+      # document, so a run could claim any principal. Added 2026-11-04 with slice 3; a scratch replay on WSL against
+      # kernel 244e0129 answered ADMISSION_REQUEST_PATH_ONLY (a diagnostic, not evidence).
+
   Rule: A run is answered at once and executed in admission order
 
     @status:not-built

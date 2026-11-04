@@ -64,6 +64,21 @@ def b64sha256(data):
     return base64.b64encode(hashlib.sha256(data).digest()).decode()
 
 
+def execution_path():
+    """The path of the kernel this client runs under, from the kernel's --timeout among the configured kinds: request,
+    worker, or what else it is. The client's parent is /usr/bin/timeout; the kernel is the nearest KernelEntry above."""
+    config = json.loads(open("/opt/sfx/sfx-api.config.json", "rb").read())
+    bound = lambda kind: config[kind]["command"][config[kind]["command"].index("--timeout") + 1]
+    paths = {bound("kernel"): "request", bound("workers"): "worker"}
+    pid = os.getppid()
+    for _ in range(4):
+        command = [part.decode("utf-8", "replace") for part in open("/proc/%d/cmdline" % pid, "rb").read().split(b"\0")]
+        if command and command[0].endswith("KernelEntry") and "--timeout" in command:
+            return paths.get(command[command.index("--timeout") + 1], "other")
+        pid = int(open("/proc/%d/stat" % pid).read().rsplit(")", 1)[1].split()[1])
+    return "unknown"
+
+
 def deployment():
     """The deployment this process runs on, read here, or why it cannot be established."""
     try:
@@ -319,12 +334,21 @@ def observe_concurrency(client, plan):
 
 def main():
     plan = json.loads(sys.argv[1])
-    answer = {"contractId": "hosted-acceptance-observations.v1", "executionId": str(uuid.uuid4()), "executedAt": now(),
-              "coordinator": {"executionPath": "request", "workerSlots": 0}}
+    answer = {"contractId": "hosted-acceptance-observations.v1", "executionId": str(uuid.uuid4()), "executedAt": now()}
     answer["deployment"] = deployment()
     password = os.environ.pop("SFX_ACCEPTANCE_PASSWORD", "")
     if not answer["deployment"]["established"]:
         # No receipt can name an unestablished deployment, so nothing is signed in or submitted.
+        return answer
+    try:
+        path = execution_path()
+    except (OSError, ValueError, KeyError, IndexError) as failure:
+        path = "unknown: " + type(failure).__name__
+    answer["coordinator"] = {"executionPath": path, "workerSlots": 0 if path == "request" else 1 if path == "worker" else -1}
+    if path != "request":
+        # Only the request path's acceptance route admits the caller by its session: anywhere else, nothing is signed in.
+        answer["deployment"] = {"established": False, "code": "ACCEPTANCE_NOT_ON_REQUEST_PATH",
+                                "message": "the coordinator runs on the %s path, not the request path" % path}
         return answer
     client = Client(plan["endpoint"], STARTED + plan["budgetMs"] / 1000)
     try:

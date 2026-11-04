@@ -398,8 +398,8 @@
                   "op": "object",
                   "fields": {
                     "code": {
-                      "op": "literal",
-                      "value": "ACCEPTANCE_DEPLOYMENT_UNESTABLISHED"
+                      "op": "path",
+                      "path": "deployment.code"
                     },
                     "message": {
                       "op": "path",

@@ -47,6 +47,10 @@
 # - evaluate derives each check from the client's observations with the profile's and the receipt schema's values,
 #   and answers the receipt; without the client's observations or an established deployment it answers 422 with
 #   ACCEPTANCE_CLIENT_FAILED or ACCEPTANCE_DEPLOYMENT_UNESTABLISHED. T7's arithmetic covers exactly the three holds.
+# - Run admission refuses accept-hosted-execution-profile (ADMISSION_REQUEST_PATH_ONLY, admit-api-run-live.feature): a
+#   run's input could claim any principal. The client also reads the kernel it runs under from /proc and signs in
+#   only on the request path, so T7's coordinatorExecutionPath and coordinatorWorkerSlots are measured; elsewhere it
+#   answers ACCEPTANCE_NOT_ON_REQUEST_PATH and no receipt.
 # - Known limit: a failure of the program itself (vault open, start of the child) fails the request with no receipt.
 
 @project:sfx-api
