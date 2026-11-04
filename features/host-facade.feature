@@ -72,7 +72,7 @@ Feature: The host is a facade
     Scenario: No kernel inherits the vault settings
       Then start.sh removes the three settings from the environment before the host starts
       And every kernel runs with the environment the host then has
-      # deploy/start.sh:35; host/serve.py:134.
+      # deploy/start.sh:35; host/serve.py:148.
 
   Rule: A kernel and the host change that needs it go out together
 
@@ -98,7 +98,7 @@ Feature: The host is a facade
         kernel its command, its number of instances and its answer bound
       And every other setting the facade acts on is declared and read at start (read-api-host-configuration.feature)
       # sfx-api.config.json at 5eb18bf. The facade carries out read-api-host-configuration's answer as its settings
-      # (host/serve.py:901-916).
+      # (host/serve.py:915-930).
 
     @status:installed
     Scenario: The configuration names the kernel once
@@ -110,14 +110,14 @@ Feature: The host is a facade
     @status:installed
     Scenario: The facade holds each connection on a thread of its own
       Then the facade serves each connection on a thread of its own, as HTTP/1.1, on its configured http.host and http.port
-      # host/serve.py:715, 929; sfx-api.config.json 0.0.0.0:8787; deploy/Dockerfile exposes 8787.
+      # host/serve.py:729, 943; sfx-api.config.json 0.0.0.0:8787; deploy/Dockerfile exposes 8787.
 
     @status:installed
     @provider:serve-http-request
     Scenario: Every method reaches the ingress
       When a client sends a request with any method
       Then the facade hands it to serve-http-request, and the client receives what the ingress answers
-      # host/serve.py:717-721 answers every do_<method> with the same handler.
+      # host/serve.py:731-735 answers every do_<method> with the same handler.
 
     @status:not-built
     @finding:misaligned
@@ -126,7 +126,7 @@ Feature: The host is a facade
       When a request's body is longer than the interface's requestByteCap, or is sent chunked
       Then the facade reads no more of it
       And the client receives the ingress's declared refusal
-      # sidefx-api-interface.v1 declares limits.requestByteCap 16777216. host/serve.py:724-725 reads as many bytes as
+      # sidefx-api-interface.v1 declares limits.requestByteCap 16777216. host/serve.py:738-739 reads as many bytes as
       # Content-Length says, with no bound, and takes a chunked body's bytes as the next request on the connection.
       # 3584e29 refused a body over bodyByteCap with 413; b12a7e5 removed the bound.
 
@@ -136,7 +136,7 @@ Feature: The host is a facade
     Scenario: No byte of a request is changed before the ingress reads it
       When a request's line, headers or body hold bytes that are not UTF-8
       Then the ingress receives those bytes unchanged
-      # host/serve.py:724-725 decodes the request as UTF-8 and replaces each invalid byte with U+FFFD. The request
+      # host/serve.py:738-739 decodes the request as UTF-8 and replaces each invalid byte with U+FFFD. The request
       # envelope's inputType text cannot carry such bytes; whether the kernel takes a byte input was not checked.
 
     @status:installed
@@ -145,7 +145,7 @@ Feature: The host is a facade
       When a request arrives
       Then it waits at most the declared wait (read-api-host-configuration.feature)
       And past it the client receives the declared busy refusal, and no kernel takes the request
-      # host/serve.py:726-729 waits request.waitMilliseconds, declared as 30000, then writes request.busy. A client that
+      # host/serve.py:740-743 waits request.waitMilliseconds, declared as 30000, then writes request.busy. A client that
       # gives up still holds its kernel until the kernel answers: "A request kernel is released when its client goes".
 
   Rule: The facade writes exactly what the kernel answers
@@ -155,7 +155,7 @@ Feature: The host is a facade
     Scenario: A response that is not a directive is written unchanged
       When the ingress answers a response that is not application/vnd.sfx.host-directive+json
       Then the facade writes its bytes to the connection unchanged
-      # host/serve.py:737-743. On WSL against the estate the facade answered 404 OPERATION_NOT_DECLARED, 401
+      # host/serve.py:751-757. On WSL against the estate the facade answered 404 OPERATION_NOT_DECLARED, 401
       # CALLER_REQUIRED and 400 LOGIN_INPUT_INVALID as the kernel answered them (README.md, Verified).
 
     @status:installed
@@ -163,14 +163,14 @@ Feature: The host is a facade
     Scenario: A directive's response is written as declared
       When a directive answers execute-run or respond
       Then the response the client receives, its status line, headers and body, is the one its declaration composed
-      # host/serve.py:755-763 writes respond.raw unchanged. declarations/11 composes execute-run's and respond's response
+      # host/serve.py:769-777 writes respond.raw unchanged. declarations/11 composes execute-run's and respond's response
       # in full.
 
     @status:installed
     Scenario: A delivery that answers no response is answered with the declared failure response
       When the request kernel's delivery carries no response
       Then the client receives the failure response the host declares (read-api-host-configuration.feature)
-      # host/serve.py:737-738 writes request.failure, which declarations/25 declares in full.
+      # host/serve.py:751-752 writes request.failure, which declarations/25 declares in full.
 
     @status:installed
     Scenario Outline: A directive the facade cannot carry out is refused
@@ -184,19 +184,19 @@ Feature: The host is a facade
         | a directive whose body is not JSON, or names another contract             | :744-750                       |
         | a directive with no respond                                               | :755-757                       |
         | a run, stream or subscription the facade cannot carry out                 | :751-760                       |
-      # host/serve.py:772-776 logs the directive's contract and kind, and writes request.failure.
+      # host/serve.py:786-790 logs the directive's contract and kind, and writes request.failure.
 
     @status:installed
     Scenario: A response that says Connection close closes the connection
       When the facade has written a response that is not a stream and says Connection close
       Then it closes the connection
-      # host/serve.py:765-770.
+      # host/serve.py:779-784.
 
     @status:installed
     Scenario: A client that disconnects ends its stream quietly
       When a client disconnects from a run stream or the channel
       Then the facade stops writing to it and logs nothing
-      # host/serve.py:813, 892.
+      # host/serve.py:827, 906.
 
   Rule: The facade starts, feeds and supervises kernels, and the kernels decide what they answer
 
@@ -204,7 +204,7 @@ Feature: The host is a facade
     Scenario: Four kinds of kernel run in one install root
       Then the facade runs two request kernels, two run workers, one channel publisher and one drawing reader
       And each runs in the configured kernel install root with its own command
-      # host/serve.py:134, 901-904; sfx-api.config.json kernel.instances 2, workers 2, publisher 1 and drawings 1: six
+      # host/serve.py:148, 915-918; sfx-api.config.json kernel.instances 2, workers 2, publisher 1 and drawings 1: six
       # kernels, four of them from the start. The owner chose the set on 2026-11-03: two request kernels, so that the
       # Explorer's concurrent reads are not refused REQUEST_KERNEL_BUSY behind one; workers that start on their first run;
       # and the host's bookkeeping on the drawing reader's kernel. Before it, image 5eb18bf ran one request kernel and a
@@ -215,7 +215,7 @@ Feature: The host is a facade
       Then session rechecks, run selections, and a run's events, trace, completion and facts run on the drawing reader's
         kernel
       And no request waits behind them, and none of them waits behind a request
-      # host/serve.py:204-211 and 619-654 take that kernel from one queue, so bookkeeping and the drawing poll never
+      # host/serve.py:218-225 and 633-668 take that kernel from one queue, so bookkeeping and the drawing poll never
       # deliver to it at once. A recheck can wait behind a drawing poll, about 1 s on WSL.
 
     @status:installed
@@ -224,7 +224,7 @@ Feature: The host is a facade
       Then it starts the request kernels, the publisher and the drawing reader before it binds its port
       And a kernel that refuses the host's bundle stops the host (answer-host-declared-read.feature)
       And a run worker starts on its first run
-      # host/serve.py:901-916, then 929; a worker is started by host/serve.py:371-421. Image 5eb18bf started all six
+      # host/serve.py:915-930, then 943; a worker is started by host/serve.py:385-435. Image 5eb18bf started all six
       # kernels before listening. Its first, cold start on sfx-api-test stopped before listening: a kernel ran past its
       # 58 s bound admitting the bundle while six kernels started on one vCPU. The next start admitted all six within
       # 19 s (docs/azure-test-2026-11-03.md).
@@ -247,15 +247,31 @@ Feature: The host is a facade
     Scenario: An envelope a kernel never read is written to a new kernel, once
       When writing an envelope to a kernel fails because the kernel has ended
       Then the facade starts a new kernel and writes the envelope to it, once
-      # host/serve.py:97-106. The kernel never read the envelope, so it cannot have begun it.
+      # host/serve.py:106-122. A write fails only before the whole line reached the kernel, so it cannot have begun the
+      # envelope. A kernel that answered before it ended is not written to again (the next scenario).
 
     @status:installed
     Scenario: An envelope a kernel may have begun is never delivered again
       When a kernel answers a failure that is not a timeout, and exits
       Then the delivery fails with that failure
       And the envelope is not delivered to another kernel
-      # host/serve.py:97-126 writes an envelope again only when writing it failed. A kernel that ends after reading it
-      # answers KERNEL_EXITED.
+      # host/serve.py:106-140 writes an envelope again only when writing it failed and the kernel answered nothing. A
+      # kernel that ends after reading it answers KERNEL_EXITED. Until 2026-11-04 a kernel that refused a line before
+      # reading all of it was written to again, and its refusal was lost: the drawing reader's kernel answered
+      # INPUT_TOO_LARGE to the T4 payload runs' ends, the facade wrote each end to a new kernel, which refused it too,
+      # and the host log said KERNEL_EXITED (runs 4f13d52c and 0d55a327, docs/azure-test-2026-11-04.md).
+
+    @status:installed
+    Scenario: An envelope reaches its kernel as one line of UTF-8
+      When the facade delivers an envelope
+      Then it writes the envelope as one line of compact JSON in UTF-8, escaping no character UTF-8 can carry
+      And the end of a run whose result is the profile's maximumResultBytes stays within the kernel's 8 MiB line
+      # host/serve.py:98-103; SDA ResidentDelivery.cs:55 MaximumEnvelopeLineBytes: a longer line is refused
+      # INPUT_TOO_LARGE and the kernel exits 2. Escaped, the T4 payload, 6291456 UTF-8 bytes, filled a 12190331-byte
+      # line; unescaped it fills 6292091. A scratch replay on WSL against kernel 244e0129 (2026-11-04, a diagnostic, not
+      # evidence) saw the escaped line refused INPUT_TOO_LARGE with exit 2 and the UTF-8 line answered. T4 through the
+      # deployed run API is the check. A lone surrogate has no UTF-8 form, so an envelope holding one is written escaped,
+      # as every envelope was before.
 
     @status:installed
     Scenario Outline: A kernel that does not answer fails its delivery
@@ -267,14 +283,14 @@ Feature: The host is a facade
         | does                              | code           |
         | overruns its answer bound         | KERNEL_TIMEOUT |
         | ends its output without an answer | KERNEL_EXITED  |
-      # host/serve.py:107-126; a kernel that does not answer is stopped.
+      # host/serve.py:123-140; a kernel that does not answer is stopped.
 
     @status:installed
     Scenario: A kernel whose answer is not JSON is stopped
       When a kernel writes an answer line that is not JSON
       Then the delivery answers KERNEL_ANSWER_INVALID
       And that kernel is stopped, so no later line it writes is read as another envelope's answer
-      # host/serve.py:114-123.
+      # host/serve.py:128-137.
 
   Rule: The facade fans in what kernels write, as they wrote it
 
@@ -282,20 +298,20 @@ Feature: The host is a facade
     Scenario: A kernel's diagnostics reach the host log unchanged
       When a kernel writes a diagnostic line that is not an observation
       Then the host log carries that line
-      # host/serve.py:165-172.
+      # host/serve.py:179-186.
 
     @status:installed
     Scenario: A delivery without an outcome is logged whole
       When a delivery carries no outcome
       Then the host log names its subject and carries its whole error
-      # host/serve.py:128-130.
+      # host/serve.py:142-144.
 
     @status:installed
     Scenario: An observation belongs to the execution its delivery's declared ref names
       When a kernel writes an observation line
       Then it belongs to the execution named by its delivery's declared observation ref
       And a line that no declared ref names is not published
-      # host/serve.py:165-192 gives a line to the run expecting the ref that its stream's opening frame names. The ref is
+      # host/serve.py:179-206 gives a line to the run expecting the ref that its stream's opening frame names. The ref is
       # declared: admit-api-run-live.feature.
 
     @approved:2026-11-01
@@ -304,7 +320,7 @@ Feature: The host is a facade
       Then worker kernels run without SIDEFX_OBSERVE, so a delivery without the member is not sampled
       And the trace and completion the host invokes around a run write no observations
       # Word for word from estate-live-observation-kernel-sampling.feature; built in 1ac2d0f. At 5eb18bf the host's own
-      # deliveries carry no observation member (host/serve.py:197-201).
+      # deliveries carry no observation member (host/serve.py:211-215).
 
     @status:installed
     Scenario: The host log carries no request

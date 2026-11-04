@@ -89,28 +89,42 @@ class Kernel:
         self.expected = {}
 
     def deliver(self, envelope):
-        """One envelope to the running kernel and its answer, delivered once. A kernel that ended before reading the line
-        is started again and given it; one that ends or overruns its bound without answering answers KERNEL_EXITED or
-        KERNEL_TIMEOUT, and one that answers what is not a JSON object answers KERNEL_ANSWER_INVALID; each of these is
-        stopped. A delivery without an outcome goes to the host log whole."""
-        line = json.dumps(envelope, separators=(',', ':')).encode('utf-8') + b'\n'
+        """One envelope to the running kernel and its answer, delivered once, as one line of UTF-8: unescaped, so a
+        result of the profile's maximumResultBytes fits the kernel's 8 MiB line. A kernel that ended before holding the
+        whole line answers it with what it wrote before ending, or, having written nothing, is started again and given
+        it; one that ends or overruns its bound without answering answers KERNEL_EXITED or KERNEL_TIMEOUT, and one that
+        answers what is not a JSON object answers KERNEL_ANSWER_INVALID; each of these is stopped. A delivery without an
+        outcome goes to the host log whole."""
+        text = json.dumps(envelope, separators=(',', ':'), ensure_ascii=False)
+        try:
+            line = text.encode('utf-8') + b'\n'
+        except UnicodeEncodeError:
+            # A lone surrogate has no UTF-8 form; the line keeps it escaped.
+            line = json.dumps(envelope, separators=(',', ':')).encode('ascii') + b'\n'
+        bound = self.kind['answerTimeoutMs'] / 1000
+        answer = b''
         for _ in range(2):
             if self.process is None or self.process.poll() is not None:
                 self.start()
             try:
                 self.process.stdin.write(line)
                 self.process.stdin.flush()
-                break
             except OSError:
-                # It ended before reading the line, so nothing was delivered.
+                # It ended before the whole line reached it, so it cannot have begun the envelope. What it answered
+                # before ending answers it; a kernel that answered nothing was given nothing.
+                try:
+                    answer = self.lines.get(timeout=bound)
+                except queue.Empty:
+                    answer = None
+                if answer != b'':
+                    break
                 self.process = None
-        if self.process is None:
-            answer = b''
-        else:
+                continue
             try:
-                answer = self.lines.get(timeout=self.kind['answerTimeoutMs'] / 1000)
+                answer = self.lines.get(timeout=bound)
             except queue.Empty:
                 answer = None
+            break
         delivery = None
         if answer:
             try:
