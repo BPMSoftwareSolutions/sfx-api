@@ -47,3 +47,39 @@ T4 end both ways:
 - UTF-8: answered `run.exited`.
 
 The check is T4 through the deployed run API.
+
+## The swap to `ec953c9`
+
+- **Image:** `bpmaiengineacr.azurecr.io/sfx-api@sha256:518fd40b254536f8b138bd21c348660f117a38ad8eacaa31989b324acef1fee0`
+  (tag `sfx-api:ec953c9`), ACR build `caav`. Kernel `244e0129`, unchanged. The bundle is unchanged too: 26 documents
+  under the pin `mCfYS9h8kuu6JogMcXTrlFC6Yps0TjGaYdcBrKhJyKM=`, all checked against the manifest in the build context.
+- **Replaced:** `sfx-api:f2bf96f` (`sha256:06902c4c…`), which is the rollback.
+- **Before the swap:** the site answered 0 to 5 requests a minute from 16:00 to 16:19 UTC, and no run was being
+  followed.
+- **The swap:**
+  - 16:20:30, the image was set;
+  - 16:20:58, the image was pulled;
+  - 16:21:14, the warm-up probe succeeded after 15.4 s and the site started;
+  - 16:21:36, the previous container stopped.
+
+  Every probe of `GET /sfx/v1/nope`, one each 10 s from 16:20:46 to 16:25:46, answered 404 `OPERATION_NOT_DECLARED`.
+  There was no outage.
+
+## T4 through the deployed run API
+
+The operator's CLI ran `sfx-api capability observe probe-hosted-execution` with `{"check":"payload"}`, signed in as
+principal `565de6d4`. The run was `af211d49-1972-ac88-d0f1-def9c5e62d0a`.
+
+| | |
+| --- | --- |
+| Run | `completed`, exit code 0, from 16:26:48.620 to 16:26:57.816 UTC |
+| Client | started 16:26:45 and returned at 16:28:08, so 83 s, of which the run took 9 s |
+| Payload, as observed | 6,291,456 UTF-8 bytes, `sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc` |
+| Read back with `sfx-api run --json --events` | 19 events, no gaps; the output payload had the same byte count and digest |
+
+Both figures match the probe's declared `payloadBytes` and `payloadSha256`, and the profile's `maximumResultBytes`.
+
+This is operator diagnostic evidence through the installed client, not an acceptance receipt: the coordinator's own
+authenticated `GET /sfx/v1/runs/{runId}/output` establishes T4 (hosted-execution-profile.feature). The 74 s between
+the run's end and the client's return is not yet broken down. The coordinator's whole budget is 150 s, so that time
+counts against it.
