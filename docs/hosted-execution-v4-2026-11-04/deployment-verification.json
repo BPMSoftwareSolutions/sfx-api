@@ -1,0 +1,25 @@
+{
+  "observedAt": "2026-11-04T23:01:59.126760+00:00",
+  "application": "sfx-api-test",
+  "resourceGroup": "sidefx_group",
+  "configuration": {
+    "alwaysOn": true,
+    "image": "DOCKER|bpmaiengineacr.azurecr.io/sfx-api@sha256:0704f06b6dc8edd8e0b1c1cd4488b77640b195adc696c2399ca5e620feb04b40"
+  },
+  "settings": [
+    {
+      "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+      "value": "true"
+    },
+    {
+      "name": "SFX_API_IMAGE_DIGEST",
+      "value": "sha256:0704f06b6dc8edd8e0b1c1cd4488b77640b195adc696c2399ca5e620feb04b40"
+    }
+  ],
+  "registryImage": {
+    "createdTime": "2026-11-04T22:53:28.9728409Z",
+    "digest": "sha256:0704f06b6dc8edd8e0b1c1cd4488b77640b195adc696c2399ca5e620feb04b40",
+    "lastUpdateTime": "2026-11-04T22:53:28.9728409Z"
+  },
+  "matchesContextPins": true
+}

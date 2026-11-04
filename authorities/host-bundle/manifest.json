@@ -5,13 +5,13 @@
       "capabilityId": "accept-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/accept-hosted-execution-profile.json",
-      "sha256Base64": "XjNT3KO2Db5AnwD2uOoi1FBbpzPVUIayc/n6/CBBD0w="
+      "sha256Base64": "pyKHoDASIQkEcYBWYqTHdM4rvU2u4x4tigH4DWG89p0="
     },
     {
       "capabilityId": "admit-api-run-live",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/admit-api-run-live.json",
-      "sha256Base64": "f1ZMeqN7OuvqeEIAFEdgOkfs6BJAmErh9xa0GLNGVH4="
+      "sha256Base64": "ZBZdvt2PtEv7B9shZ24Z3lsF/Y0JtVv83oRp5i7aF04="
     },
     {
       "capabilityId": "answer-api-response",
@@ -50,16 +50,22 @@
       "sha256Base64": "NDY+FplGjRprQef71Mw6uMicxNUy8JosSUQ+VH4PLR4="
     },
     {
-      "capabilityId": "probe-hosted-execution",
+      "capabilityId": "open-api-session",
       "namespaceId": "sidefx:capabilities",
-      "document": "capabilities/probe-hosted-execution.json",
-      "sha256Base64": "ADIBIj74mqIp39tdD3tpk0pI7k5ZjwduNjdiJ+Je8NY="
+      "document": "capabilities/open-api-session.json",
+      "sha256Base64": "bIrvuNw3L+O8qGHizRYqlXl2z6GJRKhNpEVm80cQ9gs="
     },
     {
       "capabilityId": "probe-hosted-execution-language-refusal",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/probe-hosted-execution-language-refusal.json",
       "sha256Base64": "Km1Apg+rwS3wme1kprUWr8VGf4OY5pqlCDLlB+Ap5jM="
+    },
+    {
+      "capabilityId": "probe-hosted-execution",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/probe-hosted-execution.json",
+      "sha256Base64": "ADIBIj74mqIp39tdD3tpk0pI7k5ZjwduNjdiJ+Je8NY="
     },
     {
       "capabilityId": "project-api-run-events",
@@ -83,7 +89,7 @@
       "capabilityId": "read-api-host-configuration",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-api-host-configuration.json",
-      "sha256Base64": "+k+xbCGwILIMqtLNicvKTLOwQtPiAke5BXSQxADolUE="
+      "sha256Base64": "UbExtExXWj+OehR5aTzPv7lM3oWCqVhqEVo5rhQ7F5k="
     },
     {
       "capabilityId": "read-api-session",
@@ -98,10 +104,16 @@
       "sha256Base64": "uPbEzzI+S97AF/7aBMewvel42/pn+LjzzX+HMv2ikis="
     },
     {
+      "capabilityId": "read-hosted-execution-acceptance",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-hosted-execution-acceptance.json",
+      "sha256Base64": "OQAOyifg83spYC2mAHNWwEsqoLE7uSPEXWREyEMjQOg="
+    },
+    {
       "capabilityId": "read-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-hosted-execution-profile.json",
-      "sha256Base64": "MKph4ithK3NzwcYzSeOsBwMngSMTn1kuYSK32C0zhBk="
+      "sha256Base64": "/rJRBb5QE50PtTrNVbUDwFE1SZ3IovoVBxpemDp6eb0="
     },
     {
       "capabilityId": "read-run-graphs",
@@ -125,7 +137,7 @@
       "capabilityId": "resolve-http-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/resolve-http-request.json",
-      "sha256Base64": "4fDqOOnGRRx039M/WOcUWxMVmmiaE8BaZcV0i77xJpA="
+      "sha256Base64": "8t+tjqoRdIFtHZJqmtyV355WpjUmAPaXtoQn0UeFYTo="
     },
     {
       "capabilityId": "revoke-api-session",
@@ -143,13 +155,13 @@
       "capabilityId": "serve-api-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-api-request.json",
-      "sha256Base64": "rARND5Jjju+2t0IMk4hqm4jSskT5rt8jEaBxdOPiuDI="
+      "sha256Base64": "TgpyxcgHGWbrqgDmmLWPU4pkmRNexws9WhlLnp8SkHE="
     },
     {
       "capabilityId": "serve-http-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-http-request.json",
-      "sha256Base64": "0hLtjOlDaAVIIuIGZJLQgS9Ay8uoUPPAHfC5CpG9ieY="
+      "sha256Base64": "emHK+fFb9HdfnKdry+jtahGRtii6+tO7EQ9QMziSdJY="
     },
     {
       "capabilityId": "subscribe-estate-live-observation",

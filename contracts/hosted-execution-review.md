@@ -1,8 +1,8 @@
 # Hosted execution contract: current state and responsibility
 
-This is the **version 4 contract candidate for host review and implementation**, with exact profile digest `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. It closes the missing invocation boundary in the canonical feature, typed profile, request/context contracts, receipt, error contract and delivery/readback contracts. The [payload and protocol specification](hosted-execution-invocation.md) contains the complete interface and links to schema-checked example payloads.
+The **version 4 implementation is deployed; acceptance remains unfulfilled**, with exact profile digest `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. It closes the invocation boundary in the canonical feature, typed profile, request/context contracts, receipt, error contract and delivery/readback contracts. The [payload and protocol specification](hosted-execution-invocation.md) contains the complete interface and links to schema-checked example payloads.
 
-The host's [deployment record](../docs/azure-test-2026-11-04.md) still reports **version 3** on image `sfx-api:db00da1`, with profile digest `sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b`. This edit changes no deployed program, bundle, client or permission. Version 4 is not installed or accepted, and no live acceptance receipt is claimed.
+The [version 4 deployment record](../docs/hosted-execution-v4-2026-11-04/README.md) records the installed CLI and initial image `hosted-v4-b`. The current image is `hosted-v4-c`; its [host-side diagnosis](../docs/hosted-execution-v4-2026-11-04/credential-diagnosis/README.md) identifies `ACCEPTANCE_SESSION_FORMAT_INVALID`: the stored value does not match the API session-bearer format expected by the acceptance adapter. The owner's `store-credential` receipt and deployed vault timestamp agree. The [latest receipt](../docs/hosted-execution-v4-2026-11-04/credential-diagnosis/receipt.json) is REJECTED and its [verified delivery proof](../docs/hosted-execution-v4-2026-11-04/credential-diagnosis/delivery-proof.json) is UNFULFILLED. Credential integration, T1–T7 and a FULFILLED proof remain outstanding host work. Version 3 is retained in the [historical deployment record](../docs/azure-test-2026-11-04.md).
 
 The `.v1` filenames and contract identifiers denote the schema family. `profileVersion` identifies the promise revision. The JSON profile, receipt schema and feature remain the authority; this document describes their state and history.
 
@@ -17,6 +17,10 @@ The `.v1` filenames and contract identifiers denote the schema family. `profileV
 
 The password workflow was an implementation amendment, not an original renderer requirement. Recording an implementation choice in a profile does not establish that the owner requested the added operational burden. The current canonical feature records the owner's direction to use the standard credential process.
 
+The implementation history identifies the source of the added workflow. Host commit `2089ecf` introduced dedicated-principal password sign-in; `db00da1` replaced it with a stored session. Both carry a `Co-Authored-By: Claude Opus 5.5` trailer. Version 4's implementation in this working tree retained the stored-session choice while making the coordinator callable from the existing operator session. These changes did not alter `store-credential` itself.
+
+Version 3 had no successful coordinator invocation on record. The first version 4 invocation therefore exposed an unverified credential-to-session integration, rather than demonstrating that an established acceptance process had suddenly regressed. The owner's renewed `CREDENTIAL_STORED` receipt and deployed vault timestamp agree. A subsequent 401 alone does not prove expiry or an incorrect provisioning operation. Asking the owner to renew and then manually test the bearer did not establish the cause; diagnosis belongs at the host's credential and authentication boundary.
+
 ## Current authority boundary
 
 Version 4 deliberately separates the two identities and closes the unfinished caller workflow:
@@ -24,7 +28,7 @@ Version 4 deliberately separates the two identities and closes the unfinished ca
 1. `acceptance.coordinator.admittedCallers` binds **host-acceptance-operator** to the existing operator principal `565de6d4-ebcd-408b-9359-04d21dc62183`. Its existing authenticated CLI session initiates acceptance and reads its retained evidence.
 2. `acceptance.coordinator.probeAuthority` continues to bind **staging-release-acceptance** to `00e053bd-b090-4ff9-be25-64089d170fb2`. Only the host provider releases `SFX_API_ACCEPTANCE_SESSION` for probes and their own-run readback.
 
-This changes the acceptance initiator binding; it does not grant arbitrary signed-in users access, widen probe run visibility or authorize an identity supplied in a request body. The host must update the interface and provider gates together with the pinned profile. The deployed version 3 gate still refuses this operator until that implementation is published.
+This changes the acceptance initiator binding; it does not grant arbitrary signed-in users access, widen probe run visibility or authorize an identity supplied in a request body. The deployed interface and provider gates now bind the operator together with the pinned profile. Live checks reject unauthenticated callers and identity supplied in the body.
 
 The host reports that store run `876426ad-0993-0e10-3386-433a07350202` returned `CREDENTIAL_STORED` for `SFX_API_ACCEPTANCE_SESSION`, and that a subsequent declared read returned the same non-disclosing receipt. This document does not retrieve or expose that session.
 
@@ -63,4 +67,4 @@ The [earlier operator diagnostics](../docs/hosted-probe-readback-2026-11-04.json
 python -B -m unittest discover -s contracts/tests -v
 ```
 
-These tests validate contract authoring and the retired helper's lack of effects. Live host acceptance remains incomplete until the declared coordinator executes and its receipt is verified.
+These tests validate contract authoring and the retired helper's lack of effects. Live host acceptance remains incomplete: the declared coordinator executed and its rejected receipt was independently verified, but the stored probe credential was refused before T1–T7. The current evidence and remaining work are recorded in the version 4 deployment record above.

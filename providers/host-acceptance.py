@@ -29,11 +29,15 @@ from datetime import datetime, timezone
 
 STARTED = time.monotonic()
 HOST_FILES = ["/opt/sfx/host/serve.py", "/opt/sfx/sfx-api.config.json", "/opt/sfx/start.sh", None,
-              "/opt/sfx/providers/host-provider-authority.json"]
+              "/opt/sfx/providers/host-provider-authority.json", "/opt/sfx/providers/hosted/Sfx.HostedProviders.dll",
+              "/opt/sfx/providers/hosted/validate.py", "/opt/sfx/contracts/validate-hosted-execution-receipt.py"]
 MANIFEST = "/opt/sfx/authorities/host-bundle/manifest.json"
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 PIN = re.compile(r"^sha256-base64:[A-Za-z0-9+/]{43}=$")
+# The deployed ingress accepts the canonical Base64 encoding of a 32-byte
+# session bearer. This is the same boundary as sfx-api-ingress.dependency.json.
+SESSION_BEARER = re.compile(r"[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=")
 
 
 class Failure(Exception):
@@ -116,6 +120,7 @@ class Client:
         if not match:
             raise Failure("precondition", "ACCEPTANCE_ENDPOINT_INVALID", "the plan's endpoint is not an HTTPS origin")
         self.endpoint, self.host, self.deadline, self.bearer = endpoint, match.group(1), deadline, None
+        self.authority_failed = False
         self.context = ssl.create_default_context()
 
     def remaining(self):
@@ -123,6 +128,8 @@ class Client:
 
     def request(self, stage, method, path, body=None, headers=None, stream_end=False):
         """(status, headers, body bytes) of one complete exchange, or Failure at this stage."""
+        if self.authority_failed:
+            raise Failure("precondition", "ACCEPTANCE_SESSION_REJECTED", "the acceptance session is no longer admitted")
         timeout = self.remaining()
         if timeout <= 1:
             raise Failure(stage, "ACCEPTANCE_BUDGET_EXHAUSTED", "%s %s was not sent: the acceptance budget ran out" % (method, path))
@@ -139,11 +146,14 @@ class Client:
             connection.request(method, path, body=data, headers=send)
             response = connection.getresponse()
             payload = response.read()
+            if response.status in (401, 403):
+                self.authority_failed = True
+                self.bearer = None
             return response.status, {k.lower(): v for k, v in response.getheaders()}, payload
         except http.client.IncompleteRead as error:
             raise Failure(stage, "ACCEPTANCE_RESPONSE_INCOMPLETE", "%s %s: the response ended after %d bytes" % (method, path, len(error.partial)))
         except (OSError, http.client.HTTPException) as error:
-            raise Failure(stage, "ACCEPTANCE_TRANSPORT_FAILED", "%s %s: %s: %s" % (method, path, type(error).__name__, str(error)[:200]))
+            raise Failure(stage, "ACCEPTANCE_TRANSPORT_FAILED", "%s %s: %s" % (method, path, type(error).__name__))
         finally:
             connection.close()
 
@@ -160,6 +170,9 @@ def session_check(client, plan, session):
     """The stored session, confirmed by GET /sfx/v1/session to be the plan principal's, or Failure at precondition."""
     if not session:
         raise Failure("precondition", "ACCEPTANCE_CREDENTIAL_UNAVAILABLE", "the host vault released no acceptance session")
+    if not SESSION_BEARER.fullmatch(session):
+        raise Failure("precondition", "ACCEPTANCE_SESSION_FORMAT_INVALID",
+                      "the stored credential does not satisfy the API's declared session bearer format")
     client.bearer = session
     status, answer = client.json("precondition", "GET", "/sfx/v1/session")
     if status != 200 or not isinstance(answer, dict) or answer.get("status") != "READ":
@@ -188,6 +201,8 @@ def admit(client, probe, attempt):
 def follow(client, run_id):
     """Read the run's event stream to its end frame, within the acceptance budget."""
     path = "/sfx/v1/runs/%s/events/stream?after=0" % run_id
+    if client.authority_failed:
+        raise Failure("precondition", "ACCEPTANCE_SESSION_REJECTED", "the acceptance session is no longer admitted")
     if client.remaining() <= 1:
         raise Failure("collection", "ACCEPTANCE_BUDGET_EXHAUSTED", "the run was not followed: the acceptance budget ran out")
     connection = http.client.HTTPSConnection(client.host, 443, timeout=min(client.remaining(), 60), context=client.context)
@@ -195,6 +210,8 @@ def follow(client, run_id):
         connection.request("GET", path, headers={"Accept": "text/event-stream", "Connection": "close",
                                                  "Authorization": "Bearer " + client.bearer})
         response = connection.getresponse()
+        if response.status in (401, 403):
+            client.authority_failed, client.bearer = True, None
         if response.status != 200 or not (response.getheader("content-type") or "").startswith("text/event-stream"):
             response.read()
             raise Failure("collection", "ACCEPTANCE_STREAM_REFUSED", "the run's event stream answered %d" % response.status)
@@ -212,20 +229,22 @@ def follow(client, run_id):
                 if event == "end":
                     return
                 if event == "session-ended":
+                    client.authority_failed, client.bearer = True, None
                     raise Failure("collection", "ACCEPTANCE_SESSION_ENDED", "the acceptance session ended while its run was followed")
                 event = None
     except (OSError, http.client.HTTPException) as failure:
-        raise Failure("collection", "ACCEPTANCE_TRANSPORT_FAILED", "GET %s: %s: %s" % (path, type(failure).__name__, str(failure)[:200]))
+        raise Failure("collection", "ACCEPTANCE_TRANSPORT_FAILED", "GET %s: %s" % (path, type(failure).__name__))
     finally:
         connection.close()
 
 
-def state(client, run_id, capability):
+def state(client, run_id, probe):
     status, answer = client.json("collection", "GET", "/sfx/v1/runs/%s" % run_id)
     run = answer.get("run") if isinstance(answer, dict) else None
     if status != 200 or not isinstance(run, dict):
         raise Failure("collection", "ACCEPTANCE_STATE_UNAVAILABLE", "GET /sfx/v1/runs/%s answered %d with no run" % (run_id, status))
-    if run.get("runId") != run_id or (run.get("capability") or {}).get("subject") != capability:
+    capability = run.get("capability") or {}
+    if run.get("runId") != run_id or capability.get("subject") != probe["capabilityId"] or capability.get("probeInput") != probe["input"]:
         raise Failure("verification", "ACCEPTANCE_RUN_IDENTITY", "the run read back is not the admitted probe")
     return {"state": run.get("state"), "exitCode": run.get("exitCode"), "startedAt": run.get("startedAt"),
             "endedAt": run.get("endedAt"), "startedAtMs": instant_ms(run.get("startedAt")),
@@ -290,7 +309,7 @@ def observe_checks(client, plan):
         run_id = entry["runIds"][0]
         try:
             follow(client, run_id)
-            entry["state"] = state(client, run_id, probe["capabilityId"])
+            entry["state"] = state(client, run_id, probe)
             expect = probe.get("expect", "completed")
             if entry["state"]["state"] != expect:
                 raise Failure("execution", "ACCEPTANCE_PROBE_" + str(entry["state"]["state"]).upper().replace("-", "_"),
@@ -320,7 +339,7 @@ def observe_concurrency(client, plan):
             entry["runIds"].append(admit(client, holds, attempt + "-%d" % index))
         for run_id in entry["runIds"]:
             follow(client, run_id)
-            read = state(client, run_id, holds["capabilityId"])
+            read = state(client, run_id, holds)
             if read["state"] != "completed" or read["startedAtMs"] is None or read["endedAtMs"] is None:
                 raise Failure("execution", "ACCEPTANCE_HOLD_INTERVAL_INVALID", "a hold run has no completed interval")
             entry["runs"].append({"runId": run_id, "startedAt": read["startedAt"], "endedAt": read["endedAt"],
@@ -332,7 +351,7 @@ def observe_concurrency(client, plan):
 
 def main():
     plan = json.loads(sys.argv[1])
-    answer = {"contractId": "hosted-acceptance-observations.v1", "executionId": str(uuid.uuid4()), "executedAt": now()}
+    answer = {"contractId": "hosted-acceptance-observations.v1", "executionId": plan["requestExecutionId"], "executedAt": now()}
     answer["deployment"] = deployment()
     session = os.environ.pop("SFX_ACCEPTANCE_SESSION", "")
     if not answer["deployment"]["established"]:
@@ -371,9 +390,10 @@ def main():
     return answer
 
 
-try:
-    result = main()
-except Exception as unexpected:
-    result = {"contractId": "hosted-acceptance-observations.v1", "failed": True,
-              "code": "ACCEPTANCE_CLIENT_FAILED", "message": type(unexpected).__name__ + ": " + str(unexpected)[:300]}
-print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+if __name__ == "__main__":
+    try:
+        result = main()
+    except Exception as unexpected:
+        result = {"contractId": "hosted-acceptance-observations.v1", "failed": True,
+                  "code": "ACCEPTANCE_CLIENT_FAILED", "message": type(unexpected).__name__ + ": acceptance collection failed"}
+    print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))

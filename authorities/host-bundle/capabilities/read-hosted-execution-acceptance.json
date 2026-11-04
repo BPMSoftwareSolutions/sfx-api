@@ -1,0 +1,133 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-hosted-execution-acceptance",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-hosted-execution-acceptance",
+  "graphSource": {
+    "capabilityId": "read-hosted-execution-acceptance",
+    "rootScenarioId": "read-hosted-execution-acceptance",
+    "scenarios": [
+      {
+        "scenarioId": "read-hosted-execution-acceptance",
+        "input": {
+          "inputId": "read-hosted-execution-acceptance-request",
+          "contract": {
+            "contractId": "read-hosted-execution-acceptance-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-hosted-execution-acceptance-requested",
+          "executionAuthorityId": "read-hosted-execution-acceptance.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-hosted-execution-acceptance-outcome",
+          "contract": {
+            "contractId": "hosted-execution-acceptance-read-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-hosted-execution-acceptance",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-hosted-execution-acceptance.v1",
+        "owningScenarioId": "read-hosted-execution-acceptance",
+        "operations": [
+          {
+            "operationId": "read-hosted-execution-acceptance.answer",
+            "kind": "invoke-port",
+            "portId": "read-hosted-execution-acceptance-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-hosted-execution-acceptance-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-hosted-execution-acceptance",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-hosted-execution-acceptance-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-hosted-execution-acceptance-answer",
+          "platformCapabilityId": "sfx-api-host-acceptance-record-port.v1",
+          "configuration": {
+            "operatorPrincipalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+            "requestKernelTimeout": "195000",
+            "recordDirectory": "/home/sjones/.local/share/sfx/hosted-acceptance"
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-hosted-execution-acceptance-request.v1": {
+          "schemaRef": "read-hosted-execution-acceptance-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "hosted-execution-acceptance-read-result.v1": {
+          "schemaRef": "hosted-execution-acceptance-read-result.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-hosted-execution-acceptance-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-hosted-execution-acceptance",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-hosted-execution-acceptance",
+      "input_id": "read-hosted-execution-acceptance-request",
+      "event_id": "read-hosted-execution-acceptance-requested",
+      "responsibility": "Read one non-secret retained acceptance attempt for the pinned operator, without opening a probe credential.",
+      "outcome_id": "read-hosted-execution-acceptance-outcome",
+      "scenario_definition_digest": "O2kAxEVDRYpThQZjuKpQheTRiJ8lSb+Fis9W6/6lCtE="
+    }
+  ]
+}

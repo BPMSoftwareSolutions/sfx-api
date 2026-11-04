@@ -129,4 +129,10 @@ acceptance principal, and it never signs in or revokes the session. Version 2's 
   `sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b`, with probeAuthority `stored-session`.
   The text it answers hashes to that digest.
 
-Not run yet: the coordinator. Its route admits only a caller signed in as `staging-release-acceptance`.
+At that version 3 deployment, the coordinator was not run; its route admitted only a caller signed in as `staging-release-acceptance`.
+
+## Version 4 implementation and live rejected acceptance
+
+Superseded by [the version 4 deployment record](hosted-execution-v4-2026-11-04/README.md): `hosted-v4-b` initially deployed the operator-session CLI, declared dispatch, typed results and persistent readback. The real command returned a REJECTED receipt because the stored probe session received 401 before T1–T7. The receipt survived a host restart and has a verified UNFULFILLED delivery proof. The initial diagnosis recommended renewal through `store-credential`; the subsequent investigation below corrected that diagnosis.
+
+The subsequent `hosted-v4-c` deployment [diagnosed incompatible session-bearer format](hosted-execution-v4-2026-11-04/credential-diagnosis/README.md). The renewed store receipt and deployed vault metadata agree; the earlier renewal recommendation did not resolve the host's credential expectation. Authentication integration and full live acceptance remain outstanding.

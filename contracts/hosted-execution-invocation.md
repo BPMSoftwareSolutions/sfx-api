@@ -1,6 +1,6 @@
 # Hosted execution invocation: version 4 payloads and protocol
 
-**Contract candidate; not deployed.** The authoritative behavior is [hosted-execution-profile.feature](../features/hosted-execution-profile.feature). The profile pin is `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. The host owns client support, declared dispatch, authentication bindings, persistent evidence and the live completion proof. These requirements add no consumer password workflow.
+**Version 4 deployed; acceptance unfulfilled.** The authoritative behavior is [hosted-execution-profile.feature](../features/hosted-execution-profile.feature). The profile pin is `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. The [latest host diagnosis](../docs/hosted-execution-v4-2026-11-04/credential-diagnosis/README.md) identifies a mismatch between the stored credential and the API session-bearer format expected by acceptance, before T1–T7. The host owns client support, declared dispatch, authentication bindings, persistent evidence and the live completion proof. These requirements add no consumer password workflow.
 
 ## Data contracts
 
@@ -27,7 +27,7 @@ The host must publish client support for the existing surface:
 sfx-api capability observe accept-hosted-execution-profile --input '{}' --input-type json --json --auth user
 ```
 
-The current installed client does not satisfy this new dispatch contract. The host's updated client first invokes the existing `read-hosted-execution-profile` capability, verifies its returned text/digest and schema, and selects the declared request route. Discovery completes before the coordinator starts. The profile origin must equal the authenticated CLI origin. Unsupported routing is a typed failure; the client must not fall through to a worker run.
+The updated client is installed and its live invocation is recorded above. It first invokes the existing `read-hosted-execution-profile` capability, verifies its returned text/digest and schema, and selects the declared request route. Discovery completes before the coordinator starts. The profile origin must equal the authenticated CLI origin. Unsupported routing is a typed failure; the client must not fall through to a worker run.
 
 The acceptance input and POST body are exactly:
 

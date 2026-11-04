@@ -1,0 +1,10 @@
+{
+  "observedAt": "2026-11-04T23:04:51.547Z",
+  "containerStartupCompletedAt": "2026-11-04T22:58:34.6318368Z",
+  "httpStatus": 200,
+  "attemptId": "5f8d64d2-7922-4436-84fb-3f303991212a",
+  "status": "RECEIPT_AVAILABLE",
+  "receiptByteLength": 3322,
+  "receiptSha256": "sha256:3a78d42d0ce9fa2983efef3d642b9a15cce4de66e930fe125f5378490bea2ec7",
+  "exactBytesPreserved": true
+}

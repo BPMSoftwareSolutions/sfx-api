@@ -18,6 +18,9 @@ COPY --chown=sjones:sjones kernel/ /opt/sfx/kernel/${KERNEL_DIGEST}/
 # binds the declared-read port to answer-host-declared-read over the pinned bundle (answer-host-declared-read.feature).
 COPY --chown=sjones:sjones kernel-host.json /opt/sfx/kernel/${KERNEL_DIGEST}/kernel-host.json
 COPY --chown=sjones:sjones providers/host-provider-authority.json /opt/sfx/providers/host-provider-authority.json
+COPY --chown=sjones:sjones providers/hosted/ /opt/sfx/providers/hosted/
+COPY --chown=sjones:sjones contracts/ /opt/sfx/contracts/
+RUN python3 -m pip install --no-cache-dir --no-deps --target /opt/sfx/providers/schema-python -r /opt/sfx/providers/hosted/requirements.txt
 COPY --chown=sjones:sjones authorities/host-bundle/ /opt/sfx/authorities/host-bundle/
 COPY --chown=sjones:sjones host/ /opt/sfx/host/
 COPY --chown=sjones:sjones sfx-api.config.json start.sh /opt/sfx/

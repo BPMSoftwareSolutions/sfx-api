@@ -1,0 +1,145 @@
+{
+  "contractId": "hosted-execution-delivery-proof.v1",
+  "status": "UNFULFILLED",
+  "attemptId": "3043cd09-ffe9-454e-a4e5-f0dfd58c1010",
+  "observedAt": "2026-11-04T23:15:58.742Z",
+  "client": {
+    "product": "sfx-api",
+    "version": "hosted-v4-5eee216dabdb3738",
+    "artifactDigest": "sha256:5eee216dabdb3738c2637aa23b6dd1f52377d36ed667c0f605670e24888b83d8",
+    "surface": "capability observe",
+    "capabilityId": "accept-hosted-execution-profile",
+    "input": {},
+    "authentication": "existing-operator-session"
+  },
+  "exchange": {
+    "method": "POST",
+    "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance",
+    "httpStatus": 200,
+    "redirected": false,
+    "dispatch": "declared-request-route",
+    "coordinatorWorkerSlots": 0,
+    "attemptId": "3043cd09-ffe9-454e-a4e5-f0dfd58c1010"
+  },
+  "receiptArtifact": {
+    "reference": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance/3043cd09-ffe9-454e-a4e5-f0dfd58c1010",
+    "sha256": "sha256:660619402a2bc4d0e552767663c7d0a07b5d52f9054158db2f2415d001306571",
+    "byteLength": 3387,
+    "readbackVerified": true
+  },
+  "receipt": {
+    "contractId": "hosted-execution-acceptance.v1",
+    "profileId": "sfx-api-hosted-csharp",
+    "profileVersion": 4,
+    "profileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+    "deployment": {
+      "host": "sfx-api-test",
+      "imageDigest": "sha256:5c42825278f3f9ba781c55e0507fe2ea50a9eba853c7ad4e0d11083c75d33285",
+      "bundleDigest": "sha256-base64:l2PD8V1HQtjJ6wOef8Kit8WbZJhUvFwlkkcOxkXwVfY=",
+      "kernelArtifactDigest": "sha256:244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+      "hostFilesDigest": "sha256:abb489593f7b10767293d6b522bef43a06b75771441c8fee84444e1e1a857091"
+    },
+    "executedAt": "2026-11-04T23:15:56.805Z",
+    "evaluator": {
+      "capabilityId": "accept-hosted-execution-profile",
+      "executionPath": "request",
+      "executionId": "a9cd084f-4610-43f5-856d-16993bc98fe3"
+    },
+    "checks": {
+      "T1": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "dbc9f786-4e63-4859-9056-fb9cecf664be",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T2": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "2cc358b3-f247-497c-9a26-12792c15a437",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T3": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "8e9aff3b-2713-4cdb-91e1-96ed6e8e5265",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T4": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "63fd2100-3e47-4b92-9564-2581f99df735",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T5": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "114715e1-365e-451c-82e9-d607399f3050",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T6": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "e4a0cf49-440f-43b8-86a3-0c11baa24720",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      },
+      "T7": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "90c741bd-176e-4c2c-a663-e3a9291e1ae9",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_FORMAT_INVALID",
+          "message": "the stored credential does not satisfy the API's declared session bearer format"
+        }
+      }
+    },
+    "status": "REJECTED",
+    "invocation": {
+      "attemptId": "3043cd09-ffe9-454e-a4e5-f0dfd58c1010",
+      "requestExecutionId": "a9cd084f-4610-43f5-856d-16993bc98fe3",
+      "executionPath": "request",
+      "method": "POST",
+      "path": "/sfx/v1/hosted-execution/acceptance",
+      "initiator": {
+        "kind": "user",
+        "principalRef": "host-acceptance-operator",
+        "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+        "match": "resolved-principal-id"
+      },
+      "probePrincipalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+      "expectedProfileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+      "authoritySource": "authenticated-caller-and-pinned-host-bindings"
+    }
+  }
+}

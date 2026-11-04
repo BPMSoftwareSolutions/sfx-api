@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <AssemblyName>Sfx.HostedProviders</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HostedAcceptance.cs" />
+    <Reference Include="ScenarioKernel.Adapters"><HintPath>$(KernelRoot)/ScenarioKernel.Adapters.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ScenarioKernel.Contracts"><HintPath>$(KernelRoot)/ScenarioKernel.Contracts.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ScenarioKernel.Execution"><HintPath>$(KernelRoot)/ScenarioKernel.Execution.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

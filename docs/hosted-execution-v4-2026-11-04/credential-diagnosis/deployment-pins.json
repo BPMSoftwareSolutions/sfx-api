@@ -1,0 +1,9 @@
+{
+  "hostFilesDigest": "sha256:abb489593f7b10767293d6b522bef43a06b75771441c8fee84444e1e1a857091",
+  "kernelArtifactDigest": "sha256:244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+  "bundleDigest": "sha256-base64:l2PD8V1HQtjJ6wOef8Kit8WbZJhUvFwlkkcOxkXwVfY=",
+  "profileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+  "imageDigest": "sha256:5c42825278f3f9ba781c55e0507fe2ea50a9eba853c7ad4e0d11083c75d33285",
+  "tag": "hosted-v4-c",
+  "buildRunId": "cab2"
+}

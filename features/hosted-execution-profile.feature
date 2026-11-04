@@ -1,5 +1,10 @@
-# Canonical feature of the hosted execution profile, revision 4 candidate, 2026-11-04.
-# Version 3 remains deployed. Revision 4 changes and its invocation proof are not implemented or proven by this edit.
+# Canonical feature of the hosted execution profile, revision 4, 2026-11-04.
+# Version 4 is deployed. Live attempt 5f8d64d2-7922-4436-84fb-3f303991212a was REJECTED:
+# the stored probe session returned 401 before any T1-T7 run. Fulfillment remains outstanding.
+# Evidence: docs/hosted-execution-v4-2026-11-04/README.md and its receipt/readback/delivery-proof JSON.
+# Latest hosted-v4-c diagnosis: attempt 3043cd09-ffe9-454e-a4e5-f0dfd58c1010 reports
+# ACCEPTANCE_SESSION_FORMAT_INVALID; see the credential-diagnosis/ evidence in that report.
+# Installed tags establish implementation, not successful live T1-T7 acceptance.
 # Tags, terms and the owner's direction are in features/README.md. As in the provider features of 2026-11-03,
 # @capability and @provider are on each scenario.
 # Sources:
@@ -25,6 +30,20 @@
 #   sfx-api-acceptance-python-only-port.v1
 #                                        provider sfx-api-acceptance-python-only: declared only for python, so a csharp
 #                                        worker must refuse it
+#
+# Current revision 4 implementation:
+# - host/serve.py assigns requestExecutionId at actual kernel admission; declared ingress carries it with the
+#   authenticated caller into the pinned provider. Mixed-case duplicate correlation/profile headers are refused.
+# - providers/hosted/HostedAcceptance.cs implements the declared HTTP and record ports. Configuration owns the
+#   operator/probe bindings, plan and receipt expression. Persistent /home stores RUNNING and exact terminal bytes.
+# - The exclusive OS-held lock is shared across request kernels; process death releases ownership. An abandoned
+#   RUNNING record becomes UNKNOWN. Readback opens no credential and submits no probe.
+# - Full published receipt validation precedes terminal persistence. The existing sfx-platform CLI discovers the
+#   profile, dispatches once, retains evidence and independently checks readback before constructing a proof.
+# - hostFilesDigest extends the historical five-file order with Sfx.HostedProviders.dll, hosted/validate.py and
+#   contracts/validate-hosted-execution-receipt.py. Image and bundle pins are in the deployment record.
+# - Live negative cases and a concurrent ACCEPTANCE_BUSY response are recorded. The rejected receipt survived
+#   a confirmed container restart. Successful probes, T7 scheduling and a FULFILLED proof remain unverified.
 #
 # Historical slice 3 implementation (profile version 3); revision 4 scenarios below supersede its caller gate:
 # - accept-hosted-execution-profile runs authorize > vault (sfx-vault-host-read-port.v1) > reference > open
@@ -58,7 +77,7 @@
 # - Known limit: a failure of the program itself (vault open, start of the child) fails the request with no receipt.
 
 @project:sfx-api
-@status:proposed-for-review
+@status:installed
 Feature: The host declares what it promises the capabilities it executes
   As a consumer that declares capabilities and their providers
   I want the host's execution promises as a versioned contract I can read, check by digest and require
@@ -138,7 +157,7 @@ Feature: The host declares what it promises the capabilities it executes
       # The host's existing authentication applies. Credentials are never copied into the acceptance receipt.
       # The coordinator's request executionId is distinct from the admitted worker runIds it cites.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     Scenario: The existing operator starts acceptance and the stored session owns only its probes
@@ -154,7 +173,7 @@ Feature: The host declares what it promises the capabilities it executes
 
   Rule: The host delivers and proves the complete supported invocation, not just a coordinator that assumes one
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:read-hosted-execution-profile
     @provider:serve-http-request
@@ -184,7 +203,7 @@ Feature: The host declares what it promises the capabilities it executes
       # The host owns the client publication, declared dispatch mapping, interface and provider implementation.
       # Discovery uses the existing installed reader; a URI, principal, credential or dispatch target in input is refused.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:read-hosted-execution-profile
     @provider:serve-http-request
@@ -208,7 +227,7 @@ Feature: The host declares what it promises the capabilities it executes
       # An older client that tries /runs is refused by ADMISSION_REQUEST_PATH_ONLY; it is not a supported deliverable.
       # The client update and a fresh live invocation, not merely that refusal, close CLIENT_DISPATCH_UNSUPPORTED.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:serve-http-request
     @provider:sfx-api-host-http-request-port.v1
@@ -221,7 +240,7 @@ Feature: The host declares what it promises the capabilities it executes
       And T7 is run in a measurement window with both workers available as its existing precondition requires
       # Attempt identifiers correlate evidence; they do not promise deduplication or exactly-once execution.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-vault-host-read-port.v1
     @provider:sfx-vault-reference-carry-port.v1
@@ -237,7 +256,7 @@ Feature: The host declares what it promises the capabilities it executes
       And failure before a receipt can be constructed returns hosted-execution-invocation-error.v1 with no fabricated receipt
       And the provider never signs in, revokes the stored session or discloses its value
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:serve-http-request
     Scenario: The caller receives a typed terminal result and an uncertain response never authorizes completion
@@ -253,7 +272,7 @@ Feature: The host declares what it promises the capabilities it executes
       And the coordinator still stops measuring by 150 s within the unchanged 195000 ms delivery and 198000 ms answer bounds
       # No failure branch revokes the stored session. A new attempt is not evidence that the previous one was cancelled.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:serve-http-request
     @provider:read-run-state
@@ -275,7 +294,7 @@ Feature: The host declares what it promises the capabilities it executes
       # Schemas enforce shape and pass thresholds. The host verifier resolves artifacts and actual run/deployment identity.
       # The consumer independently checks the supplied evidence; it is not required to implement the invocation client.
 
-    @status:not-built
+    @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-acceptance-record-port.v1
     Scenario: An admitted attempt and its terminal receipt survive a lost response and a host restart
@@ -289,7 +308,7 @@ Feature: The host declares what it promises the capabilities it executes
       And no restart replays an uncertain attempt or turns it into successful acceptance
       And request diagnostics, credentials, passwords and session bearers are excluded from retained records
 
-    @status:not-built
+    @status:installed
     @capability:read-hosted-execution-acceptance
     @provider:serve-http-request
     @provider:sfx-api-host-acceptance-record-port.v1
@@ -337,6 +356,7 @@ Feature: The host declares what it promises the capabilities it executes
       Examples:
         | defect                                                  |
         | the host vault has no SFX_API_ACCEPTANCE_SESSION entry    |
+        | the stored value is not in the API session bearer format  |
         | the stored session is rejected: expired or revoked       |
         | the stored session names a different principalId         |
         | the acceptance session expires or is revoked during the run |

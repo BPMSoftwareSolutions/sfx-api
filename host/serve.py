@@ -742,7 +742,13 @@ class Facade(http.server.BaseHTTPRequestHandler):
         except queue.Empty:
             return self.write(settings['request']['busy'])
         envelope = copy.deepcopy(settings['request']['envelope'])
-        envelope['request']['input'] = raw
+        # The host owns request admission identity. It is never read from a
+        # client header/body, and travels with this one kernel delivery.
+        request_id = str(uuid.uuid4())
+        envelope['request']['input'] = {
+            'contractId': 'serve-http-request-request.v1', 'raw': raw,
+            'requestExecutionId': request_id, 'executionPath': 'request',
+        }
         try:
             delivery = kernel.deliver(envelope)
         finally:

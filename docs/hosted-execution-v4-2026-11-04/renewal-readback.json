@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-11-04T23:05:01.134Z",
+  "runId": "110ccb93-b9a2-ef24-fbe9-b7e74b40b528",
+  "results": [
+    {
+      "path": "/sfx/v1/runs/110ccb93-b9a2-ef24-fbe9-b7e74b40b528",
+      "httpStatus": 200,
+      "receipt": null
+    },
+    {
+      "path": "/sfx/v1/runs/110ccb93-b9a2-ef24-fbe9-b7e74b40b528/output",
+      "httpStatus": 200,
+      "receipt": {
+        "disposition": "CREDENTIAL_STORED",
+        "referenceName": "SFX_API_ACCEPTANCE_SESSION",
+        "entryId": "vault-entry:SFX_API_ACCEPTANCE_SESSION",
+        "storedAt": "2026-11-04T23:01:02.4658373Z",
+        "formatVersion": "sda-secret-vault.v1",
+        "nonDisclosureVerified": true
+      }
+    }
+  ]
+}

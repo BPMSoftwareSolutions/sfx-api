@@ -1,0 +1,145 @@
+{
+  "contractId": "hosted-execution-delivery-proof.v1",
+  "status": "UNFULFILLED",
+  "attemptId": "5f8d64d2-7922-4436-84fb-3f303991212a",
+  "observedAt": "2026-11-04T22:55:20.811Z",
+  "client": {
+    "product": "sfx-api",
+    "version": "hosted-v4-088f4ce3585c8fbe",
+    "artifactDigest": "sha256:088f4ce3585c8fbe7911189008dbb395861ab7549b34f7d2ff1683f7bfd9b171",
+    "surface": "capability observe",
+    "capabilityId": "accept-hosted-execution-profile",
+    "input": {},
+    "authentication": "existing-operator-session"
+  },
+  "exchange": {
+    "method": "POST",
+    "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance",
+    "httpStatus": 200,
+    "redirected": false,
+    "dispatch": "declared-request-route",
+    "coordinatorWorkerSlots": 0,
+    "attemptId": "5f8d64d2-7922-4436-84fb-3f303991212a"
+  },
+  "receiptArtifact": {
+    "reference": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance/5f8d64d2-7922-4436-84fb-3f303991212a",
+    "sha256": "sha256:3a78d42d0ce9fa2983efef3d642b9a15cce4de66e930fe125f5378490bea2ec7",
+    "byteLength": 3322,
+    "readbackVerified": true
+  },
+  "receipt": {
+    "contractId": "hosted-execution-acceptance.v1",
+    "profileId": "sfx-api-hosted-csharp",
+    "profileVersion": 4,
+    "profileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+    "deployment": {
+      "host": "sfx-api-test",
+      "imageDigest": "sha256:0704f06b6dc8edd8e0b1c1cd4488b77640b195adc696c2399ca5e620feb04b40",
+      "bundleDigest": "sha256-base64:zC7Q9MeFV1P0cTC7CL65d8D95Z+CDJl2/MGoQsUYC3I=",
+      "kernelArtifactDigest": "sha256:244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+      "hostFilesDigest": "sha256:6412e84fd7cf29cd08a8f6c2b22a510b1aa94dd2b104bafc5c1dad08d1642c1b"
+    },
+    "executedAt": "2026-11-04T22:55:19.303Z",
+    "evaluator": {
+      "capabilityId": "accept-hosted-execution-profile",
+      "executionPath": "request",
+      "executionId": "9d8775ef-6a86-47ea-bb49-2a20e8a3f30f"
+    },
+    "checks": {
+      "T1": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "2c1ffb88-a353-4280-9e06-fc896de2dc5f",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T2": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "a639799e-aaab-4749-9dce-2a201f69514a",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T3": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "3c3cc3eb-2b42-4fe7-ac98-ed46554e8b8d",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T4": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "41749cae-7759-4b29-a82d-a7e626ef419f",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T5": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "319fd049-9b37-46ec-acc2-88ad33be2cb9",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T6": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "cdeece6c-9728-4964-9b9e-f4e6ebd0fc35",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      },
+      "T7": {
+        "kind": "EXECUTION_ERROR",
+        "status": "FAILED",
+        "attemptId": "bf44e6cb-5e01-44ad-b3de-b537fe9b6b91",
+        "runIds": [],
+        "error": {
+          "stage": "precondition",
+          "code": "ACCEPTANCE_SESSION_REJECTED",
+          "message": "the stored acceptance session was not accepted: GET /sfx/v1/session answered 401"
+        }
+      }
+    },
+    "status": "REJECTED",
+    "invocation": {
+      "attemptId": "5f8d64d2-7922-4436-84fb-3f303991212a",
+      "requestExecutionId": "9d8775ef-6a86-47ea-bb49-2a20e8a3f30f",
+      "executionPath": "request",
+      "method": "POST",
+      "path": "/sfx/v1/hosted-execution/acceptance",
+      "initiator": {
+        "kind": "user",
+        "principalRef": "host-acceptance-operator",
+        "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+        "match": "resolved-principal-id"
+      },
+      "probePrincipalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+      "expectedProfileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+      "authoritySource": "authenticated-caller-and-pinned-host-bindings"
+    }
+  }
+}

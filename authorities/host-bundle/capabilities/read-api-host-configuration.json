@@ -100,7 +100,7 @@
                       "object": "capability",
                       "verb": "invoke",
                       "subject": "serve-http-request",
-                      "inputType": "text"
+                      "inputType": "json"
                     }
                   },
                   "waitMilliseconds": 30000,
@@ -204,7 +204,7 @@
       "event_id": "read-api-host-configuration-requested",
       "responsibility": "the declared settings are read",
       "outcome_id": "read-api-host-configuration-outcome",
-      "scenario_definition_digest": "EOZDnfr8fMsDVfwAmTzv+zJHcSEOOHKTEOPFF7YamYQ="
+      "scenario_definition_digest": "KkIJ8XIfyJdzq2OI1TiOas62QIl2qwTx2DtcGnkIViA="
     }
   ]
 }

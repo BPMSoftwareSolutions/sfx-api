@@ -90,9 +90,8 @@
           "platformCapabilityId": "sda-json-cli.v1",
           "configuration": {
             "input": {
-              "type": "text",
-              "contract": "serve-http-request-request.v1",
-              "path": "raw"
+              "type": "json",
+              "contract": "serve-http-request-request.v1"
             },
             "display": {
               "select": "outcome",
@@ -753,6 +752,14 @@
                                 "op": "literal",
                                 "value": {}
                               }
+                            },
+                            "requestExecutionId": {
+                              "op": "path",
+                              "path": "requestExecutionId"
+                            },
+                            "executionPath": {
+                              "op": "path",
+                              "path": "executionPath"
                             }
                           }
                         },
@@ -1041,7 +1048,7 @@
           "configuration": {
             "expression": {
               "op": "path",
-              "path": "raw"
+              "path": ""
             }
           }
         }
@@ -1059,7 +1066,9 @@
             "additionalProperties": false,
             "required": [
               "contractId",
-              "raw"
+              "raw",
+              "requestExecutionId",
+              "executionPath"
             ],
             "properties": {
               "contractId": {
@@ -1067,6 +1076,13 @@
               },
               "raw": {
                 "type": "string"
+              },
+              "requestExecutionId": {
+                "type": "string",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "executionPath": {
+                "const": "request"
               }
             }
           }
@@ -1082,9 +1098,8 @@
   },
   "cliConfiguration": {
     "input": {
-      "type": "text",
-      "contract": "serve-http-request-request.v1",
-      "path": "raw"
+      "type": "json",
+      "contract": "serve-http-request-request.v1"
     },
     "display": {
       "select": "outcome",
@@ -1101,7 +1116,7 @@
       "event_id": "serve-http-request-requested",
       "responsibility": "the kernel resolves the request, runs the frontdoor and composes the response",
       "outcome_id": "serve-http-request-outcome",
-      "scenario_definition_digest": "tRW8zgO09tnrfKMC6TnKEePmhBm7L7NC6HvqxmPelbI="
+      "scenario_definition_digest": "Tz+m05vij8vlHwF2l/wcCpfKUSzM41VM4hDzpswpA30="
     }
   ]
 }

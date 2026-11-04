@@ -244,6 +244,57 @@
                       "op": "path",
                       "path": "namespace",
                       "from": "admitted"
+                    },
+                    "probeInput": {
+                      "op": "if",
+                      "when": {
+                        "op": "includes",
+                        "in": {
+                          "op": "literal",
+                          "value": [
+                            "probe-hosted-execution",
+                            "probe-hosted-execution-language-refusal"
+                          ]
+                        },
+                        "value": {
+                          "op": "path",
+                          "path": "admission.subject",
+                          "from": "admitted"
+                        }
+                      },
+                      "then": {
+                        "op": "if",
+                        "when": {
+                          "op": "equals",
+                          "left": {
+                            "op": "path",
+                            "path": "admission.subject",
+                            "from": "admitted"
+                          },
+                          "right": {
+                            "op": "literal",
+                            "value": "probe-hosted-execution"
+                          }
+                        },
+                        "then": {
+                          "op": "object",
+                          "fields": {
+                            "check": {
+                              "op": "path",
+                              "path": "admission.input.check",
+                              "from": "admitted"
+                            }
+                          }
+                        },
+                        "else": {
+                          "op": "literal",
+                          "value": {}
+                        }
+                      },
+                      "else": {
+                        "op": "literal",
+                        "value": null
+                      }
                     }
                   }
                 }
@@ -638,7 +689,7 @@
       "event_id": "admit-api-run-live-requested",
       "responsibility": "the run store registers the run",
       "outcome_id": "admit-api-run-live-outcome",
-      "scenario_definition_digest": "8VA1EdGZ0oMGyc4QwmJWPMxxSU4SAe2fF04373FerEE="
+      "scenario_definition_digest": "+Pt0lE0N4OGm6LpB0Gkc9B71RQ3cpY+JYPqz7UMp2NY="
     }
   ]
 }

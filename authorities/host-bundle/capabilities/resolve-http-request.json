@@ -96,7 +96,7 @@
           "configuration": {
             "expression": {
               "op": "path",
-              "path": "raw"
+              "path": ""
             }
           }
         },
@@ -169,7 +169,7 @@
       "event_id": "resolve-http-request-requested",
       "responsibility": "the ingress provider reads it",
       "outcome_id": "resolve-http-request-outcome",
-      "scenario_definition_digest": "xfN7RoxHLjDtBycEEfuJQRlKtz0RSE+1quMY/RnMOdM="
+      "scenario_definition_digest": "AWQZeqf1wvHWC9dGj/51zdpkEndcQWLYFScxvgqqP54="
     }
   ]
 }

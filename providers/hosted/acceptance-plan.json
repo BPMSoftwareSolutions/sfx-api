@@ -1,0 +1,58 @@
+{
+  "endpoint": "https://sfx-api-test.azurewebsites.net",
+  "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+  "budgetMs": 150000,
+  "probes": [
+    {
+      "checkId": "T4",
+      "capabilityId": "probe-hosted-execution",
+      "input": {
+        "check": "payload"
+      },
+      "observe": "payload"
+    },
+    {
+      "checkId": "T1",
+      "capabilityId": "probe-hosted-execution",
+      "input": {
+        "check": "runtime"
+      }
+    },
+    {
+      "checkId": "T2",
+      "capabilityId": "probe-hosted-execution",
+      "input": {
+        "check": "forced-termination"
+      }
+    },
+    {
+      "checkId": "T5",
+      "capabilityId": "probe-hosted-execution",
+      "input": {
+        "check": "graceful-termination"
+      }
+    },
+    {
+      "checkId": "T6",
+      "capabilityId": "probe-hosted-execution",
+      "input": {
+        "check": "configuration"
+      }
+    },
+    {
+      "checkId": "T3",
+      "capabilityId": "probe-hosted-execution-language-refusal",
+      "input": {},
+      "expect": "failed",
+      "observe": "refusal"
+    }
+  ],
+  "concurrency": {
+    "checkId": "T7",
+    "capabilityId": "probe-hosted-execution",
+    "input": {
+      "check": "hold"
+    },
+    "count": 3
+  }
+}

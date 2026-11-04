@@ -1,0 +1,9 @@
+{
+  "installedAt": "2026-11-04T23:01:36.062Z",
+  "installedVersion": "46d8ee8418ad533d672b1bff58a83db9f5423ae9f4a3a0a6864ef2876558633a",
+  "clientVersion": "hosted-v4-5eee216dabdb3738",
+  "clientArtifactDigest": "sha256:5eee216dabdb3738c2637aa23b6dd1f52377d36ed667c0f605670e24888b83d8",
+  "sourceRepository": "sfx-platform",
+  "sourceDirectory": "clients/api",
+  "existingOperatorSessionPreserved": true
+}

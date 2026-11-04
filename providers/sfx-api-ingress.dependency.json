@@ -16,7 +16,17 @@
         {
           "name": "raw",
           "source": "input",
-          "path": ""
+          "path": "raw"
+        },
+        {
+          "name": "requestExecutionId",
+          "source": "input",
+          "path": "requestExecutionId"
+        },
+        {
+          "name": "executionPath",
+          "source": "input",
+          "path": "executionPath"
         }
       ],
       "result": {
@@ -706,6 +716,124 @@
             ]
           },
           {
+            "bind": "hostedAttemptPattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "(?im)\\A(?![\\s\\S]*^x-sfx-acceptance-attempt-id:[\\s\\S]*^x-sfx-acceptance-attempt-id:)[\\s\\S]*?^x-sfx-acceptance-attempt-id:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+              }
+            ]
+          },
+          {
+            "bind": "hostedAttemptMatch",
+            "invocation": "hostedAttemptPattern.Match",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "head"
+              }
+            ]
+          },
+          {
+            "bind": "hostedAttemptGroups",
+            "invocation": "hostedAttemptMatch.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Groups"
+            }
+          },
+          {
+            "bind": "hostedAttemptGroup",
+            "invocation": "hostedAttemptGroups.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": 1
+            }
+          },
+          {
+            "bind": "hostedAttempt",
+            "invocation": "hostedAttemptGroup.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Value"
+            }
+          },
+          {
+            "invocation": "headers.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "x-sfx-acceptance-attempt-id"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "hostedAttempt"
+              }
+            ]
+          },
+          {
+            "bind": "hostedProfilePattern",
+            "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "(?im)\\A(?![\\s\\S]*^x-sfx-hosted-profile-digest:[\\s\\S]*^x-sfx-hosted-profile-digest:)[\\s\\S]*?^x-sfx-hosted-profile-digest:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+              }
+            ]
+          },
+          {
+            "bind": "hostedProfileMatch",
+            "invocation": "hostedProfilePattern.Match",
+            "arguments": [
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "head"
+              }
+            ]
+          },
+          {
+            "bind": "hostedProfileGroups",
+            "invocation": "hostedProfileMatch.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Groups"
+            }
+          },
+          {
+            "bind": "hostedProfileGroup",
+            "invocation": "hostedProfileGroups.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": 1
+            }
+          },
+          {
+            "bind": "hostedProfile",
+            "invocation": "hostedProfileGroup.$computed.$read",
+            "selector": {
+              "op": "literal",
+              "value": "Value"
+            }
+          },
+          {
+            "invocation": "headers.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "x-sfx-hosted-profile-digest"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "hostedProfile"
+              }
+            ]
+          },
+          {
             "bind": "value",
             "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
             "arguments": [
@@ -838,6 +966,34 @@
                 "op": "path",
                 "from": "scope",
                 "path": "headers"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "requestExecutionId"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "requestExecutionId"
+              }
+            ]
+          },
+          {
+            "invocation": "value.Add",
+            "arguments": [
+              {
+                "op": "literal",
+                "value": "executionPath"
+              },
+              {
+                "op": "path",
+                "from": "scope",
+                "path": "executionPath"
               }
             ]
           }

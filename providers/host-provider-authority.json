@@ -227,7 +227,7 @@
                       },
                       "sha256Base64": {
                         "op": "literal",
-                        "value": "aLbrAJnJJzkMRXedbX2nMTR9QPW6WOA7OiwoMlFCAjs="
+                        "value": "l2PD8V1HQtjJ6wOef8Kit8WbZJhUvFwlkkcOxkXwVfY="
                       },
                       "carry": {
                         "op": "path",
@@ -422,7 +422,7 @@
                       },
                       "pin": {
                         "op": "literal",
-                        "value": "sha256-base64:aLbrAJnJJzkMRXedbX2nMTR9QPW6WOA7OiwoMlFCAjs="
+                        "value": "sha256-base64:l2PD8V1HQtjJ6wOef8Kit8WbZJhUvFwlkkcOxkXwVfY="
                       }
                     },
                     "value": {
@@ -727,7 +727,7 @@
     {
       "mechanicId": "sfx-api-ingress-resolve-port.v2",
       "providerProfileId": "sfx-api-ingress-resolve.v2",
-      "providerProfileDigest": "sha256:f0c909ea63679f5624ac1aad9943f6b56d4ea28b717c623247c277c6ba8d586b",
+      "providerProfileDigest": "sha256:fbadca186a642bd381522ffa5227b834b32f2c75ef49615d074726c0779df034",
       "implementationRef": "sidefx:dependencies/sfx-api-ingress"
     },
     {
@@ -769,8 +769,14 @@
     {
       "mechanicId": "sfx-api-host-http-request-port.v1",
       "providerProfileId": "sfx-api-host-http-request",
-      "providerProfileDigest": "sha256:320fd0146ca43c9aa6dd2d185b473dda2fa7542305785ca670a45f76b453bf55",
-      "implementationRef": "sidefx:dependencies/sfx-api-host-http-request"
+      "providerProfileDigest": "sha256:19b782e7d34e1105466e08257309b2277753720bf1a5312f1dc60046249e7d4c",
+      "implementationRef": "providers/hosted/HostedAcceptance.cs#Accept"
+    },
+    {
+      "mechanicId": "sfx-api-host-acceptance-record-port.v1",
+      "providerProfileId": "sfx-api-host-acceptance-record",
+      "providerProfileDigest": "sha256:19b782e7d34e1105466e08257309b2277753720bf1a5312f1dc60046249e7d4c",
+      "implementationRef": "providers/hosted/HostedAcceptance.cs#Read"
     }
   ],
   "declaredProviders": [
@@ -1019,7 +1025,17 @@
             {
               "name": "raw",
               "source": "input",
-              "path": ""
+              "path": "raw"
+            },
+            {
+              "name": "requestExecutionId",
+              "source": "input",
+              "path": "requestExecutionId"
+            },
+            {
+              "name": "executionPath",
+              "source": "input",
+              "path": "executionPath"
             }
           ],
           "result": {
@@ -1708,6 +1724,124 @@
               ]
             },
             {
+              "bind": "hostedAttemptPattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)\\A(?![\\s\\S]*^x-sfx-acceptance-attempt-id:[\\s\\S]*^x-sfx-acceptance-attempt-id:)[\\s\\S]*?^x-sfx-acceptance-attempt-id:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+                }
+              ]
+            },
+            {
+              "bind": "hostedAttemptMatch",
+              "invocation": "hostedAttemptPattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "hostedAttemptGroups",
+              "invocation": "hostedAttemptMatch.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "hostedAttemptGroup",
+              "invocation": "hostedAttemptGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "hostedAttempt",
+              "invocation": "hostedAttemptGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "invocation": "headers.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "x-sfx-acceptance-attempt-id"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "hostedAttempt"
+                }
+              ]
+            },
+            {
+              "bind": "hostedProfilePattern",
+              "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "(?im)\\A(?![\\s\\S]*^x-sfx-hosted-profile-digest:[\\s\\S]*^x-sfx-hosted-profile-digest:)[\\s\\S]*?^x-sfx-hosted-profile-digest:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+                }
+              ]
+            },
+            {
+              "bind": "hostedProfileMatch",
+              "invocation": "hostedProfilePattern.Match",
+              "arguments": [
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "head"
+                }
+              ]
+            },
+            {
+              "bind": "hostedProfileGroups",
+              "invocation": "hostedProfileMatch.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Groups"
+              }
+            },
+            {
+              "bind": "hostedProfileGroup",
+              "invocation": "hostedProfileGroups.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": 1
+              }
+            },
+            {
+              "bind": "hostedProfile",
+              "invocation": "hostedProfileGroup.$computed.$read",
+              "selector": {
+                "op": "literal",
+                "value": "Value"
+              }
+            },
+            {
+              "invocation": "headers.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "x-sfx-hosted-profile-digest"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "hostedProfile"
+                }
+              ]
+            },
+            {
               "bind": "value",
               "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
               "arguments": [
@@ -1842,11 +1976,39 @@
                   "path": "headers"
                 }
               ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "requestExecutionId"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "requestExecutionId"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "executionPath"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "executionPath"
+                }
+              ]
             }
           ]
         }
       ],
-      "sourceProviderDefinitionDigest": "sha256:02cc0d921e570a96dbf2c3b8044fd3a1a3d3560e2a0c4dc69944df821867c422"
+      "sourceProviderDefinitionDigest": "sha256:fbadca186a642bd381522ffa5227b834b32f2c75ef49615d074726c0779df034"
     },
     {
       "providerProfileId": "sfx-api-ingress-compose.v2",
@@ -3898,631 +4060,20 @@
     {
       "providerProfileId": "sfx-api-host-http-request",
       "language": "csharp",
-      "type": "System.Diagnostics.Process",
-      "assembly": "System.Diagnostics.Process",
-      "method": ".ctor",
-      "factory": true,
+      "type": "Sfx.HostedProviders.HostedAcceptance",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Accept",
       "effectClassification": "observation",
-      "operations": [
-        {
-          "operationId": "accept",
-          "parameters": [
-            {
-              "name": "admission",
-              "source": "input",
-              "path": "context.admission"
-            },
-            {
-              "name": "vault",
-              "source": "input",
-              "path": "vault"
-            },
-            {
-              "name": "credentialReference",
-              "source": "input",
-              "path": "credentialReference"
-            },
-            {
-              "name": "keyReference",
-              "source": "input",
-              "path": "keyReference"
-            },
-            {
-              "name": "keyService",
-              "source": "input",
-              "path": "keyService"
-            },
-            {
-              "name": "plan",
-              "source": "input",
-              "path": "context.plan",
-              "encoding": "json-text"
-            }
-          ],
-          "result": {
-            "from": "value",
-            "encoding": "json-text"
-          },
-          "program": [
-            {
-              "bind": "gates",
-              "invocation": "new System.Collections.Generic.Dictionary`2[[System.String, System.Private.CoreLib],[System.String, System.Private.CoreLib]]"
-            },
-            {
-              "invocation": "gates.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "ADMITTED"
-                },
-                {
-                  "op": "literal",
-                  "value": "ADMITTED"
-                }
-              ]
-            },
-            {
-              "bind": "admitted",
-              "invocation": "gates.get_Item",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "admission"
-                }
-              ]
-            },
-            {
-              "bind": "entries",
-              "invocation": "vault.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "entries"
-              }
-            },
-            {
-              "bind": "entry",
-              "invocation": "entries.$computed.$read",
-              "selector": {
-                "op": "path",
-                "from": "scope",
-                "path": "credentialReference"
-              }
-            },
-            {
-              "bind": "nonce",
-              "invocation": "entry.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "nonce"
-              }
-            },
-            {
-              "bind": "ciphertext",
-              "invocation": "entry.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "ciphertext"
-              }
-            },
-            {
-              "bind": "tag",
-              "invocation": "entry.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "tag"
-              }
-            },
-            {
-              "bind": "keyVersionNode",
-              "invocation": "entry.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "keyVersion"
-              }
-            },
-            {
-              "bind": "keyVersion",
-              "invocation": "keyVersionNode.ToJsonString",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": null
-                }
-              ]
-            },
-            {
-              "bind": "vaultId",
-              "invocation": "vault.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "vaultId"
-              }
-            },
-            {
-              "bind": "holder",
-              "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": null
-                }
-              ]
-            },
-            {
-              "invocation": "holder.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "associatedData"
-                },
-                {
-                  "op": "join",
-                  "value": {
-                    "op": "array",
-                    "items": [
-                      {
-                        "op": "literal",
-                        "value": "{\"keyVersion\":"
-                      },
-                      {
-                        "op": "path",
-                        "from": "scope",
-                        "path": "keyVersion"
-                      },
-                      {
-                        "op": "literal",
-                        "value": ",\"referenceName\":\""
-                      },
-                      {
-                        "op": "path",
-                        "from": "scope",
-                        "path": "credentialReference"
-                      },
-                      {
-                        "op": "literal",
-                        "value": "\",\"vaultId\":\""
-                      },
-                      {
-                        "op": "path",
-                        "from": "scope",
-                        "path": "vaultId"
-                      },
-                      {
-                        "op": "literal",
-                        "value": "\"}"
-                      }
-                    ]
-                  },
-                  "separator": ""
-                }
-              ]
-            },
-            {
-              "bind": "associatedData",
-              "invocation": "holder.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "associatedData"
-              }
-            },
-            {
-              "bind": "start",
-              "invocation": "new System.Diagnostics.ProcessStartInfo, System.Diagnostics.Process"
-            },
-            {
-              "invocation": "start.FileName.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "secret-tool"
-                }
-              ]
-            },
-            {
-              "invocation": "start.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "lookup"
-                }
-              ]
-            },
-            {
-              "invocation": "start.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "service"
-                }
-              ]
-            },
-            {
-              "invocation": "start.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "keyService"
-                }
-              ]
-            },
-            {
-              "invocation": "start.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "key"
-                }
-              ]
-            },
-            {
-              "invocation": "start.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "keyReference"
-                }
-              ]
-            },
-            {
-              "invocation": "start.RedirectStandardOutput.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": true
-                }
-              ]
-            },
-            {
-              "invocation": "start.UseShellExecute.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": false
-                }
-              ]
-            },
-            {
-              "bind": "process",
-              "invocation": "new System.Diagnostics.Process, System.Diagnostics.Process",
-              "release": {
-                "invocation": "process.Dispose"
-              }
-            },
-            {
-              "invocation": "process.StartInfo.$write",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "start"
-                }
-              ]
-            },
-            {
-              "invocation": "process.Start"
-            },
-            {
-              "bind": "keyOutput",
-              "invocation": "process.StandardOutput.ReadToEnd"
-            },
-            {
-              "invocation": "process.WaitForExit"
-            },
-            {
-              "bind": "key",
-              "invocation": "keyOutput.Trim"
-            },
-            {
-              "bind": "cipher",
-              "invocation": "new System.Security.Cryptography.AesGcm, System.Security.Cryptography",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "key"
-                },
-                {
-                  "op": "literal",
-                  "value": 16
-                }
-              ],
-              "release": {
-                "invocation": "cipher.Dispose"
-              }
-            },
-            {
-              "bind": "ciphertextStream",
-              "invocation": "new System.IO.MemoryStream",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "ciphertext"
-                }
-              ],
-              "release": {
-                "invocation": "ciphertextStream.Dispose"
-              }
-            },
-            {
-              "bind": "ciphertextBytes",
-              "invocation": "ciphertextStream.ToArray"
-            },
-            {
-              "bind": "length",
-              "invocation": "ciphertextBytes.$computed.$read",
-              "selector": {
-                "op": "literal",
-                "value": "Length"
-              }
-            },
-            {
-              "bind": "plaintext",
-              "invocation": "new System.Byte[]",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "length"
-                }
-              ]
-            },
-            {
-              "bind": "encoding",
-              "invocation": "new System.Text.UTF8Encoding"
-            },
-            {
-              "bind": "associated",
-              "invocation": "encoding.GetBytes",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "associatedData"
-                }
-              ]
-            },
-            {
-              "invocation": "cipher.Decrypt",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "nonce"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "ciphertextBytes"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "tag"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "plaintext"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "associated"
-                }
-              ]
-            },
-            {
-              "bind": "secret",
-              "invocation": "encoding.GetString",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "plaintext"
-                }
-              ]
-            },
-            {
-              "bind": "child",
-              "invocation": "new System.Diagnostics.ProcessStartInfo, System.Diagnostics.Process"
-            },
-            {
-              "bind": "imageDigest",
-              "invocation": "child.Environment.get_Item",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "SFX_API_IMAGE_DIGEST"
-                }
-              ]
-            },
-            {
-              "invocation": "child.Environment.Clear"
-            },
-            {
-              "invocation": "child.Environment.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "SFX_ACCEPTANCE_SESSION"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "secret"
-                }
-              ]
-            },
-            {
-              "invocation": "child.Environment.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "SFX_API_IMAGE_DIGEST"
-                },
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "imageDigest"
-                }
-              ]
-            },
-            {
-              "invocation": "child.FileName.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "/usr/bin/timeout"
-                }
-              ]
-            },
-            {
-              "invocation": "child.UseShellExecute.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": false
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "--kill-after=5"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "175"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "/usr/local/bin/python3"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "-I"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "-S"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "-B"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "-c"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": "\"\"\"The HTTPS client of accept-hosted-execution-profile (contracts/sfx-api-hosted-csharp.v1.profile.json, acceptance).\n\nThe C# program of sfx-api-host-http-request opens the host-vault entry SFX_API_ACCEPTANCE_SESSION, which the operator\nstores with store-credential, inside its own call. It starts this script under /usr/bin/timeout in an empty environment\nthat holds only SFX_ACCEPTANCE_SESSION and SFX_API_IMAGE_DIGEST. argv[1] is the acceptance plan the coordinator declares.\nThe script:\n\n- attests the deployment it runs on: the deployer's recorded image digest, the bundle pin, the kernel install root it\n  runs in, and the SHA-256 over the deployed host files;\n- confirms over HTTPS that GET /sfx/v1/session names the plan's principalId for the stored session;\n- submits each probe of the plan through POST /sfx/v1/runs, follows each run's event stream to its end frame, and reads\n  its state and its output through the same endpoint, without following redirects;\n- measures the payload probe's /output/payload from the HTTPS response, as UTF-8 bytes and their SHA-256.\n\nIt never signs in and never revokes the stored session. It answers one JSON object of observations: what each request\nanswered, or the stage and code at which a check could not be observed. It decides no disposition: the coordinator's\ndeclared evaluation does. The session never leaves this process.\n\"\"\"\nimport hashlib\nimport http.client\nimport json\nimport os\nimport re\nimport ssl\nimport sys\nimport time\nimport uuid\nfrom datetime import datetime, timezone\n\nSTARTED = time.monotonic()\nHOST_FILES = [\"/opt/sfx/host/serve.py\", \"/opt/sfx/sfx-api.config.json\", \"/opt/sfx/start.sh\", None,\n              \"/opt/sfx/providers/host-provider-authority.json\"]\nMANIFEST = \"/opt/sfx/authorities/host-bundle/manifest.json\"\nSHA256 = re.compile(r\"^sha256:[0-9a-f]{64}$\")\nUUID = re.compile(r\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\")\nPIN = re.compile(r\"^sha256-base64:[A-Za-z0-9+/]{43}=$\")\n\n\nclass Failure(Exception):\n    def __init__(self, stage, code, message):\n        super().__init__(message)\n        self.stage, self.code, self.message = stage, code, message[:500]\n\n\ndef now():\n    return datetime.now(timezone.utc).isoformat(timespec=\"milliseconds\").replace(\"+00:00\", \"Z\")\n\n\ndef instant_ms(text):\n    \"\"\"An ISO 8601 instant as epoch milliseconds, or None.\"\"\"\n    if not isinstance(text, str):\n        return None\n    try:\n        value = datetime.fromisoformat(text.replace(\"Z\", \"+00:00\"))\n    except ValueError:\n        return None\n    if value.tzinfo is None:\n        value = value.replace(tzinfo=timezone.utc)\n    return int(value.timestamp() * 1000)\n\n\ndef b64sha256(data):\n    import base64\n    return base64.b64encode(hashlib.sha256(data).digest()).decode()\n\n\ndef execution_path():\n    \"\"\"The path of the kernel this client runs under, from the kernel's --timeout among the configured kinds: request,\n    worker, or what else it is. The client's parent is /usr/bin/timeout; the kernel is the nearest KernelEntry above.\"\"\"\n    config = json.loads(open(\"/opt/sfx/sfx-api.config.json\", \"rb\").read())\n    bound = lambda kind: config[kind][\"command\"][config[kind][\"command\"].index(\"--timeout\") + 1]\n    paths = {bound(\"kernel\"): \"request\", bound(\"workers\"): \"worker\"}\n    pid = os.getppid()\n    for _ in range(4):\n        command = [part.decode(\"utf-8\", \"replace\") for part in open(\"/proc/%d/cmdline\" % pid, \"rb\").read().split(b\"\\0\")]\n        if command and command[0].endswith(\"KernelEntry\") and \"--timeout\" in command:\n            return paths.get(command[command.index(\"--timeout\") + 1], \"other\")\n        pid = int(open(\"/proc/%d/stat\" % pid).read().rsplit(\")\", 1)[1].split()[1])\n    return \"unknown\"\n\n\ndef deployment():\n    \"\"\"The deployment this process runs on, read here, or why it cannot be established.\"\"\"\n    try:\n        config = json.loads(open(\"/opt/sfx/sfx-api.config.json\", \"rb\").read())\n        root = config[\"kernel\"][\"root\"]\n        if os.path.realpath(os.getcwd()) != os.path.realpath(root):\n            raise ValueError(\"the coordinator does not run in the configured kernel install root\")\n        kernel = os.path.basename(root.rstrip(\"/\"))\n        if not re.fullmatch(r\"[0-9a-f]{64}\", kernel):\n            raise ValueError(\"the kernel install root is not named by its digest\")\n        files = [path or os.path.join(root, \"kernel-host.json\") for path in HOST_FILES]\n        digest = hashlib.sha256()\n        for path in files:\n            digest.update(open(path, \"rb\").read())\n        authority = open(\"/opt/sfx/providers/host-provider-authority.json\", encoding=\"utf-8\").read()\n        pins = sorted(set(re.findall(r'\"(sha256-base64:[A-Za-z0-9+/]{43}=)\"', authority)))\n        manifest_pin = \"sha256-base64:\" + b64sha256(open(MANIFEST, \"rb\").read())\n        if pins != [manifest_pin]:\n            raise ValueError(\"the provider authority does not pin the deployed bundle manifest\")\n        image = os.environ.get(\"SFX_API_IMAGE_DIGEST\", \"\")\n        if not SHA256.match(image):\n            raise ValueError(\"the deployer recorded no image digest (SFX_API_IMAGE_DIGEST)\")\n        return {\"established\": True, \"imageDigest\": image, \"bundleDigest\": manifest_pin,\n                \"kernelArtifactDigest\": \"sha256:\" + kernel, \"hostFilesDigest\": \"sha256:\" + digest.hexdigest()}\n    except (OSError, ValueError, KeyError, TypeError) as error:\n        return {\"established\": False, \"code\": \"ACCEPTANCE_DEPLOYMENT_UNESTABLISHED\",\n                \"message\": type(error).__name__ + \": \" + str(error)[:300]}\n\n\nclass Client:\n    \"\"\"HTTPS to the plan's endpoint only, one request per connection, never following a redirect.\"\"\"\n\n    def __init__(self, endpoint, deadline):\n        match = re.fullmatch(r\"https://([a-z0-9.-]+)\", endpoint)\n        if not match:\n            raise Failure(\"precondition\", \"ACCEPTANCE_ENDPOINT_INVALID\", \"the plan's endpoint is not an HTTPS origin\")\n        self.endpoint, self.host, self.deadline, self.bearer = endpoint, match.group(1), deadline, None\n        self.context = ssl.create_default_context()\n\n    def remaining(self):\n        return self.deadline - time.monotonic()\n\n    def request(self, stage, method, path, body=None, headers=None, stream_end=False):\n        \"\"\"(status, headers, body bytes) of one complete exchange, or Failure at this stage.\"\"\"\n        timeout = self.remaining()\n        if timeout <= 1:\n            raise Failure(stage, \"ACCEPTANCE_BUDGET_EXHAUSTED\", \"%s %s was not sent: the acceptance budget ran out\" % (method, path))\n        send = {\"Accept\": \"text/event-stream\" if stream_end else \"application/json\", \"Connection\": \"close\"}\n        if self.bearer:\n            send[\"Authorization\"] = \"Bearer \" + self.bearer\n        data = None\n        if body is not None:\n            data = json.dumps(body, separators=(\",\", \":\"), ensure_ascii=False).encode(\"utf-8\")\n            send[\"Content-Type\"] = \"application/json; charset=utf-8\"\n        send.update(headers or {})\n        connection = http.client.HTTPSConnection(self.host, 443, timeout=min(timeout, 120), context=self.context)\n        try:\n            connection.request(method, path, body=data, headers=send)\n            response = connection.getresponse()\n            payload = response.read()\n            return response.status, {k.lower(): v for k, v in response.getheaders()}, payload\n        except http.client.IncompleteRead as error:\n            raise Failure(stage, \"ACCEPTANCE_RESPONSE_INCOMPLETE\", \"%s %s: the response ended after %d bytes\" % (method, path, len(error.partial)))\n        except (OSError, http.client.HTTPException) as error:\n            raise Failure(stage, \"ACCEPTANCE_TRANSPORT_FAILED\", \"%s %s: %s: %s\" % (method, path, type(error).__name__, str(error)[:200]))\n        finally:\n            connection.close()\n\n    def json(self, stage, method, path, body=None, headers=None):\n        status, _, payload = self.request(stage, method, path, body, headers)\n        try:\n            document = json.loads(payload.decode(\"utf-8\"))\n        except (UnicodeDecodeError, ValueError):\n            raise Failure(stage, \"ACCEPTANCE_RESPONSE_UNDECODABLE\", \"%s %s answered %d with a body that is not JSON\" % (method, path, status))\n        return status, document\n\n\ndef session_check(client, plan, session):\n    \"\"\"The stored session, confirmed by GET /sfx/v1/session to be the plan principal's, or Failure at precondition.\"\"\"\n    if not session:\n        raise Failure(\"precondition\", \"ACCEPTANCE_CREDENTIAL_UNAVAILABLE\", \"the host vault released no acceptance session\")\n    client.bearer = session\n    status, answer = client.json(\"precondition\", \"GET\", \"/sfx/v1/session\")\n    if status != 200 or not isinstance(answer, dict) or answer.get(\"status\") != \"READ\":\n        client.bearer = None\n        raise Failure(\"precondition\", \"ACCEPTANCE_SESSION_REJECTED\",\n                      \"the stored acceptance session was not accepted: GET /sfx/v1/session answered %d\" % status)\n    principal = str(answer.get(\"principalId\", \"\")).lower()\n    if principal != plan[\"principalId\"]:\n        client.bearer = None\n        raise Failure(\"precondition\", \"ACCEPTANCE_PRINCIPAL_MISMATCH\", \"the stored acceptance session names another principal\")\n    return {\"disposition\": \"CONFIRMED\", \"principalId\": principal, \"sessionExpiresAt\": answer.get(\"sessionExpiresAt\")}\n\n\ndef admit(client, probe, attempt):\n    \"\"\"The admitted run id of one probe, or Failure at admission.\"\"\"\n    status, answer = client.json(\"admission\", \"POST\", \"/sfx/v1/runs\",\n                                 {\"object\": \"capability\", \"operation\": \"observe\", \"subject\": probe[\"capabilityId\"],\n                                  \"input\": probe[\"input\"]}, {\"Idempotency-Key\": attempt})\n    run_id = answer.get(\"runId\") if isinstance(answer, dict) else None\n    if status not in (200, 201, 202) or not isinstance(run_id, str) or not UUID.match(run_id):\n        code = (answer.get(\"error\") or {}).get(\"code\") if isinstance(answer, dict) else None\n        raise Failure(\"admission\", \"ACCEPTANCE_ADMISSION_REFUSED\", \"POST /sfx/v1/runs answered %d %s\" % (status, code or \"\"))\n    return run_id\n\n\ndef follow(client, run_id):\n    \"\"\"Read the run's event stream to its end frame, within the acceptance budget.\"\"\"\n    path = \"/sfx/v1/runs/%s/events/stream?after=0\" % run_id\n    if client.remaining() <= 1:\n        raise Failure(\"collection\", \"ACCEPTANCE_BUDGET_EXHAUSTED\", \"the run was not followed: the acceptance budget ran out\")\n    connection = http.client.HTTPSConnection(client.host, 443, timeout=min(client.remaining(), 60), context=client.context)\n    try:\n        connection.request(\"GET\", path, headers={\"Accept\": \"text/event-stream\", \"Connection\": \"close\",\n                                                 \"Authorization\": \"Bearer \" + client.bearer})\n        response = connection.getresponse()\n        if response.status != 200 or not (response.getheader(\"content-type\") or \"\").startswith(\"text/event-stream\"):\n            response.read()\n            raise Failure(\"collection\", \"ACCEPTANCE_STREAM_REFUSED\", \"the run's event stream answered %d\" % response.status)\n        event = None\n        while True:\n            if client.remaining() <= 1:\n                raise Failure(\"collection\", \"ACCEPTANCE_BUDGET_EXHAUSTED\", \"the run did not end within the acceptance budget\")\n            line = response.readline()\n            if not line:\n                raise Failure(\"collection\", \"ACCEPTANCE_STREAM_INTERRUPTED\", \"the run's event stream closed before its end frame\")\n            text = line.decode(\"utf-8\", \"replace\").rstrip(\"\\r\\n\")\n            if text.startswith(\"event:\"):\n                event = text[6:].strip()\n            elif not text:\n                if event == \"end\":\n                    return\n                if event == \"session-ended\":\n                    raise Failure(\"collection\", \"ACCEPTANCE_SESSION_ENDED\", \"the acceptance session ended while its run was followed\")\n                event = None\n    except (OSError, http.client.HTTPException) as failure:\n        raise Failure(\"collection\", \"ACCEPTANCE_TRANSPORT_FAILED\", \"GET %s: %s: %s\" % (path, type(failure).__name__, str(failure)[:200]))\n    finally:\n        connection.close()\n\n\ndef state(client, run_id, capability):\n    status, answer = client.json(\"collection\", \"GET\", \"/sfx/v1/runs/%s\" % run_id)\n    run = answer.get(\"run\") if isinstance(answer, dict) else None\n    if status != 200 or not isinstance(run, dict):\n        raise Failure(\"collection\", \"ACCEPTANCE_STATE_UNAVAILABLE\", \"GET /sfx/v1/runs/%s answered %d with no run\" % (run_id, status))\n    if run.get(\"runId\") != run_id or (run.get(\"capability\") or {}).get(\"subject\") != capability:\n        raise Failure(\"verification\", \"ACCEPTANCE_RUN_IDENTITY\", \"the run read back is not the admitted probe\")\n    return {\"state\": run.get(\"state\"), \"exitCode\": run.get(\"exitCode\"), \"startedAt\": run.get(\"startedAt\"),\n            \"endedAt\": run.get(\"endedAt\"), \"startedAtMs\": instant_ms(run.get(\"startedAt\")),\n            \"endedAtMs\": instant_ms(run.get(\"endedAt\")), \"failure\": run.get(\"failure\"),\n            \"outputAvailable\": (run.get(\"output\") or {}).get(\"available\") is True}\n\n\ndef output(client, run_id):\n    status, answer = client.json(\"collection\", \"GET\", \"/sfx/v1/runs/%s/output\" % run_id)\n    if status != 200 or not isinstance(answer, dict) or not isinstance(answer.get(\"output\"), dict):\n        raise Failure(\"collection\", \"ACCEPTANCE_OUTPUT_UNAVAILABLE\", \"GET /sfx/v1/runs/%s/output answered %d with no output\" % (run_id, status))\n    return answer[\"output\"]\n\n\ndef measure(client, run_id):\n    \"\"\"T4: the payload as the deployed HTTPS route answers it.\"\"\"\n    path = \"/sfx/v1/runs/%s/output\" % run_id\n    status, headers, payload = client.request(\"collection\", \"GET\", path)\n    measured = {\"transport\": \"https\", \"method\": \"GET\", \"url\": client.endpoint + path, \"statusCode\": status,\n                \"redirected\": False, \"payloadPointer\": \"/output/payload\"}\n    try:\n        document = json.loads(payload.decode(\"utf-8\"))\n        produced = document[\"output\"]\n        text = produced[\"payload\"]\n        if not isinstance(text, str):\n            raise TypeError(\"/output/payload is not a string\")\n    except (UnicodeDecodeError, ValueError, KeyError, TypeError) as error:\n        raise Failure(\"collection\", \"ACCEPTANCE_OUTPUT_UNDECODABLE\", \"%s answered %d: %s\" % (path, status, type(error).__name__))\n    data = text.encode(\"utf-8\")\n    return dict(measured, expectedBytes=produced.get(\"payloadBytes\"), receivedBytes=len(data),\n                expectedSha256=produced.get(\"payloadSha256\"), receivedSha256=\"sha256:\" + hashlib.sha256(data).hexdigest())\n\n\ndef refusal(failure):\n    \"\"\"T3: what the run's failure names, read from its code and message.\"\"\"\n    failure = failure if isinstance(failure, dict) else {}\n    message = str(failure.get(\"message\") or \"\")\n    named = re.search(r\"'([^']+)' is declared for '([^']+)', not '([^']+)'\", message)\n    if not named:\n        raise Failure(\"collection\", \"ACCEPTANCE_REFUSAL_UNREADABLE\", \"the failed run's failure names no provider and languages\")\n    return {\"errorCode\": failure.get(\"code\"), \"providerProfileId\": named.group(1), \"declaredLanguage\": named.group(2),\n            \"runtimeLanguage\": named.group(3)}\n\n\ndef error(failure, runs):\n    return {\"stage\": failure.stage, \"code\": failure.code, \"message\": failure.message, \"runIds\": runs}\n\n\ndef observe_checks(client, plan):\n    checks = {}\n    pending = []\n    for probe in plan[\"probes\"]:\n        attempt = str(uuid.uuid4())\n        entry = {\"attemptId\": attempt, \"runIds\": [], \"error\": None}\n        checks[probe[\"checkId\"]] = entry\n        try:\n            entry[\"runIds\"] = [admit(client, probe, attempt)]\n            pending.append((probe, entry))\n        except Failure as failure:\n            entry[\"error\"] = error(failure, [])\n    for probe, entry in pending:\n        run_id = entry[\"runIds\"][0]\n        try:\n            follow(client, run_id)\n            entry[\"state\"] = state(client, run_id, probe[\"capabilityId\"])\n            expect = probe.get(\"expect\", \"completed\")\n            if entry[\"state\"][\"state\"] != expect:\n                raise Failure(\"execution\", \"ACCEPTANCE_PROBE_\" + str(entry[\"state\"][\"state\"]).upper().replace(\"-\", \"_\"),\n                              \"the probe run ended %s, not %s: %s\" % (entry[\"state\"][\"state\"], expect,\n                                                                    json.dumps(entry[\"state\"][\"failure\"])[:300]))\n            if probe.get(\"observe\") == \"refusal\":\n                entry[\"observed\"] = refusal(entry[\"state\"][\"failure\"])\n            elif probe.get(\"observe\") == \"payload\":\n                entry[\"measurement\"] = measure(client, run_id)\n            else:\n                produced = output(client, run_id)\n                if produced.get(\"status\") != \"MEASURED\":\n                    raise Failure(\"execution\", \"ACCEPTANCE_PROBE_UNMEASURED\", \"the probe answered %s: %s\" % (\n                        produced.get(\"status\"), str(produced.get(\"finding\"))[:300]))\n                entry[\"output\"] = produced\n        except Failure as failure:\n            entry[\"error\"] = error(failure, entry[\"runIds\"])\n    return checks\n\n\ndef observe_concurrency(client, plan):\n    holds = plan[\"concurrency\"]\n    attempt = str(uuid.uuid4())\n    entry = {\"attemptId\": attempt, \"runIds\": [], \"runs\": [], \"error\": None}\n    try:\n        for index in range(holds[\"count\"]):\n            entry[\"runIds\"].append(admit(client, holds, attempt + \"-%d\" % index))\n        for run_id in entry[\"runIds\"]:\n            follow(client, run_id)\n            read = state(client, run_id, holds[\"capabilityId\"])\n            if read[\"state\"] != \"completed\" or read[\"startedAtMs\"] is None or read[\"endedAtMs\"] is None:\n                raise Failure(\"execution\", \"ACCEPTANCE_HOLD_INTERVAL_INVALID\", \"a hold run has no completed interval\")\n            entry[\"runs\"].append({\"runId\": run_id, \"startedAt\": read[\"startedAt\"], \"endedAt\": read[\"endedAt\"],\n                                  \"startedAtMs\": read[\"startedAtMs\"], \"endedAtMs\": read[\"endedAtMs\"]})\n    except Failure as failure:\n        entry[\"error\"] = error(failure, entry[\"runIds\"])\n    return entry\n\n\ndef main():\n    plan = json.loads(sys.argv[1])\n    answer = {\"contractId\": \"hosted-acceptance-observations.v1\", \"executionId\": str(uuid.uuid4()), \"executedAt\": now()}\n    answer[\"deployment\"] = deployment()\n    session = os.environ.pop(\"SFX_ACCEPTANCE_SESSION\", \"\")\n    if not answer[\"deployment\"][\"established\"]:\n        # No receipt can name an unestablished deployment, so the session is not used and nothing is submitted.\n        return answer\n    try:\n        path = execution_path()\n    except (OSError, ValueError, KeyError, IndexError) as failure:\n        path = \"unknown: \" + type(failure).__name__\n    answer[\"coordinator\"] = {\"executionPath\": path, \"workerSlots\": 0 if path == \"request\" else 1 if path == \"worker\" else -1}\n    if path != \"request\":\n        # Only the request path's acceptance route admits the caller by its session: anywhere else, the stored session\n        # is not used.\n        answer[\"deployment\"] = {\"established\": False, \"code\": \"ACCEPTANCE_NOT_ON_REQUEST_PATH\",\n                                \"message\": \"the coordinator runs on the %s path, not the request path\" % path}\n        return answer\n    client = Client(plan[\"endpoint\"], STARTED + plan[\"budgetMs\"] / 1000)\n    try:\n        answer[\"session\"] = session_check(client, plan, session)\n    except Failure as failure:\n        # No probe is submitted without the session: every check is unobserved at its precondition.\n        answer[\"session\"] = {\"disposition\": \"FAILED\", \"code\": failure.code, \"message\": failure.message}\n        answer[\"checks\"] = {check: {\"attemptId\": str(uuid.uuid4()), \"runIds\": [], \"error\": error(failure, [])}\n                            for check in [probe[\"checkId\"] for probe in plan[\"probes\"]] + [plan[\"concurrency\"][\"checkId\"]]}\n        answer[\"elapsedMs\"] = int((time.monotonic() - STARTED) * 1000)\n        return answer\n    finally:\n        session = None\n    try:\n        answer[\"checks\"] = observe_checks(client, plan)\n        answer[\"checks\"][plan[\"concurrency\"][\"checkId\"]] = observe_concurrency(client, plan)\n    finally:\n        # The stored session serves later acceptances until it expires: it is never revoked here.\n        client.bearer = None\n    answer[\"elapsedMs\"] = int((time.monotonic() - STARTED) * 1000)\n    return answer\n\n\ntry:\n    result = main()\nexcept Exception as unexpected:\n    result = {\"contractId\": \"hosted-acceptance-observations.v1\", \"failed\": True,\n              \"code\": \"ACCEPTANCE_CLIENT_FAILED\", \"message\": type(unexpected).__name__ + \": \" + str(unexpected)[:300]}\nprint(json.dumps(result, ensure_ascii=False, separators=(\",\", \":\")))\n"
-                }
-              ]
-            },
-            {
-              "invocation": "child.ArgumentList.Add",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "plan"
-                }
-              ]
-            },
-            {
-              "invocation": "child.RedirectStandardInput.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": true
-                }
-              ]
-            },
-            {
-              "invocation": "child.RedirectStandardOutput.$write",
-              "arguments": [
-                {
-                  "op": "literal",
-                  "value": true
-                }
-              ]
-            },
-            {
-              "bind": "driver",
-              "invocation": "new System.Diagnostics.Process, System.Diagnostics.Process",
-              "release": {
-                "invocation": "driver.Dispose"
-              }
-            },
-            {
-              "invocation": "driver.StartInfo.$write",
-              "arguments": [
-                {
-                  "op": "path",
-                  "from": "scope",
-                  "path": "child"
-                }
-              ]
-            },
-            {
-              "invocation": "driver.Start"
-            },
-            {
-              "invocation": "driver.StandardInput.Close"
-            },
-            {
-              "bind": "value",
-              "invocation": "driver.StandardOutput.ReadToEnd"
-            },
-            {
-              "invocation": "driver.WaitForExit"
-            }
-          ]
-        }
-      ],
-      "sourceProviderDefinitionDigest": "sha256:320fd0146ca43c9aa6dd2d185b473dda2fa7542305785ca670a45f76b453bf55"
+      "sourceProviderDefinitionDigest": "sha256:19b782e7d34e1105466e08257309b2277753720bf1a5312f1dc60046249e7d4c"
+    },
+    {
+      "providerProfileId": "sfx-api-host-acceptance-record",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.HostedAcceptance",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Read",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:19b782e7d34e1105466e08257309b2277753720bf1a5312f1dc60046249e7d4c"
     }
   ]
 }
