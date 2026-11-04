@@ -1,69 +1,66 @@
-# Hosted execution contract for host review
+# Hosted execution contract: current state and responsibility
 
-The current amendment uses the existing dedicated acceptance principal and the deployed user-session mechanism. The host reports slices 1 and 2 deployed from commit `2aaceba`; slice 3 remains to be implemented. This amendment changes source contracts and their acceptance cases. It does not claim a new deployment or a completed acceptance receipt.
+This is the **version 4 contract candidate for host review and implementation**, with exact profile digest `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. It closes the missing invocation boundary in the canonical feature, typed profile, request/context contracts, receipt, error contract and delivery/readback contracts. The [payload and protocol specification](hosted-execution-invocation.md) contains the complete interface and links to schema-checked example payloads.
 
-The profile is now **version 2**, because version 1 has been published by the host. Its exact UTF-8/LF bytes have digest `sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414`. The receipt schema and canonical feature pin it. The existing `.v1` contract identifiers and source filename denote the schema family; `profileVersion` carries this promise revision. The deployed version 1 bundle retains its original `7c555f52…` profile until the host regenerates and deploys the bundle. Git attributes preserve JSON line endings across Windows and Linux checkouts.
+The host's [deployment record](../docs/azure-test-2026-11-04.md) still reports **version 3** on image `sfx-api:db00da1`, with profile digest `sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b`. This edit changes no deployed program, bundle, client or permission. Version 4 is not installed or accepted, and no live acceptance receipt is claimed.
 
-## Session authority amendment
+The `.v1` filenames and contract identifiers denote the schema family. `profileVersion` identifies the promise revision. The JSON profile, receipt schema and feature remain the authority; this document describes their state and history.
 
-The host resolves `staging-release-acceptance` to its existing immutable principal ID and login tuple through a trusted declaration in its pinned bundle. Only a live user session with that principal ID may start acceptance. Checking caller kind `user` alone, or trusting a caller-supplied account name, is insufficient.
+## Where the dependencies entered
 
-The coordinator releases the account password from host-vault reference **`sfx-api-acceptance-password`** at the declared credential pointer, then signs in over the deployed HTTPS `/sfx/v1/session` endpoint. It verifies the response principal ID and uses the returned bearer for its own probes, streams and readback during that invocation. Existing own-runs visibility applies. Password and bearer values never enter source, observations or receipts. A missing credential, rejected login, principal mismatch or expired session produces an explicit failure with no fallback identity.
-
-The host operator must provision that vault reference securely and bind the existing principal ID and login tuple before exercising slice 3. The credential value is not part of this repository. Operator `sfx-api login` renewal restores CLI probe access; it does not provision the coordinator's dedicated password.
-
-After provisioning, the host regenerates the profile reader and bundle for version 2, implements the coordinator, deploys, and reruns T1–T7 against the resulting deployment pins. The earlier measurements are useful probe evidence, but cannot be relabelled as a version 2 ACCEPTED receipt.
-
-The scratch judge's missing `kind` is addressed by the canonical receipt-projection scenario. A successful measurement is wrapped as `kind: OBSERVED` with its real `runIds` and only the check's typed measurement fields. `PASSED` is derived from the schema thresholds. Raw `probe` and `status: MEASURED` metadata are excluded from `observed`; failed execution uses the existing error variant. T6 still combines the facade configuration with the declared host settings before it has a complete observation.
-
-## The agreed execution boundary
-
-| Concern | Concrete contract |
+| Recorded revision | Coordinator and authority requirement |
 | --- | --- |
-| Coordinator | The host interface declares authenticated `POST /sfx/v1/hosted-execution/acceptance` on the request path, bound to `accept-hosted-execution-profile`. It holds zero worker slots and uses the existing request deadline. |
-| Authority | Only the resolved `staging-release-acceptance` principal may invoke it. Probe requests use a dedicated session obtained with `sfx-api-acceptance-password`, with own-runs visibility. |
-| Worker probes | `probe-hosted-execution` supplies the ordinary checks and the three T7 holds. `probe-hosted-execution-language-refusal` isolates the Python-only T3 binding from every other closure. Both are private acceptance fixtures. |
-| Probe admission | A declared `sfx-api-host-http-request-port.v1` program submits the probes through the deployed HTTPS `POST /sfx/v1/runs` route. That lets the facade consume the admission directive and queue them. |
-| T4 readback | The same HTTP provider fetches the completed T4 run's `/output` through the public endpoint without redirects. It decodes the JSON string at `/output/payload`, then counts and hashes its UTF-8 bytes. A direct call to `serve-http-request` cannot supply this evidence. |
-| T7 concurrency | In a measurement window with both workers available, the request coordinator submits three 5-second holds without waiting for completion. It retains their execution intervals and computes overlap from those intervals, excluding its own execution. |
-| Failure before measurement | A check returns `kind: EXECUTION_ERROR`, `status: FAILED`, a real attempt identity and a typed error. It supplies only actual admitted run IDs and no invented observations. The receipt is `REJECTED`. |
-| Complete measurement | `kind: OBSERVED` retains the existing typed observations. Every `PASSED` check must still meet all schema thresholds. A measured mismatch is `FAILED` with a finding. |
+| First version 1 draft, `62da685`, 2026-11-04 08:56 EST | No coordinator credential requirement. The scope was the host's execution promises and their acceptance evidence. |
+| Revised version 1, `3e0f38e`, 10:05 EST | Added the request-path coordinator, `admittedCallers: ["machine"]`, `host-machine-credential`, two request kernels and a 150 s budget. The deployed ingress could not produce that machine caller. |
+| Version 2, recorded in `1be9e95`, 11:01 EST | Replaced machine authority with the `staging-release-acceptance` user principal and password reference `sfx-api-acceptance-password`, followed by HTTPS sign-in. The consumer-side assistant also added a local password helper. That workflow is now retired. |
+| Version 3, `db00da1`, 14:21 EST | Uses `SFX_API_ACCEPTANCE_SESSION`, provisioned by the standard `store-credential` capability. It checks the stored session through HTTPS `GET /sfx/v1/session`; it never signs in or revokes it. |
 
-The result schema accepts both failure forms for every check. A precondition or admission failure may have no worker run ID. Execution, collection and verification errors require an admitted run ID. If deployment identity cannot be established, the capability fails without issuing an acceptance receipt.
+The password workflow was an implementation amendment, not an original renderer requirement. Recording an implementation choice in a profile does not establish that the owner requested the added operational burden. The current canonical feature records the owner's direction to use the standard credential process.
 
-## Host implementation scope
+## Current authority boundary
 
-1. Implement the profile reader and the request-path acceptance entry in the host's declared bundle/interface.
-2. Declare the child-process and HTTPS providers through the profile schema boundary, using the existing authentication mechanism. Retain the isolated Python-only negative-control provider.
-3. Declare the private probe capabilities and the coordinator. T6 reads effective configuration; T7 establishes execution concurrency. T3's expected failed run is a passing refusal observation.
-4. Derive measurements and dispositions from the actual executions. Verify each cited admission and require terminal evidence for passing checks, including capability, inputs and deployment identity. Failed checks retain known admission and attempt evidence when execution or collection could not finish. Match T4's URL to its payload run and T7's interval IDs to its three hold runs. Use half-open intervals `[startedAt, endedAt)` for overlap.
-5. Parse receipts with duplicate-key rejection before Draft 2020-12 validation, with date-time format assertions enabled. Verify the deployer's image identity and the evaluator's bundle, kernel and host-file identities against the tested deployment.
-6. Deploy the host bundle and run the declared checks against `sfx-api-test`. Produce the first real receipt. The consumer then proves the renderer and both objectives against that receipt's deployment and profile pins.
+Version 4 deliberately separates the two identities and closes the unfinished caller workflow:
 
-The schemas enforce structure, complete check coverage and pass thresholds. The declared runtime supplies and verifies evidence provenance, cross-field run references and interval calculations. Local synthetic fixtures do not attest to the deployment.
+1. `acceptance.coordinator.admittedCallers` binds **host-acceptance-operator** to the existing operator principal `565de6d4-ebcd-408b-9359-04d21dc62183`. Its existing authenticated CLI session initiates acceptance and reads its retained evidence.
+2. `acceptance.coordinator.probeAuthority` continues to bind **staging-release-acceptance** to `00e053bd-b090-4ff9-be25-64089d170fb2`. Only the host provider releases `SFX_API_ACCEPTANCE_SESSION` for probes and their own-run readback.
 
-## Local regression checks
+This changes the acceptance initiator binding; it does not grant arbitrary signed-in users access, widen probe run visibility or authorize an identity supplied in a request body. The host must update the interface and provider gates together with the pinned profile. The deployed version 3 gate still refuses this operator until that implementation is published.
+
+The host reports that store run `876426ad-0993-0e10-3386-433a07350202` returned `CREDENTIAL_STORED` for `SFX_API_ACCEPTANCE_SESSION`, and that a subsequent declared read returned the same non-disclosing receipt. This document does not retrieve or expose that session.
+
+## Host completion work
+
+The required supported entry is the **existing command surface** `sfx-api capability observe accept-hosted-execution-profile --input '{}' --input-type json --json --auth user`. The host supplies the client support and declared dispatch to **`POST /sfx/v1/hosted-execution/acceptance`**. It also supplies `read-hosted-execution-acceptance` through the same command surface, dispatched to the declared request-path GET. No new CLI verb, consumer-authored script, password workflow or account switch is a prerequisite.
+
+The host implementation checklist is concrete:
+
+1. Publish the versioned client support for profile discovery, exact digest verification, origin binding and request-path dispatch for the two named capabilities. Unsupported descriptors fail before coordinator dispatch; admission to `/runs` stays forbidden for the coordinator.
+2. Declare the interface's empty POST body, correlation/profile headers, trusted context mapping and pinned operator gate. The runtime request identity is carried into the receipt, not replaced by an evaluator-generated UUID. A profile change after discovery is refused before credential release.
+3. Preserve the standard stored probe session and its dedicated identity. Check it before admitting probes. Missing, expired, revoked or mismatched credentials produce typed failures; renewal remains the host operator's standard `store-credential` responsibility.
+4. Declare deployment-wide single-coordinator admission and release it on every termination path. Retain attempts and exact terminal receipt bytes through `sfx-api-host-acceptance-record-port.v1`, including restart and uncertain-outcome handling, before claiming a returned receipt.
+5. Declare the authenticated, non-secret readback capability and its closed request/result contracts. It reads only the named acceptance attempt, never opens the probe credential, and does not imply access to other runs.
+6. Update the receipt projection and client response handling for the published schemas. Preserve REJECTED receipts and typed failures; never automatically retry an uncertain POST or fabricate a receipt when none was obtained.
+7. Rebuild and pin the interface, provider programs, profile reader, schemas and client as one verified release. The host supplies these as declared capability/program changes through its existing authoring process; the retired password script is not a substitute.
+8. Execute the supported command from the actual operator session against the deployment, run T1–T7, independently read the retained receipt and reconcile every attempt, request, run and deployment identity. Deliver the real receipt and `hosted-execution-delivery-proof.v1`. Only a verified FULFILLED proof containing an ACCEPTED receipt closes this host work.
+
+The canonical feature includes positive and negative scenarios for these obligations and provider bindings. The schemas enforce the payloads, identities, thresholds and result alternatives; the verifier also checks cross-field identity, interval arithmetic and retained artifact bytes. Local tests and the example JSON files are explicitly synthetic, not live evidence.
+
+The 150 s budget is already a declared host acceptance constraint. The host's earlier successful T4 operator run took 83 s of client time; only a real coordinator run establishes whether all checks fit. If the coordinator cannot finish, its implementation needs correction or a concrete contract change; the consumer must not treat it as accepted.
+
+Consumer obligations remain C1–C4: declare providers for the host runtime, bound child execution and expose failures, carry pinned third-party packages, and handle insufficient shared temporary space. Once the host proves its profile, the consumer proves the renderer and published artifacts against those deployment and profile pins. Building the host's invocation client is not an additional consumer obligation.
+
+## Obsolete client retired
+
+`tools/invoke-hosted-acceptance.ps1` now stops immediately with `HOSTED_ACCEPTANCE_PASSWORD_FLOW_RETIRED`. It prompts for no password, calls no API, changes no credential and does not revoke the stored session. Its regression check verifies this on installed PowerShell versions. Old instructions to run that file no longer start the version 2 workflow.
+
+`contracts/validate-hosted-execution-receipt.py` validates received receipts, retained readback records and delivery proofs. It rejects duplicate keys, checks the current profile and schemas, reconciles execution/attempt/run references and T7 intervals, and checks exact artifact bytes. It does not issue receipts or independently establish live execution and deployment provenance.
+
+## Existing evidence and checks
+
+The [earlier operator diagnostics](../docs/hosted-probe-readback-2026-11-04.json) recorded T3's expected language refusal and a T4 run that had no persisted state or output. The host subsequently fixed the oversized escaped-JSON envelope and recorded successful T4 run `af211d49-1972-ac88-d0f1-def9c5e62d0a`: 6,291,456 UTF-8 bytes with the required digest. Those measurements are useful diagnostic evidence; they are not the outstanding version 3 coordinator receipt.
 
 ```powershell
-python -m pip install -r contracts/tests/requirements.txt
 python -B -m unittest discover -s contracts/tests -v
 ```
 
-The suite validates both schemas and the profile, checks the exact profile pin and Unicode payload digest, repeats the original negative cases, rejects in-process T4 and worker-occupied T7 claims, and exercises early failures for all seven checks. It also refuses duplicate keys and malformed timestamps. These are authoring checks only; the deployed implementation remains declared capability work owned by the host.
-
-Files for review are [the feature](../features/hosted-execution-profile.feature), [the profile](sfx-api-hosted-csharp.v1.profile.json), [the profile schema](hosted-execution-profile.v1.schema.json), [the receipt schema](hosted-execution-acceptance.v1.schema.json), and [the regression suite](tests/test_hosted_execution_contract.py).
-
-## Prior host review, 2026-11-04
-
-The host accepted version 1 with four amendments. They gave the profile digest
-`sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804`, which the receipt schema and the feature
-pinned by the deployed version 1 bundle. The two machine-authority amendments below are superseded by version 2's session authority. The two-request-kernel requirement, 150 s budget and stream completion policy remain in the current profile.
-
-| Amendment | Why | Where |
-| --- | --- | --- |
-| Only the interface's machine caller may invoke the coordinator (`admittedCallers: ["machine"]`) | The probes act with the machine caller's authority, which sees all runs. A user session must not start them. | profile `acceptance.coordinator`, feature |
-| The probes authenticate as the machine caller with `host-machine-credential`, released at a declared credential pointer | "The existing authentication mechanism" names the interface's `callers.machine`. The credential reaches no testimony, observation or receipt. | profile `acceptance.coordinator.probeAuthority` |
-| The request path declares `kernels: 2`, and the coordinator requires at least 2; T6 checks it | The coordinator holds one request kernel while its own HTTPS calls need another. With one, its calls would be refused `REQUEST_KERNEL_BUSY` after 30 s. | profile `executionPaths.request`, `acceptance.coordinator.requestKernelsRequired`, receipt T6 |
-| The coordinator has a 150 s budget, and waits on probes by reading each run's event stream to its end frame | It must issue its receipt before the 195 s delivery bound ends it. Declared programs have no loop or sleep, so a stream read is how it waits. | profile `acceptance.coordinator.budgetMs` and `probeCompletion`, feature |
-
-That review added `test_coordinator_authority_and_capacity` and passed 11 local tests before slices 1 and 2 were deployed. The current suite additionally covers the dedicated session authority, the version change and the measured-probe receipt projection.
+These tests validate contract authoring and the retired helper's lack of effects. Live host acceptance remains incomplete until the declared coordinator executes and its receipt is verified.

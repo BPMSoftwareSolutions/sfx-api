@@ -5,36 +5,89 @@
   "description": "What a host deployment promises to the capabilities it executes. A consumer requirement names a profile by profileId and profileVersion and checks it by profileDigest, the SHA-256 of the profile document's exact bytes. A change to any promise is a new profileVersion.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contractId", "profileId", "profileVersion", "host", "runtime", "providers", "childProcesses", "executionPaths", "results", "consumerObligations", "acceptance"],
+  "required": [
+    "contractId",
+    "profileId",
+    "profileVersion",
+    "host",
+    "runtime",
+    "providers",
+    "childProcesses",
+    "executionPaths",
+    "results",
+    "consumerObligations",
+    "acceptance"
+  ],
   "properties": {
-    "contractId": { "const": "hosted-execution-profile.v1" },
-    "profileId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,62}$" },
-    "profileVersion": { "type": "integer", "minimum": 1 },
+    "contractId": {
+      "const": "hosted-execution-profile.v1"
+    },
+    "profileId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,62}$"
+    },
+    "profileVersion": {
+      "type": "integer",
+      "minimum": 4
+    },
     "host": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["deployment", "endpoint"],
+      "required": [
+        "deployment",
+        "endpoint"
+      ],
       "properties": {
-        "deployment": { "type": "string", "minLength": 1 },
-        "endpoint": { "type": "string", "pattern": "^https://" }
+        "deployment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endpoint": {
+          "type": "string",
+          "pattern": "^https://"
+        }
       }
     },
     "runtime": {
       "description": "H1. Every run this deployment executes runs in this language.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["promiseId", "language", "kernel"],
+      "required": [
+        "promiseId",
+        "language",
+        "kernel"
+      ],
       "properties": {
-        "promiseId": { "const": "H1" },
-        "language": { "enum": ["csharp", "python", "node"] },
+        "promiseId": {
+          "const": "H1"
+        },
+        "language": {
+          "enum": [
+            "csharp",
+            "python",
+            "node"
+          ]
+        },
         "kernel": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["implementation", "sdaRevision", "rid"],
+          "required": [
+            "implementation",
+            "sdaRevision",
+            "rid"
+          ],
           "properties": {
-            "implementation": { "const": "sda-scenario-kernel" },
-            "sdaRevision": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
-            "rid": { "type": "string", "minLength": 1 }
+            "implementation": {
+              "const": "sda-scenario-kernel"
+            },
+            "sdaRevision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,40}$"
+            },
+            "rid": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }
@@ -43,19 +96,38 @@
       "description": "H2. A provider in a run's closure with no entry for runtime.language fails the run with this refusal.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["promiseId", "selection", "refusal"],
+      "required": [
+        "promiseId",
+        "selection",
+        "refusal"
+      ],
       "properties": {
-        "promiseId": { "const": "H2" },
-        "selection": { "const": "entry-for-runtime-language" },
+        "promiseId": {
+          "const": "H2"
+        },
+        "selection": {
+          "const": "entry-for-runtime-language"
+        },
         "refusal": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["code", "names"],
+          "required": [
+            "code",
+            "names"
+          ],
           "properties": {
-            "code": { "const": "PROVIDER_LANGUAGE_UNAVAILABLE" },
+            "code": {
+              "const": "PROVIDER_LANGUAGE_UNAVAILABLE"
+            },
             "names": {
               "type": "array",
-              "items": { "enum": ["providerProfileId", "declaredLanguage", "runtimeLanguage"] },
+              "items": {
+                "enum": [
+                  "providerProfileId",
+                  "declaredLanguage",
+                  "runtimeLanguage"
+                ]
+              },
               "minItems": 3,
               "uniqueItems": true
             }
@@ -67,17 +139,34 @@
       "description": "H3. A provider program in runtime.language may start these executables, and they work under these conditions.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["promiseId", "identity", "environment", "temporaryStorage", "executables"],
+      "required": [
+        "promiseId",
+        "identity",
+        "environment",
+        "temporaryStorage",
+        "executables"
+      ],
       "properties": {
-        "promiseId": { "const": "H3" },
+        "promiseId": {
+          "const": "H3"
+        },
         "identity": {
           "description": "The operating-system user every kernel and child runs as.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["user", "uid"],
+          "required": [
+            "user",
+            "uid"
+          ],
           "properties": {
-            "user": { "type": "string", "minLength": 1 },
-            "uid": { "type": "integer", "minimum": 0 }
+            "user": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uid": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         },
         "environment": {
@@ -87,12 +176,26 @@
         "temporaryStorage": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["path", "operations", "freeBytesAtAcceptance"],
+          "required": [
+            "path",
+            "operations",
+            "freeBytesAtAcceptance"
+          ],
           "properties": {
-            "path": { "type": "string", "pattern": "^/" },
+            "path": {
+              "type": "string",
+              "pattern": "^/"
+            },
             "operations": {
               "type": "array",
-              "items": { "enum": ["create", "write", "read", "delete"] },
+              "items": {
+                "enum": [
+                  "create",
+                  "write",
+                  "read",
+                  "delete"
+                ]
+              },
               "minItems": 4,
               "uniqueItems": true
             },
@@ -100,10 +203,18 @@
               "description": "Free space measured when acceptance runs. It is not reserved: concurrent runs share it, and a later invocation can find less (consumer obligation C4).",
               "type": "object",
               "additionalProperties": false,
-              "required": ["minimum", "lifetime"],
+              "required": [
+                "minimum",
+                "lifetime"
+              ],
               "properties": {
-                "minimum": { "type": "integer", "minimum": 0 },
-                "lifetime": { "const": "measured-at-acceptance-not-reserved" }
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lifetime": {
+                  "const": "measured-at-acceptance-not-reserved"
+                }
               }
             }
           }
@@ -113,8 +224,12 @@
           "minItems": 1,
           "items": {
             "oneOf": [
-              { "$ref": "#/$defs/cpython" },
-              { "$ref": "#/$defs/gnuTimeout" }
+              {
+                "$ref": "#/$defs/cpython"
+              },
+              {
+                "$ref": "#/$defs/gnuTimeout"
+              }
             ]
           }
         }
@@ -124,20 +239,37 @@
       "description": "H5. The bounds of each path a capability can execute on, in milliseconds, and the runs a worker path holds.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["promiseId", "request", "worker"],
+      "required": [
+        "promiseId",
+        "request",
+        "worker"
+      ],
       "properties": {
-        "promiseId": { "const": "H5" },
-        "request": { "$ref": "#/$defs/requestPath" },
-        "worker": { "$ref": "#/$defs/workerPath" }
+        "promiseId": {
+          "const": "H5"
+        },
+        "request": {
+          "$ref": "#/$defs/requestPath"
+        },
+        "worker": {
+          "$ref": "#/$defs/workerPath"
+        }
       }
     },
     "results": {
       "description": "H4. What the host preserves of a capability's answer.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["promiseId", "preservation", "artifactBytes", "maximumResultBytes"],
+      "required": [
+        "promiseId",
+        "preservation",
+        "artifactBytes",
+        "maximumResultBytes"
+      ],
       "properties": {
-        "promiseId": { "const": "H4" },
+        "promiseId": {
+          "const": "H4"
+        },
         "preservation": {
           "description": "The declared result value reaches the caller through the API envelope unchanged.",
           "const": "declared-result-value"
@@ -146,7 +278,10 @@
           "description": "Artifact content is preserved as exact UTF-8 bytes, checked by SHA-256.",
           "const": "utf-8-sha256"
         },
-        "maximumResultBytes": { "type": "integer", "minimum": 1 }
+        "maximumResultBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "consumerObligations": {
@@ -156,10 +291,19 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["obligationId", "statement"],
+        "required": [
+          "obligationId",
+          "statement"
+        ],
         "properties": {
-          "obligationId": { "type": "string", "pattern": "^C[0-9]+$" },
-          "statement": { "type": "string", "minLength": 1 }
+          "obligationId": {
+            "type": "string",
+            "pattern": "^C[0-9]+$"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -167,32 +311,78 @@
       "description": "The checks that establish this profile on a deployment, and when they must run again. Every promise above is covered by at least one check.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["receiptContract", "coordinator", "repeatWhenChanged", "checks"],
+      "required": [
+        "receiptContract",
+        "coordinator",
+        "repeatWhenChanged",
+        "checks",
+        "invocation"
+      ],
       "properties": {
-        "receiptContract": { "const": "hosted-execution-acceptance.v1" },
+        "receiptContract": {
+          "const": "hosted-execution-acceptance.v1"
+        },
         "coordinator": {
           "description": "The host's declared request entry coordinates worker probes through its deployed HTTPS API. It never holds a worker slot while waiting for them.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["capabilityId", "executionPath", "method", "path", "workerSlotsHeld", "probeTransport", "admittedCallers", "probeAuthority", "requestKernelsRequired", "budgetMs", "probeCompletion"],
+          "required": [
+            "capabilityId",
+            "executionPath",
+            "method",
+            "path",
+            "workerSlotsHeld",
+            "probeTransport",
+            "admittedCallers",
+            "probeAuthority",
+            "requestKernelsRequired",
+            "budgetMs",
+            "probeCompletion"
+          ],
           "properties": {
-            "capabilityId": { "const": "accept-hosted-execution-profile" },
-            "executionPath": { "const": "request" },
-            "method": { "const": "POST" },
-            "path": { "const": "/sfx/v1/hosted-execution/acceptance" },
-            "workerSlotsHeld": { "const": 0 },
-            "probeTransport": { "const": "deployed-https-api" },
+            "capabilityId": {
+              "const": "accept-hosted-execution-profile"
+            },
+            "executionPath": {
+              "const": "request"
+            },
+            "method": {
+              "const": "POST"
+            },
+            "path": {
+              "const": "/sfx/v1/hosted-execution/acceptance"
+            },
+            "workerSlotsHeld": {
+              "const": 0
+            },
+            "probeTransport": {
+              "const": "deployed-https-api"
+            },
             "admittedCallers": {
-              "description": "Only the authenticated user session of this dedicated principal may invoke the coordinator. The host resolves principalRef through a trusted deployment binding and compares the caller's resolved principalId, never a request-body identifier or display name.",
+              "description": "Only the existing host operator principal named by this trusted profile binding may initiate acceptance. The stored probe principal is a separate identity. Request-body identity assertions never grant authority.",
               "type": "array",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["kind", "principalRef", "match"],
+                "required": [
+                  "kind",
+                  "principalRef",
+                  "principalId",
+                  "match"
+                ],
                 "properties": {
-                  "kind": { "const": "user" },
-                  "principalRef": { "const": "staging-release-acceptance" },
-                  "match": { "const": "resolved-principal-id" }
+                  "kind": {
+                    "const": "user"
+                  },
+                  "principalRef": {
+                    "const": "host-acceptance-operator"
+                  },
+                  "principalId": {
+                    "const": "565de6d4-ebcd-408b-9359-04d21dc62183"
+                  },
+                  "match": {
+                    "const": "resolved-principal-id"
+                  }
                 }
               },
               "minItems": 1,
@@ -202,15 +392,40 @@
               "description": "The coordinator uses the dedicated acceptance principal's session, which the operator stores in the host vault with the standard store-credential capability. It is released from the vault only at the declared credential pointer. Before any probe, the coordinator confirms that the deployed HTTPS session check names the trusted principal binding's principalId. It then uses that session for its own probes and readback. It never signs in and never revokes the stored session.",
               "type": "object",
               "additionalProperties": false,
-              "required": ["caller", "principalRef", "authentication", "credential", "provisioning", "sessionCheckPath", "release", "runVisibility", "sessionUse"],
+              "required": [
+                "caller",
+                "principalRef",
+                "authentication",
+                "credential",
+                "provisioning",
+                "sessionCheckPath",
+                "release",
+                "runVisibility",
+                "sessionUse",
+                "principalId"
+              ],
               "properties": {
-                "caller": { "const": "user" },
-                "principalRef": { "const": "staging-release-acceptance" },
-                "authentication": { "const": "stored-session" },
-                "credential": { "const": "SFX_API_ACCEPTANCE_SESSION" },
-                "provisioning": { "const": "store-credential" },
-                "sessionCheckPath": { "const": "/sfx/v1/session" },
-                "runVisibility": { "const": "own-runs" },
+                "caller": {
+                  "const": "user"
+                },
+                "principalRef": {
+                  "const": "staging-release-acceptance"
+                },
+                "authentication": {
+                  "const": "stored-session"
+                },
+                "credential": {
+                  "const": "SFX_API_ACCEPTANCE_SESSION"
+                },
+                "provisioning": {
+                  "const": "store-credential"
+                },
+                "sessionCheckPath": {
+                  "const": "/sfx/v1/session"
+                },
+                "runVisibility": {
+                  "const": "own-runs"
+                },
                 "sessionUse": {
                   "description": "The stored session serves every acceptance until it expires or is revoked. The operator stores a new one with store-credential.",
                   "const": "stored-until-expiry"
@@ -218,6 +433,9 @@
                 "release": {
                   "description": "The stored session bearer is released only at the declared credential pointer. It never reaches source, testimony, observations or the receipt.",
                   "const": "declared-credential-pointer"
+                },
+                "principalId": {
+                  "const": "00e053bd-b090-4ff9-be25-64089d170fb2"
                 }
               }
             },
@@ -239,7 +457,15 @@
         },
         "repeatWhenChanged": {
           "type": "array",
-          "items": { "enum": ["imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest", "profileDigest"] },
+          "items": {
+            "enum": [
+              "imageDigest",
+              "bundleDigest",
+              "kernelArtifactDigest",
+              "hostFilesDigest",
+              "profileDigest"
+            ]
+          },
           "minItems": 5,
           "uniqueItems": true
         },
@@ -249,16 +475,406 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["checkId", "promiseIds", "executionPath", "evidence", "establishes"],
+            "required": [
+              "checkId",
+              "promiseIds",
+              "executionPath",
+              "evidence",
+              "establishes"
+            ],
             "properties": {
-              "checkId": { "type": "string", "pattern": "^T[0-9]+$" },
-              "promiseIds": { "type": "array", "items": { "type": "string", "pattern": "^H[0-9]+$" }, "minItems": 1, "uniqueItems": true },
-              "executionPath": { "description": "The path of the probe being tested, distinct from the coordinator's request path.", "enum": ["request", "worker"] },
+              "checkId": {
+                "type": "string",
+                "pattern": "^T[0-9]+$"
+              },
+              "promiseIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^H[0-9]+$"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "executionPath": {
+                "description": "The path of the probe being tested, distinct from the coordinator's request path.",
+                "enum": [
+                  "request",
+                  "worker"
+                ]
+              },
               "evidence": {
                 "description": "execution: the check runs the behavior and measures it. configuration: the check compares the deployed settings with the profile, and proves no behavior.",
-                "enum": ["execution", "configuration"]
+                "enum": [
+                  "execution",
+                  "configuration"
+                ]
               },
-              "establishes": { "type": "string", "minLength": 1 }
+              "establishes": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "invocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "owner",
+            "client",
+            "discovery",
+            "dispatch",
+            "credentials",
+            "failureContract",
+            "uncertainOutcome",
+            "completion",
+            "readback"
+          ],
+          "properties": {
+            "owner": {
+              "const": "host"
+            },
+            "client": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "product",
+                "surface",
+                "capabilityId",
+                "input",
+                "json",
+                "authentication",
+                "publicationOwner",
+                "exitCodes"
+              ],
+              "properties": {
+                "product": {
+                  "const": "sfx-api"
+                },
+                "surface": {
+                  "const": "capability observe"
+                },
+                "capabilityId": {
+                  "const": "accept-hosted-execution-profile"
+                },
+                "input": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                },
+                "json": {
+                  "const": true
+                },
+                "authentication": {
+                  "const": "existing-operator-session"
+                },
+                "publicationOwner": {
+                  "const": "host"
+                },
+                "exitCodes": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "accepted",
+                    "rejectedReceipt",
+                    "failed",
+                    "unknown"
+                  ],
+                  "properties": {
+                    "accepted": {
+                      "const": 0
+                    },
+                    "rejectedReceipt": {
+                      "const": 2
+                    },
+                    "failed": {
+                      "const": 1
+                    },
+                    "unknown": {
+                      "const": 3
+                    }
+                  }
+                }
+              }
+            },
+            "discovery": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "capabilityId",
+                "verify",
+                "routing",
+                "unsupported",
+                "clientWaitMs",
+                "endpointBinding"
+              ],
+              "properties": {
+                "capabilityId": {
+                  "const": "read-hosted-execution-profile"
+                },
+                "verify": {
+                  "const": "exact-profile-text-sha256-and-supported-schema"
+                },
+                "routing": {
+                  "const": "profile-acceptance-coordinator"
+                },
+                "unsupported": {
+                  "const": "refuse-before-dispatch"
+                },
+                "clientWaitMs": {
+                  "const": 230000
+                },
+                "endpointBinding": {
+                  "const": "authenticated-cli-origin-only"
+                }
+              }
+            },
+            "dispatch": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "executionPath",
+                "method",
+                "path",
+                "body",
+                "attemptHeader",
+                "attemptId",
+                "workerAdmission",
+                "redirects",
+                "automaticRetry",
+                "clientWaitMs",
+                "requestContract",
+                "maximumConcurrentCoordinators",
+                "busyOutcome",
+                "attemptMeaning",
+                "profileDigestHeader",
+                "contextContract",
+                "contextSource",
+                "concurrencyScope"
+              ],
+              "properties": {
+                "executionPath": {
+                  "const": "request"
+                },
+                "method": {
+                  "const": "POST"
+                },
+                "path": {
+                  "const": "/sfx/v1/hosted-execution/acceptance"
+                },
+                "body": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [],
+                  "properties": {}
+                },
+                "attemptHeader": {
+                  "const": "X-SFX-Acceptance-Attempt-Id"
+                },
+                "attemptId": {
+                  "const": "client-generated-uuid"
+                },
+                "workerAdmission": {
+                  "const": "forbidden"
+                },
+                "redirects": {
+                  "const": "forbidden"
+                },
+                "automaticRetry": {
+                  "const": false
+                },
+                "clientWaitMs": {
+                  "const": 230000
+                },
+                "requestContract": {
+                  "const": "hosted-execution-acceptance-request.v1"
+                },
+                "maximumConcurrentCoordinators": {
+                  "const": 1
+                },
+                "busyOutcome": {
+                  "const": "ACCEPTANCE_BUSY"
+                },
+                "attemptMeaning": {
+                  "const": "correlation-not-idempotency"
+                },
+                "profileDigestHeader": {
+                  "const": "X-SFX-Hosted-Profile-Digest"
+                },
+                "contextContract": {
+                  "const": "hosted-execution-acceptance-context.v1"
+                },
+                "contextSource": {
+                  "const": "host-ingress-not-request-body"
+                },
+                "concurrencyScope": {
+                  "const": "host-deployment"
+                }
+              }
+            },
+            "credentials": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "initiator",
+                "probe",
+                "provisioning",
+                "refreshOwner",
+                "passwordPrompt",
+                "accountSwitch",
+                "revokeStoredSession",
+                "secretInInputOrEvidence",
+                "fallbackPrincipal"
+              ],
+              "properties": {
+                "initiator": {
+                  "const": "existing-operator-session"
+                },
+                "probe": {
+                  "const": "host-vault-stored-session"
+                },
+                "provisioning": {
+                  "const": "store-credential"
+                },
+                "refreshOwner": {
+                  "const": "host-operator"
+                },
+                "passwordPrompt": {
+                  "const": false
+                },
+                "accountSwitch": {
+                  "const": false
+                },
+                "revokeStoredSession": {
+                  "const": false
+                },
+                "secretInInputOrEvidence": {
+                  "const": false
+                },
+                "fallbackPrincipal": {
+                  "const": false
+                }
+              }
+            },
+            "failureContract": {
+              "const": "hosted-execution-invocation-error.v1"
+            },
+            "uncertainOutcome": {
+              "const": "retain-attempt-and-investigate-before-explicit-retry"
+            },
+            "completion": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "owner",
+                "proofContract",
+                "evidence",
+                "receiptRetention",
+                "fulfilledOnlyWith",
+                "consumerClientImplementationRequired",
+                "verifierOwner",
+                "deploymentChangesInvalidateProof",
+                "publication"
+              ],
+              "properties": {
+                "owner": {
+                  "const": "host"
+                },
+                "proofContract": {
+                  "const": "hosted-execution-delivery-proof.v1"
+                },
+                "evidence": {
+                  "const": "live-supported-client-to-deployed-request-route"
+                },
+                "receiptRetention": {
+                  "const": "host-recorded-before-response-and-returned-to-initiator"
+                },
+                "fulfilledOnlyWith": {
+                  "const": "ACCEPTED-receipt-and-verified-delivery-proof"
+                },
+                "consumerClientImplementationRequired": {
+                  "const": false
+                },
+                "verifierOwner": {
+                  "const": "host-with-consumer-readback"
+                },
+                "deploymentChangesInvalidateProof": {
+                  "const": true
+                },
+                "publication": {
+                  "const": "profile-client-provider-bindings-and-schemas-as-one-verified-release"
+                }
+              }
+            },
+            "readback": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "owner",
+                "capabilityId",
+                "surface",
+                "executionPath",
+                "method",
+                "path",
+                "inputContract",
+                "resultContract",
+                "authorization",
+                "credentialRelease",
+                "provider",
+                "retention",
+                "receiptBytesPointer",
+                "encoding",
+                "notFoundMeaning"
+              ],
+              "properties": {
+                "owner": {
+                  "const": "host"
+                },
+                "capabilityId": {
+                  "const": "read-hosted-execution-acceptance"
+                },
+                "surface": {
+                  "const": "capability observe"
+                },
+                "executionPath": {
+                  "const": "request"
+                },
+                "method": {
+                  "const": "GET"
+                },
+                "path": {
+                  "const": "/sfx/v1/hosted-execution/acceptance/{attemptId}"
+                },
+                "inputContract": {
+                  "const": "hosted-execution-acceptance-read-request.v1"
+                },
+                "resultContract": {
+                  "const": "hosted-execution-acceptance-read-result.v1"
+                },
+                "authorization": {
+                  "const": "same-pinned-operator-binding"
+                },
+                "credentialRelease": {
+                  "const": false
+                },
+                "provider": {
+                  "const": "sfx-api-host-acceptance-record-port.v1"
+                },
+                "retention": {
+                  "const": "persistent-across-restarts-until-explicit-owner-retirement"
+                },
+                "receiptBytesPointer": {
+                  "const": "/receiptBytesBase64"
+                },
+                "encoding": {
+                  "const": "base64"
+                },
+                "notFoundMeaning": {
+                  "const": "no-retained-evidence-not-proof-of-no-execution"
+                }
+              }
             }
           }
         }
@@ -269,42 +885,92 @@
     "cpython": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "path", "implementation", "version", "soabi", "platform", "wheelTags", "flags"],
+      "required": [
+        "kind",
+        "path",
+        "implementation",
+        "version",
+        "soabi",
+        "platform",
+        "wheelTags",
+        "flags"
+      ],
       "properties": {
-        "kind": { "const": "cpython" },
-        "path": { "type": "string", "pattern": "^/" },
-        "implementation": { "const": "cpython" },
+        "kind": {
+          "const": "cpython"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "implementation": {
+          "const": "cpython"
+        },
         "version": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["major", "minor"],
+          "required": [
+            "major",
+            "minor"
+          ],
           "properties": {
-            "major": { "type": "integer" },
-            "minor": { "type": "integer" }
+            "major": {
+              "type": "integer"
+            },
+            "minor": {
+              "type": "integer"
+            }
           }
         },
-        "soabi": { "type": "string", "minLength": 1 },
+        "soabi": {
+          "type": "string",
+          "minLength": 1
+        },
         "platform": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["system", "machine", "libc", "libcMinimumVersion"],
+          "required": [
+            "system",
+            "machine",
+            "libc",
+            "libcMinimumVersion"
+          ],
           "properties": {
-            "system": { "const": "Linux" },
-            "machine": { "type": "string", "minLength": 1 },
-            "libc": { "const": "glibc" },
-            "libcMinimumVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" }
+            "system": {
+              "const": "Linux"
+            },
+            "machine": {
+              "type": "string",
+              "minLength": 1
+            },
+            "libc": {
+              "const": "glibc"
+            },
+            "libcMinimumVersion": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+$"
+            }
           }
         },
         "wheelTags": {
           "description": "Wheel tags this interpreter can load, as the packaging specification defines them.",
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "flags": {
           "type": "array",
-          "items": { "enum": ["-I", "-S", "-B"] },
+          "items": {
+            "enum": [
+              "-I",
+              "-S",
+              "-B"
+            ]
+          },
           "uniqueItems": true
         }
       }
@@ -312,47 +978,111 @@
     "gnuTimeout": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "path", "identity", "exitWhenTerminated", "exitWhenKilled", "killAfterOption"],
+      "required": [
+        "kind",
+        "path",
+        "identity",
+        "exitWhenTerminated",
+        "exitWhenKilled",
+        "killAfterOption"
+      ],
       "properties": {
-        "kind": { "const": "gnu-timeout" },
-        "path": { "type": "string", "pattern": "^/" },
+        "kind": {
+          "const": "gnu-timeout"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/"
+        },
         "identity": {
           "description": "What `timeout --version` prints first.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["package", "versionLinePattern"],
+          "required": [
+            "package",
+            "versionLinePattern"
+          ],
           "properties": {
-            "package": { "const": "GNU coreutils" },
-            "versionLinePattern": { "type": "string", "minLength": 1 }
+            "package": {
+              "const": "GNU coreutils"
+            },
+            "versionLinePattern": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         },
-        "exitWhenTerminated": { "const": 124 },
-        "exitWhenKilled": { "const": 137 },
-        "killAfterOption": { "const": "--kill-after" }
+        "exitWhenTerminated": {
+          "const": 124
+        },
+        "exitWhenKilled": {
+          "const": 137
+        },
+        "killAfterOption": {
+          "const": "--kill-after"
+        }
       }
     },
     "requestPath": {
       "description": "platformBoundMs is App Service's front-end bound, not the host's. The host promises that waitForKernelMs plus answerBoundMs stays within it.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["kernels", "waitForKernelMs", "deliveryBoundMs", "answerBoundMs", "platformBoundMs"],
+      "required": [
+        "kernels",
+        "waitForKernelMs",
+        "deliveryBoundMs",
+        "answerBoundMs",
+        "platformBoundMs"
+      ],
       "properties": {
-        "kernels": { "type": "integer", "minimum": 1 },
-        "waitForKernelMs": { "type": "integer", "minimum": 0 },
-        "deliveryBoundMs": { "type": "integer", "minimum": 1 },
-        "answerBoundMs": { "type": "integer", "minimum": 1 },
-        "platformBoundMs": { "type": "integer", "minimum": 1 }
+        "kernels": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "waitForKernelMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deliveryBoundMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "answerBoundMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "platformBoundMs": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "workerPath": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["deliveryBoundMs", "answerBoundMs", "concurrentRuns", "waitingRuns"],
+      "required": [
+        "deliveryBoundMs",
+        "answerBoundMs",
+        "concurrentRuns",
+        "waitingRuns"
+      ],
       "properties": {
-        "deliveryBoundMs": { "type": "integer", "minimum": 1 },
-        "answerBoundMs": { "type": "integer", "minimum": 1 },
-        "concurrentRuns": { "type": "integer", "minimum": 1 },
-        "waitingRuns": { "type": "integer", "minimum": 0 }
+        "deliveryBoundMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "answerBoundMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "concurrentRuns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "waitingRuns": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   }

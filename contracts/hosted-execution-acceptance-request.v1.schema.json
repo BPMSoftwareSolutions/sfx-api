@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {},
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hosted-execution-acceptance-request.v1.schema.json",
+  "description": "The acceptance command input and HTTPS request body are an empty object. Authenticated caller identity comes from ingress, the probe session from the host vault, the endpoint from the verified profile, and the correlation UUID from the declared header. None is supplied in this body."
+}

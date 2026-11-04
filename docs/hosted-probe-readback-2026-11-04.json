@@ -1,0 +1,100 @@
+{
+  "kind": "hosted-probe-readback",
+  "acceptanceReceipt": false,
+  "observedAt": "2026-11-04T15:56:14.650Z",
+  "endpoint": "https://sfx-api-test.azurewebsites.net",
+  "checks": {
+    "T3": {
+      "runId": "7c298f6d-c609-7c76-cd38-8c0e4b63ea1f",
+      "expectedRefusalObserved": true,
+      "state": {
+        "status": "READ",
+        "runId": "7c298f6d-c609-7c76-cd38-8c0e4b63ea1f",
+        "run": {
+          "runId": "7c298f6d-c609-7c76-cd38-8c0e4b63ea1f",
+          "state": "failed",
+          "capability": {
+            "object": "capability",
+            "operation": "observe",
+            "subject": "probe-hosted-execution-language-refusal",
+            "namespace": "sidefx:capabilities"
+          },
+          "exitCode": 1,
+          "failure": {
+            "code": "PROVIDER_LANGUAGE_UNAVAILABLE",
+            "message": "PROVIDER_LANGUAGE_UNAVAILABLE: 'sfx-api-acceptance-python-only' is declared for 'python', not 'csharp'."
+          },
+          "startedAt": "2026-11-04T15:56:17.274Z",
+          "endedAt": "2026-11-04T15:56:21.769Z",
+          "partial": false,
+          "output": {
+            "available": false
+          }
+        }
+      },
+      "clientFailure": "PROVIDER_LANGUAGE_UNAVAILABLE: 'sfx-api-acceptance-python-only' is declared for 'python', not 'csharp'. Resume with: sfx-api run 7c298f6d-c609-7c76-cd38-8c0e4b63ea1f --json",
+      "disposition": "EXPECTED_REFUSAL_OBSERVED"
+    },
+    "T4": {
+      "runId": "0d55a327-610f-0b14-a1f1-67c862c6ae0b",
+      "transport": "https",
+      "method": "GET",
+      "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/runs/0d55a327-610f-0b14-a1f1-67c862c6ae0b/output",
+      "statusCode": 200,
+      "redirected": false,
+      "payloadPointer": "/output/payload",
+      "receivedBytes": null,
+      "receivedSha256": null,
+      "expectedBytes": 6291456,
+      "expectedSha256": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc",
+      "outputKeys": [],
+      "clientFailure": "Client wait timed out; the remote run was not cancelled. Resume with: sfx-api run 0d55a327-610f-0b14-a1f1-67c862c6ae0b --json",
+      "matches": false,
+      "followupReadbacks": [
+        {
+          "checkedAt": "2026-11-04T16:02:21.495Z",
+          "method": "GET",
+          "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/runs/0d55a327-610f-0b14-a1f1-67c862c6ae0b",
+          "statusCode": 200,
+          "redirected": false,
+          "body": {
+            "status": "READ",
+            "runId": "0d55a327-610f-0b14-a1f1-67c862c6ae0b",
+            "run": null
+          }
+        },
+        {
+          "checkedAt": "2026-11-04T16:02:22.250Z",
+          "method": "GET",
+          "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/runs/0d55a327-610f-0b14-a1f1-67c862c6ae0b/output",
+          "statusCode": 200,
+          "redirected": false,
+          "body": {
+            "status": "READ",
+            "runId": "0d55a327-610f-0b14-a1f1-67c862c6ae0b",
+            "output": null
+          }
+        },
+        {
+          "checkedAt": "2026-11-04T16:02:23.091Z",
+          "method": "GET",
+          "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/runs/0d55a327-610f-0b14-a1f1-67c862c6ae0b/events?after=0",
+          "statusCode": 200,
+          "redirected": false,
+          "body": {
+            "status": "READ",
+            "runId": "0d55a327-610f-0b14-a1f1-67c862c6ae0b"
+          }
+        }
+      ],
+      "disposition": "UNVERIFIED",
+      "finding": "The admitted run did not yield a terminal run state or payload during the client wait. Follow-up HTTPS reads returned null run and output. The cause is not established."
+    }
+  },
+  "completedAt": "2026-11-04T16:02:23.091Z",
+  "limitations": [
+    "Diagnostic probe evidence only; not a hosted-execution acceptance receipt.",
+    "No image, bundle, kernel or profile identity attested by this diagnostic.",
+    "No additional T4 run was submitted after the client wait expired."
+  ]
+}

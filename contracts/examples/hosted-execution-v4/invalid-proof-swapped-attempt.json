@@ -1,0 +1,221 @@
+{
+  "contractId": "hosted-execution-delivery-proof.v1",
+  "status": "FULFILLED",
+  "attemptId": "11111111-1111-4111-8111-000000000011",
+  "observedAt": "2026-11-04T18:00:12Z",
+  "client": {
+    "product": "sfx-api",
+    "version": "synthetic-fixture-only",
+    "artifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "surface": "capability observe",
+    "capabilityId": "accept-hosted-execution-profile",
+    "input": {},
+    "authentication": "existing-operator-session"
+  },
+  "exchange": {
+    "method": "POST",
+    "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance",
+    "httpStatus": 200,
+    "redirected": false,
+    "dispatch": "declared-request-route",
+    "coordinatorWorkerSlots": 0,
+    "attemptId": "11111111-1111-4111-8111-000000000001"
+  },
+  "receiptArtifact": {
+    "reference": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance/11111111-1111-4111-8111-000000000011",
+    "sha256": "sha256:a40ba02d6c7705daeaf9c2285873e96f56a732c3b600dc092fe0b7b72a16ee05",
+    "byteLength": 4391,
+    "readbackVerified": true
+  },
+  "receipt": {
+    "contractId": "hosted-execution-acceptance.v1",
+    "profileId": "sfx-api-hosted-csharp",
+    "profileVersion": 4,
+    "profileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d",
+    "deployment": {
+      "host": "sfx-api-test",
+      "imageDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bundleDigest": "sha256-base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "kernelArtifactDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hostFilesDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "executedAt": "2026-11-04T18:00:11Z",
+    "evaluator": {
+      "capabilityId": "accept-hosted-execution-profile",
+      "executionPath": "request",
+      "executionId": "11111111-1111-4111-8111-000000000001"
+    },
+    "invocation": {
+      "attemptId": "11111111-1111-4111-8111-000000000011",
+      "requestExecutionId": "11111111-1111-4111-8111-000000000001",
+      "method": "POST",
+      "path": "/sfx/v1/hosted-execution/acceptance",
+      "executionPath": "request",
+      "initiator": {
+        "kind": "user",
+        "principalRef": "host-acceptance-operator",
+        "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+        "match": "resolved-principal-id"
+      },
+      "probePrincipalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+      "authoritySource": "authenticated-caller-and-pinned-host-bindings",
+      "expectedProfileDigest": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+    },
+    "checks": {
+      "T1": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000002"
+        ],
+        "observed": {
+          "runtimeLanguage": "csharp",
+          "user": "sjones",
+          "uid": 1000,
+          "environmentKeys": [],
+          "python": {
+            "path": "/usr/local/bin/python3",
+            "implementation": "cpython",
+            "version": "3.12.16",
+            "soabi": "cpython-312-x86_64-linux-gnu",
+            "machine": "x86_64",
+            "glibcVersion": "2.36",
+            "loadableTags": [
+              "py3-none-any",
+              "cp38-abi3-manylinux_2_17_x86_64",
+              "cp312-cp312-manylinux_2_17_x86_64"
+            ]
+          },
+          "temporaryStorage": {
+            "path": "/tmp",
+            "created": true,
+            "written": true,
+            "readBack": true,
+            "deleted": true,
+            "freeBytes": 67108864
+          }
+        }
+      },
+      "T2": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000003"
+        ],
+        "observed": {
+          "timeoutSeconds": 2,
+          "killAfterSeconds": 2,
+          "ignoredTermination": true,
+          "exitCode": 137,
+          "elapsedMs": 4100,
+          "childPid": 123,
+          "childRemaining": false
+        }
+      },
+      "T3": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000004"
+        ],
+        "observed": {
+          "errorCode": "PROVIDER_LANGUAGE_UNAVAILABLE",
+          "providerProfileId": "sfx-api-acceptance-python-only",
+          "declaredLanguage": "python",
+          "runtimeLanguage": "csharp"
+        }
+      },
+      "T4": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000005"
+        ],
+        "observed": {
+          "transport": "https",
+          "method": "GET",
+          "url": "https://sfx-api-test.azurewebsites.net/sfx/v1/runs/11111111-1111-4111-8111-000000000005/output",
+          "statusCode": 200,
+          "redirected": false,
+          "payloadPointer": "/output/payload",
+          "expectedBytes": 6291456,
+          "receivedBytes": 6291456,
+          "expectedSha256": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc",
+          "receivedSha256": "sha256:9afa6a901fd5ea4d49cb734d1f88e73a9c73c7449773e0f98b6f90159d1cdadc"
+        }
+      },
+      "T5": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000006"
+        ],
+        "observed": {
+          "timeoutSeconds": 2,
+          "exitCode": 124,
+          "elapsedMs": 2100,
+          "childPid": 124,
+          "childRemaining": false,
+          "versionLine": "timeout (GNU coreutils) 9.1"
+        }
+      },
+      "T6": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000007"
+        ],
+        "observed": {
+          "configurationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "settingsDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "request": {
+            "kernels": 2,
+            "waitForKernelMs": 30000,
+            "deliveryBoundMs": 195000,
+            "answerBoundMs": 198000
+          },
+          "worker": {
+            "deliveryBoundMs": 3600000,
+            "answerBoundMs": 3605000,
+            "concurrentRuns": 2,
+            "waitingRuns": 64
+          }
+        }
+      },
+      "T7": {
+        "kind": "OBSERVED",
+        "status": "PASSED",
+        "runIds": [
+          "11111111-1111-4111-8111-000000000008",
+          "11111111-1111-4111-8111-000000000009",
+          "11111111-1111-4111-8111-000000000010"
+        ],
+        "observed": {
+          "coordinatorExecutionPath": "request",
+          "coordinatorWorkerSlots": 0,
+          "admitted": 3,
+          "maxConcurrent": 2,
+          "thirdStartedAfterAnEnd": true,
+          "runs": [
+            {
+              "runId": "11111111-1111-4111-8111-000000000008",
+              "startedAt": "2026-11-04T18:00:00Z",
+              "endedAt": "2026-11-04T18:00:05Z"
+            },
+            {
+              "runId": "11111111-1111-4111-8111-000000000009",
+              "startedAt": "2026-11-04T18:00:01Z",
+              "endedAt": "2026-11-04T18:00:06Z"
+            },
+            {
+              "runId": "11111111-1111-4111-8111-000000000010",
+              "startedAt": "2026-11-04T18:00:05Z",
+              "endedAt": "2026-11-04T18:00:10Z"
+            }
+          ]
+        }
+      }
+    },
+    "status": "ACCEPTED"
+  }
+}

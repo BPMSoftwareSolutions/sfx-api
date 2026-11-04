@@ -1,7 +1,7 @@
 {
   "contractId": "hosted-execution-profile.v1",
   "profileId": "sfx-api-hosted-csharp",
-  "profileVersion": 3,
+  "profileVersion": 4,
   "host": {
     "deployment": "sfx-api-test",
     "endpoint": "https://sfx-api-test.azurewebsites.net"
@@ -20,24 +20,42 @@
     "selection": "entry-for-runtime-language",
     "refusal": {
       "code": "PROVIDER_LANGUAGE_UNAVAILABLE",
-      "names": ["providerProfileId", "declaredLanguage", "runtimeLanguage"]
+      "names": [
+        "providerProfileId",
+        "declaredLanguage",
+        "runtimeLanguage"
+      ]
     }
   },
   "childProcesses": {
     "promiseId": "H3",
-    "identity": { "user": "sjones", "uid": 1000 },
+    "identity": {
+      "user": "sjones",
+      "uid": 1000
+    },
     "environment": "works-when-cleared",
     "temporaryStorage": {
       "path": "/tmp",
-      "operations": ["create", "write", "read", "delete"],
-      "freeBytesAtAcceptance": { "minimum": 67108864, "lifetime": "measured-at-acceptance-not-reserved" }
+      "operations": [
+        "create",
+        "write",
+        "read",
+        "delete"
+      ],
+      "freeBytesAtAcceptance": {
+        "minimum": 67108864,
+        "lifetime": "measured-at-acceptance-not-reserved"
+      }
     },
     "executables": [
       {
         "kind": "cpython",
         "path": "/usr/local/bin/python3",
         "implementation": "cpython",
-        "version": { "major": 3, "minor": 12 },
+        "version": {
+          "major": 3,
+          "minor": 12
+        },
         "soabi": "cpython-312-x86_64-linux-gnu",
         "platform": {
           "system": "Linux",
@@ -45,13 +63,24 @@
           "libc": "glibc",
           "libcMinimumVersion": "2.17"
         },
-        "wheelTags": ["py3-none-any", "cp38-abi3-manylinux_2_17_x86_64", "cp312-cp312-manylinux_2_17_x86_64"],
-        "flags": ["-I", "-S", "-B"]
+        "wheelTags": [
+          "py3-none-any",
+          "cp38-abi3-manylinux_2_17_x86_64",
+          "cp312-cp312-manylinux_2_17_x86_64"
+        ],
+        "flags": [
+          "-I",
+          "-S",
+          "-B"
+        ]
       },
       {
         "kind": "gnu-timeout",
         "path": "/usr/bin/timeout",
-        "identity": { "package": "GNU coreutils", "versionLinePattern": "^timeout \\(GNU coreutils\\) [0-9]+\\.[0-9]+" },
+        "identity": {
+          "package": "GNU coreutils",
+          "versionLinePattern": "^timeout \\(GNU coreutils\\) [0-9]+\\.[0-9]+"
+        },
         "exitWhenTerminated": 124,
         "exitWhenKilled": 137,
         "killAfterOption": "--kill-after"
@@ -81,10 +110,22 @@
     "maximumResultBytes": 6291456
   },
   "consumerObligations": [
-    { "obligationId": "C1", "statement": "Every provider in a run's closure has an entry for runtime.language." },
-    { "obligationId": "C2", "statement": "A program that starts a child uses only the executables in childProcesses.executables, sets or clears the child's environment itself, bounds the child within its execution path's delivery bound, and fails visibly when the child exits unsuccessfully, is ended, or answers what is not its declared result." },
-    { "obligationId": "C3", "statement": "Third-party packages come from the consumer's own digest-pinned closure, never from the host image." },
-    { "obligationId": "C4", "statement": "Temporary storage is shared and not reserved. A consumer whose child finds too little space fails visibly." }
+    {
+      "obligationId": "C1",
+      "statement": "Every provider in a run's closure has an entry for runtime.language."
+    },
+    {
+      "obligationId": "C2",
+      "statement": "A program that starts a child uses only the executables in childProcesses.executables, sets or clears the child's environment itself, bounds the child within its execution path's delivery bound, and fails visibly when the child exits unsuccessfully, is ended, or answers what is not its declared result."
+    },
+    {
+      "obligationId": "C3",
+      "statement": "Third-party packages come from the consumer's own digest-pinned closure, never from the host image."
+    },
+    {
+      "obligationId": "C4",
+      "statement": "Temporary storage is shared and not reserved. A consumer whose child finds too little space fails visibly."
+    }
   ],
   "acceptance": {
     "receiptContract": "hosted-execution-acceptance.v1",
@@ -95,7 +136,14 @@
       "path": "/sfx/v1/hosted-execution/acceptance",
       "workerSlotsHeld": 0,
       "probeTransport": "deployed-https-api",
-      "admittedCallers": [{ "kind": "user", "principalRef": "staging-release-acceptance", "match": "resolved-principal-id" }],
+      "admittedCallers": [
+        {
+          "kind": "user",
+          "principalRef": "host-acceptance-operator",
+          "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+          "match": "resolved-principal-id"
+        }
+      ],
       "probeAuthority": {
         "caller": "user",
         "principalRef": "staging-release-acceptance",
@@ -105,21 +153,172 @@
         "sessionCheckPath": "/sfx/v1/session",
         "release": "declared-credential-pointer",
         "runVisibility": "own-runs",
-        "sessionUse": "stored-until-expiry"
+        "sessionUse": "stored-until-expiry",
+        "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2"
       },
       "requestKernelsRequired": 2,
       "budgetMs": 150000,
       "probeCompletion": "run-event-stream-to-end"
     },
-    "repeatWhenChanged": ["imageDigest", "bundleDigest", "kernelArtifactDigest", "hostFilesDigest", "profileDigest"],
+    "repeatWhenChanged": [
+      "imageDigest",
+      "bundleDigest",
+      "kernelArtifactDigest",
+      "hostFilesDigest",
+      "profileDigest"
+    ],
     "checks": [
-      { "checkId": "T1", "promiseIds": ["H1", "H3"], "executionPath": "worker", "evidence": "execution", "establishes": "The run reports runtime.language. Under the worker identity, with a cleared environment, CPython at its path reports its implementation, version, SOABI, machine and glibc version, and each wheel tag above is among the tags that interpreter can load. Temporary storage at its path allows create, write, read and delete, with at least freeBytesAtAcceptance.minimum free." },
-      { "checkId": "T2", "promiseIds": ["H3"], "executionPath": "worker", "evidence": "execution", "establishes": "timeout --kill-after=2 2 ends a child that ignores SIGTERM: it exits exitWhenKilled after 4 to 5 s, and no process of the child remains." },
-      { "checkId": "T3", "promiseIds": ["H2"], "executionPath": "worker", "evidence": "execution", "establishes": "A run whose closure has a provider with no entry for runtime.language fails with PROVIDER_LANGUAGE_UNAVAILABLE, naming the provider, its declared language and runtime.language." },
-      { "checkId": "T4", "promiseIds": ["H4"], "executionPath": "worker", "evidence": "execution", "establishes": "A worker probe returns a JSON object with a payload string of maximumResultBytes UTF-8 bytes. The coordinator makes an authenticated HTTPS GET to host.endpoint + /sfx/v1/runs/{runId}/output, without redirects, and decodes /output/payload from the response JSON. Those UTF-8 bytes have the declared byte count and SHA-256. Calling serve-http-request in process does not establish this check." },
-      { "checkId": "T5", "promiseIds": ["H3"], "executionPath": "worker", "evidence": "execution", "establishes": "timeout at its path prints a first version line matching its identity, and timeout 2 ends a child that stops on SIGTERM: it exits exitWhenTerminated after 2 to 3 s, and no process of the child remains." },
-      { "checkId": "T6", "promiseIds": ["H5"], "executionPath": "worker", "evidence": "configuration", "establishes": "The deployed facade configuration and the declared host settings hold every bound, the run concurrency and the waiting runs above. This compares settings and proves no behavior." },
-      { "checkId": "T7", "promiseIds": ["H5"], "executionPath": "worker", "evidence": "execution", "establishes": "The request-path coordinator holds no worker slot. With both workers available, it admits three 5-second hold probes through the deployed HTTPS run API without waiting for any to finish. From the three completed runs' execution intervals, two overlap and the third starts only after one of them ends. The coordinator execution is excluded from the probe counts." }
-    ]
+      {
+        "checkId": "T1",
+        "promiseIds": [
+          "H1",
+          "H3"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "The run reports runtime.language. Under the worker identity, with a cleared environment, CPython at its path reports its implementation, version, SOABI, machine and glibc version, and each wheel tag above is among the tags that interpreter can load. Temporary storage at its path allows create, write, read and delete, with at least freeBytesAtAcceptance.minimum free."
+      },
+      {
+        "checkId": "T2",
+        "promiseIds": [
+          "H3"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "timeout --kill-after=2 2 ends a child that ignores SIGTERM: it exits exitWhenKilled after 4 to 5 s, and no process of the child remains."
+      },
+      {
+        "checkId": "T3",
+        "promiseIds": [
+          "H2"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "A run whose closure has a provider with no entry for runtime.language fails with PROVIDER_LANGUAGE_UNAVAILABLE, naming the provider, its declared language and runtime.language."
+      },
+      {
+        "checkId": "T4",
+        "promiseIds": [
+          "H4"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "A worker probe returns a JSON object with a payload string of maximumResultBytes UTF-8 bytes. The coordinator makes an authenticated HTTPS GET to host.endpoint + /sfx/v1/runs/{runId}/output, without redirects, and decodes /output/payload from the response JSON. Those UTF-8 bytes have the declared byte count and SHA-256. Calling serve-http-request in process does not establish this check."
+      },
+      {
+        "checkId": "T5",
+        "promiseIds": [
+          "H3"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "timeout at its path prints a first version line matching its identity, and timeout 2 ends a child that stops on SIGTERM: it exits exitWhenTerminated after 2 to 3 s, and no process of the child remains."
+      },
+      {
+        "checkId": "T6",
+        "promiseIds": [
+          "H5"
+        ],
+        "executionPath": "worker",
+        "evidence": "configuration",
+        "establishes": "The deployed facade configuration and the declared host settings hold every bound, the run concurrency and the waiting runs above. This compares settings and proves no behavior."
+      },
+      {
+        "checkId": "T7",
+        "promiseIds": [
+          "H5"
+        ],
+        "executionPath": "worker",
+        "evidence": "execution",
+        "establishes": "The request-path coordinator holds no worker slot. With both workers available, it admits three 5-second hold probes through the deployed HTTPS run API without waiting for any to finish. From the three completed runs' execution intervals, two overlap and the third starts only after one of them ends. The coordinator execution is excluded from the probe counts."
+      }
+    ],
+    "invocation": {
+      "owner": "host",
+      "client": {
+        "product": "sfx-api",
+        "surface": "capability observe",
+        "capabilityId": "accept-hosted-execution-profile",
+        "input": {},
+        "json": true,
+        "authentication": "existing-operator-session",
+        "publicationOwner": "host",
+        "exitCodes": {
+          "accepted": 0,
+          "rejectedReceipt": 2,
+          "failed": 1,
+          "unknown": 3
+        }
+      },
+      "discovery": {
+        "capabilityId": "read-hosted-execution-profile",
+        "verify": "exact-profile-text-sha256-and-supported-schema",
+        "routing": "profile-acceptance-coordinator",
+        "unsupported": "refuse-before-dispatch",
+        "clientWaitMs": 230000,
+        "endpointBinding": "authenticated-cli-origin-only"
+      },
+      "dispatch": {
+        "executionPath": "request",
+        "method": "POST",
+        "path": "/sfx/v1/hosted-execution/acceptance",
+        "body": {},
+        "attemptHeader": "X-SFX-Acceptance-Attempt-Id",
+        "attemptId": "client-generated-uuid",
+        "workerAdmission": "forbidden",
+        "redirects": "forbidden",
+        "automaticRetry": false,
+        "clientWaitMs": 230000,
+        "requestContract": "hosted-execution-acceptance-request.v1",
+        "maximumConcurrentCoordinators": 1,
+        "busyOutcome": "ACCEPTANCE_BUSY",
+        "attemptMeaning": "correlation-not-idempotency",
+        "profileDigestHeader": "X-SFX-Hosted-Profile-Digest",
+        "contextContract": "hosted-execution-acceptance-context.v1",
+        "contextSource": "host-ingress-not-request-body",
+        "concurrencyScope": "host-deployment"
+      },
+      "credentials": {
+        "initiator": "existing-operator-session",
+        "probe": "host-vault-stored-session",
+        "provisioning": "store-credential",
+        "refreshOwner": "host-operator",
+        "passwordPrompt": false,
+        "accountSwitch": false,
+        "revokeStoredSession": false,
+        "secretInInputOrEvidence": false,
+        "fallbackPrincipal": false
+      },
+      "failureContract": "hosted-execution-invocation-error.v1",
+      "uncertainOutcome": "retain-attempt-and-investigate-before-explicit-retry",
+      "completion": {
+        "owner": "host",
+        "proofContract": "hosted-execution-delivery-proof.v1",
+        "evidence": "live-supported-client-to-deployed-request-route",
+        "receiptRetention": "host-recorded-before-response-and-returned-to-initiator",
+        "fulfilledOnlyWith": "ACCEPTED-receipt-and-verified-delivery-proof",
+        "consumerClientImplementationRequired": false,
+        "verifierOwner": "host-with-consumer-readback",
+        "deploymentChangesInvalidateProof": true,
+        "publication": "profile-client-provider-bindings-and-schemas-as-one-verified-release"
+      },
+      "readback": {
+        "owner": "host",
+        "capabilityId": "read-hosted-execution-acceptance",
+        "surface": "capability observe",
+        "executionPath": "request",
+        "method": "GET",
+        "path": "/sfx/v1/hosted-execution/acceptance/{attemptId}",
+        "inputContract": "hosted-execution-acceptance-read-request.v1",
+        "resultContract": "hosted-execution-acceptance-read-result.v1",
+        "authorization": "same-pinned-operator-binding",
+        "credentialRelease": false,
+        "provider": "sfx-api-host-acceptance-record-port.v1",
+        "retention": "persistent-across-restarts-until-explicit-owner-retirement",
+        "receiptBytesPointer": "/receiptBytesBase64",
+        "encoding": "base64",
+        "notFoundMeaning": "no-retained-evidence-not-proof-of-no-execution"
+      }
+    }
   }
 }

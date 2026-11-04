@@ -1,0 +1,17 @@
+{
+  "contractId": "hosted-execution-acceptance-read-result.v1",
+  "attemptId": "11111111-1111-4111-8111-000000000011",
+  "status": "FAILED",
+  "error": {
+    "contractId": "hosted-execution-invocation-error.v1",
+    "attemptId": "11111111-1111-4111-8111-000000000011",
+    "outcome": "FAILED",
+    "stage": "credential",
+    "code": "ACCEPTANCE_CREDENTIAL_UNAVAILABLE",
+    "httpStatus": 0,
+    "requestExecutionId": null,
+    "message": "Synthetic fixture only; not live execution evidence.",
+    "automaticRetry": false,
+    "receipt": null
+  }
+}

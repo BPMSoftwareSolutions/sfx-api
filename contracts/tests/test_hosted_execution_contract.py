@@ -107,6 +107,14 @@ def fixture(profile):
         "executedAt": "2026-11-04T18:00:11Z",
         "evaluator": {"capabilityId": "accept-hosted-execution-profile",
                       "executionPath": "request", "executionId": IDS[0]},
+        "invocation": {
+            "attemptId": IDS[10], "requestExecutionId": IDS[0], "method": "POST",
+            "path": profile["acceptance"]["coordinator"]["path"], "executionPath": "request",
+            "initiator": profile["acceptance"]["coordinator"]["admittedCallers"][0],
+            "probePrincipalId": profile["acceptance"]["coordinator"]["probeAuthority"]["principalId"],
+            "authoritySource": "authenticated-caller-and-pinned-host-bindings",
+            "expectedProfileDigest": digest((CONTRACTS / "sfx-api-hosted-csharp.v1.profile.json").read_bytes()),
+        },
         "checks": {name: {"kind": "OBSERVED", "status": "PASSED",
                            "runIds": IDS[7:10] if name == "T7" else [IDS[index + 1]],
                            "observed": value}
@@ -308,10 +316,12 @@ class HostedExecutionContractTests(unittest.TestCase):
     def test_dedicated_session_authority_is_narrow(self):
         coordinator = self.profile["acceptance"]["coordinator"]
         self.assertEqual(coordinator["admittedCallers"], [
-            {"kind": "user", "principalRef": "staging-release-acceptance", "match": "resolved-principal-id"}
+            {"kind": "user", "principalRef": "host-acceptance-operator",
+             "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183", "match": "resolved-principal-id"}
         ])
         authority = coordinator["probeAuthority"]
-        self.assertEqual(authority["principalRef"], coordinator["admittedCallers"][0]["principalRef"])
+        self.assertEqual(authority["principalRef"], "staging-release-acceptance")
+        self.assertNotEqual(authority["principalId"], coordinator["admittedCallers"][0]["principalId"])
         self.assertEqual(authority["caller"], "user")
         self.assertEqual(authority["authentication"], "stored-session")
         self.assertEqual(authority["credential"], "SFX_API_ACCEPTANCE_SESSION")
@@ -320,9 +330,11 @@ class HostedExecutionContractTests(unittest.TestCase):
         mutations = [
             ("admittedCallers.0.kind", "machine"),
             ("admittedCallers.0.principalRef", "another-user"),
+            ("admittedCallers.0.principalId", authority["principalId"]),
             ("admittedCallers.0.match", "request-body-name"),
             ("probeAuthority.caller", "machine"),
             ("probeAuthority.principalRef", "another-user"),
+            ("probeAuthority.principalId", coordinator["admittedCallers"][0]["principalId"]),
             ("probeAuthority.authentication", "https-session-login"),
             ("probeAuthority.credential", "sfx-api-acceptance-password"),
             ("probeAuthority.provisioning", "operator-script"),
@@ -347,9 +359,10 @@ class HostedExecutionContractTests(unittest.TestCase):
                 self.assertFalse(validator.is_valid(profile))
 
     def test_published_version_one_cannot_be_relabelled_as_current(self):
-        self.assertEqual(self.profile["profileVersion"], 3)
+        self.assertEqual(self.profile["profileVersion"], 4)
         for version, digest in ((1, "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804"),
-                                (2, "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414")):
+                                (2, "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414"),
+                                (3, "sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b")):
             with self.subTest(version=version):
                 value = copy.deepcopy(self.good)
                 value["profileVersion"] = version
