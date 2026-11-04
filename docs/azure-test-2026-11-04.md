@@ -83,3 +83,30 @@ This is operator diagnostic evidence through the installed client, not an accept
 authenticated `GET /sfx/v1/runs/{runId}/output` establishes T4 (hosted-execution-profile.feature). The 74 s between
 the run's end and the client's return is not yet broken down. The coordinator's whole budget is 150 s, so that time
 counts against it.
+
+## Slice 3: the acceptance coordinator (`21e7499`)
+
+- **Image:** `bpmaiengineacr.azurecr.io/sfx-api@sha256:9fb211e1275195bc876261b410ea41a4b46cf4809c8a18904991d9f017d3432f`
+  (tag `sfx-api:21e7499`), ACR build `caax`. Kernel `244e0129`, unchanged. The bundle holds 27 documents under the pin
+  `CwjJy9jhaiO4MnlpvgRgI4upKe3Z2Jx8ax7uUtkGXBo=`, all checked against the manifest in the build context.
+- **Replaced:** `sfx-api:2089ecf` (`sha256:8fffef2a…`), live from about 17:26 to 17:41 UTC. It let a caller start the
+  coordinator as a run with any `principalId` in the run's input. `21e7499` refuses that admission. The vault held no
+  acceptance password while `2089ecf` was live, so the coordinator could not sign in. The rollback is `sfx-api:ec953c9`
+  (`sha256:518fd40b…`).
+- **The deployer's record of the image:** the App Service setting `SFX_API_IMAGE_DIGEST`, set to the digest above at
+  17:37:39 UTC, before the image. Each deploy now restarts twice: once for the setting, once for the image. The
+  setting was first set at 17:23:11, for `2089ecf`.
+- **The swaps:** the image was set at 17:39:59 UTC, and the site started at 17:41:28. Every probe of
+  `GET /sfx/v1/nope` answered 404 through both restarts of each deploy, so there was no outage.
+
+Checked on the deployed host after the swap:
+
+| Check | Result |
+| --- | --- |
+| `POST /sfx/v1/hosted-execution/acceptance`, unauthenticated | 401 `CALLER_REQUIRED`: the route is declared |
+| `read-hosted-execution-profile`, run `c2716df8` | profile version 2, `sha256:a27ac5f5…`, and the text it answers hashes to that digest |
+| `accept-hosted-execution-profile` admitted as a run | refused `ADMISSION_REQUEST_PATH_ONLY` |
+| `probe-hosted-execution` `configuration`, run `70fd87a4` | `settingsDigest` `sha256:2daac7e0…`, request 2 kernels, 30000 / 195000 / 198000 ms; worker 3600000 / 3605000 ms, 2 at once, 64 waiting |
+
+Not checked yet: the coordinator itself. It needs the vault entry `sfx-api-acceptance-password`, which is not
+provisioned, and a caller signed in as `staging-release-acceptance`.
