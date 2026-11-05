@@ -227,7 +227,7 @@
                       },
                       "sha256Base64": {
                         "op": "literal",
-                        "value": "FXzM/XtVovxt1M0Zu6Fb4e2QrYwbTes1+2tTin0DFwA="
+                        "value": "cYmRFVRLSrW+5H0igNDXEW9/IiS8GzM67WtrH+4d8Uw="
                       },
                       "carry": {
                         "op": "path",
@@ -422,7 +422,7 @@
                       },
                       "pin": {
                         "op": "literal",
-                        "value": "sha256-base64:FXzM/XtVovxt1M0Zu6Fb4e2QrYwbTes1+2tTin0DFwA="
+                        "value": "sha256-base64:cYmRFVRLSrW+5H0igNDXEW9/IiS8GzM67WtrH+4d8Uw="
                       }
                     },
                     "value": {
