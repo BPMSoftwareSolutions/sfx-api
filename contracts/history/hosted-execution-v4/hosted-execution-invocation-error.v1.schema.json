@@ -1,0 +1,290 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractId",
+    "attemptId",
+    "outcome",
+    "stage",
+    "code",
+    "httpStatus",
+    "requestExecutionId",
+    "message",
+    "automaticRetry",
+    "receipt"
+  ],
+  "properties": {
+    "contractId": {
+      "const": "hosted-execution-invocation-error.v1"
+    },
+    "attemptId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "outcome": {
+      "enum": [
+        "FAILED",
+        "UNKNOWN"
+      ]
+    },
+    "stage": {
+      "enum": [
+        "discovery",
+        "caller",
+        "credential",
+        "dispatch",
+        "execution",
+        "collection",
+        "verification"
+      ]
+    },
+    "code": {
+      "enum": [
+        "PROFILE_DISCOVERY_FAILED",
+        "PROFILE_IDENTITY_MISMATCH",
+        "CLIENT_DISPATCH_UNSUPPORTED",
+        "CALLER_REQUIRED",
+        "ACCEPTANCE_PRINCIPAL_REQUIRED",
+        "ACCEPTANCE_CREDENTIAL_UNAVAILABLE",
+        "ACCEPTANCE_SESSION_REJECTED",
+        "ACCEPTANCE_PRINCIPAL_MISMATCH",
+        "ACCEPTANCE_REQUEST_PATH_REQUIRED",
+        "ACCEPTANCE_CLIENT_FAILED",
+        "ACCEPTANCE_RECEIPT_INVALID",
+        "ACCEPTANCE_TRANSPORT_UNCERTAIN",
+        "ACCEPTANCE_BUSY",
+        "ACCEPTANCE_REQUEST_INVALID",
+        "PROFILE_CHANGED",
+        "ACCEPTANCE_RECORD_UNAVAILABLE"
+      ]
+    },
+    "httpStatus": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 599
+    },
+    "requestExecutionId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "automaticRetry": {
+      "const": false
+    },
+    "receipt": {
+      "type": "null"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hosted-execution-invocation-error.v1.schema.json",
+  "description": "A non-secret client-visible failure when no acceptance receipt was returned. Unknown transport outcome retains the original attempt and forbids automatic retry; it never means ACCEPTED.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "UNKNOWN"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "const": "ACCEPTANCE_TRANSPORT_UNCERTAIN"
+          },
+          "stage": {
+            "enum": [
+              "dispatch",
+              "collection"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "ACCEPTANCE_TRANSPORT_UNCERTAIN"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "outcome": {
+            "const": "UNKNOWN"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "enum": [
+              "discovery",
+              "caller"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "outcome": {
+            "const": "FAILED"
+          },
+          "requestExecutionId": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "discovery"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "PROFILE_DISCOVERY_FAILED",
+              "PROFILE_IDENTITY_MISMATCH",
+              "CLIENT_DISPATCH_UNSUPPORTED"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "caller"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "CALLER_REQUIRED",
+              "ACCEPTANCE_PRINCIPAL_REQUIRED"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "credential"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "ACCEPTANCE_CREDENTIAL_UNAVAILABLE",
+              "ACCEPTANCE_SESSION_REJECTED",
+              "ACCEPTANCE_PRINCIPAL_MISMATCH"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "dispatch"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "ACCEPTANCE_BUSY",
+              "ACCEPTANCE_REQUEST_INVALID",
+              "ACCEPTANCE_REQUEST_PATH_REQUIRED",
+              "ACCEPTANCE_TRANSPORT_UNCERTAIN",
+              "PROFILE_CHANGED"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "execution"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "ACCEPTANCE_CLIENT_FAILED",
+              "ACCEPTANCE_RECORD_UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "collection"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "ACCEPTANCE_TRANSPORT_UNCERTAIN"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "verification"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "ACCEPTANCE_RECEIPT_INVALID"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

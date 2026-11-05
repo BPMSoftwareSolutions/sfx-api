@@ -10,5 +10,6 @@
     <Reference Include="ScenarioKernel.Adapters"><HintPath>$(KernelRoot)/ScenarioKernel.Adapters.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="ScenarioKernel.Contracts"><HintPath>$(KernelRoot)/ScenarioKernel.Contracts.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="ScenarioKernel.Execution"><HintPath>$(KernelRoot)/ScenarioKernel.Execution.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ScenarioKernel"><HintPath>$(KernelRoot)/ScenarioKernel.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

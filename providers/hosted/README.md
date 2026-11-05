@@ -24,11 +24,14 @@ before terminal persistence. Kernel carrier schemas are not substituted for that
 validation. The client independently uses generated Ajv validators from the same
 schema files and reconciles identities and original artifact bytes.
 
-Credential diagnostics distinguish a value that does not match the deployed
-ingress's session-bearer format from a correctly shaped value rejected by session
-authentication. The check occurs inside the host's credential-consuming program.
-It returns only a typed failure and a fixed message, with no value, prefix, length
-or hash of the credential. `CREDENTIAL_STORED` remains a storage receipt.
+Version 5 removes the separate acceptance credential. The ingress provider wraps
+the existing declared parser and retains only a canonical Authorization bearer
+for the acceptance POST. The bearer is outside graph values, bound to the host's
+request UUID, available once for at most the request lifetime, and registered
+with kernel observation redaction. A later ingress clears any unused value.
+The coordinator validates the same operator session through HTTPS and passes it
+to its bounded probe process; no vault read, sign-in, renewal or storage occurs.
+Duplicate headers, another request UUID and replay cannot release a credential.
 
 Records are stored on the deployment's persistent `/home` mount. `coordinator.lock`
 is an OS-held exclusive lock; process death releases it. `active.json` identifies

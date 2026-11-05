@@ -1228,7 +1228,7 @@
                                 "body": "$body"
                               }
                             },
-                            "meaning": "The pinned host operator initiates the v4 coordinator with an empty body. Ingress binds the caller and actual request admission identity; headers only correlate the attempt and discovered profile.",
+                            "meaning": "The pinned host operator initiates the coordinator with an empty body. Ingress binds the caller and actual request admission identity; the same request session serves probes without vault provisioning.",
                             "segments": {
                               "0": "",
                               "1": "sfx",
@@ -3040,7 +3040,7 @@
       "event_id": "serve-api-request-requested",
       "responsibility": "the kernel identifies the caller, resolves the request against the interface its declaration carries, and runs the operation's capability",
       "outcome_id": "serve-api-request-outcome",
-      "scenario_definition_digest": "Sjph9dkAFArzWsHxhQGbXIV5loeB3bEGRHe3OWgRJ64="
+      "scenario_definition_digest": "VOPQdD8XYj8/EnkSbqKh0D9sjoqqwb5IsD/mcb9OSjk="
     }
   ]
 }

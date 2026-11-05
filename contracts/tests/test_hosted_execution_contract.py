@@ -313,28 +313,28 @@ class HostedExecutionContractTests(unittest.TestCase):
         value["checks"]["T6"]["observed"]["request"]["kernels"] = 1
         self.assertFalse(self.validator.is_valid(value))
 
-    def test_dedicated_session_authority_is_narrow(self):
+    def test_invoking_session_authority_is_narrow(self):
         coordinator = self.profile["acceptance"]["coordinator"]
         self.assertEqual(coordinator["admittedCallers"], [
             {"kind": "user", "principalRef": "host-acceptance-operator",
              "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183", "match": "resolved-principal-id"}
         ])
         authority = coordinator["probeAuthority"]
-        self.assertEqual(authority["principalRef"], "staging-release-acceptance")
-        self.assertNotEqual(authority["principalId"], coordinator["admittedCallers"][0]["principalId"])
+        self.assertEqual(authority["principalRef"], "host-acceptance-operator")
+        self.assertEqual(authority["principalId"], coordinator["admittedCallers"][0]["principalId"])
         self.assertEqual(authority["caller"], "user")
-        self.assertEqual(authority["authentication"], "stored-session")
-        self.assertEqual(authority["credential"], "SFX_API_ACCEPTANCE_SESSION")
-        self.assertEqual(authority["provisioning"], "store-credential")
+        self.assertEqual(authority["authentication"], "existing-operator-session")
+        self.assertEqual(authority["credential"], "invoking-request-session")
+        self.assertEqual(authority["provisioning"], "existing-cli-login")
         validator = Draft202012Validator(self.profile_schema)
         mutations = [
             ("admittedCallers.0.kind", "machine"),
             ("admittedCallers.0.principalRef", "another-user"),
-            ("admittedCallers.0.principalId", authority["principalId"]),
+            ("admittedCallers.0.principalId", IDS[0]),
             ("admittedCallers.0.match", "request-body-name"),
             ("probeAuthority.caller", "machine"),
             ("probeAuthority.principalRef", "another-user"),
-            ("probeAuthority.principalId", coordinator["admittedCallers"][0]["principalId"]),
+            ("probeAuthority.principalId", IDS[0]),
             ("probeAuthority.authentication", "https-session-login"),
             ("probeAuthority.credential", "sfx-api-acceptance-password"),
             ("probeAuthority.provisioning", "operator-script"),
@@ -359,7 +359,7 @@ class HostedExecutionContractTests(unittest.TestCase):
                 self.assertFalse(validator.is_valid(profile))
 
     def test_published_version_one_cannot_be_relabelled_as_current(self):
-        self.assertEqual(self.profile["profileVersion"], 4)
+        self.assertEqual(self.profile["profileVersion"], 5)
         for version, digest in ((1, "sha256:7c555f52f36a6060453451a79092a2ecc34a653fcb0c4b871fe991305b4da804"),
                                 (2, "sha256:a27ac5f5d28f8dd511fe3763bafb188c1bf4dfc60632447d1ba43622e104e414"),
                                 (3, "sha256:53d88521d1767295fd4967ce3bcf90d3606b7e0b63e2c2c3ba66a5a685e6957b")):

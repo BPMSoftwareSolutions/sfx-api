@@ -1,0 +1,1 @@
+{"contractId":"hosted-execution-invocation-error.v1","attemptId":"c55ffbc8-1653-45f9-9a98-6969919378b9","outcome":"FAILED","stage":"discovery","code":"PROFILE_DISCOVERY_FAILED","httpStatus":0,"requestExecutionId":null,"message":"The hosted acceptance invocation could not complete: PROFILE_DISCOVERY_FAILED.","automaticRetry":false,"receipt":null}

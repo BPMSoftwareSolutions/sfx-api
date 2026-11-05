@@ -50,7 +50,7 @@
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         },
         "profileDigest": {
-          "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+          "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
         }
       }
     },
@@ -80,7 +80,7 @@
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         },
         "profileDigest": {
-          "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+          "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
         }
       }
     },
@@ -150,7 +150,7 @@
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         },
         "profileDigest": {
-          "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+          "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
         },
         "receiptSha256": {
           "type": "string",

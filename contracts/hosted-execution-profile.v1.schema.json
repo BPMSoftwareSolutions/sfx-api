@@ -28,7 +28,7 @@
     },
     "profileVersion": {
       "type": "integer",
-      "minimum": 4
+      "minimum": 5
     },
     "host": {
       "type": "object",
@@ -389,7 +389,7 @@
               "maxItems": 1
             },
             "probeAuthority": {
-              "description": "The coordinator uses the dedicated acceptance principal's session, which the operator stores in the host vault with the standard store-credential capability. It is released from the vault only at the declared credential pointer. Before any probe, the coordinator confirms that the deployed HTTPS session check names the trusted principal binding's principalId. It then uses that session for its own probes and readback. It never signs in and never revokes the stored session.",
+              "description": "The coordinator reuses the authenticated operator request session for this invocation only. It is held in request-kernel memory outside graph values, checked through the deployed HTTPS session endpoint, and never stored, returned, signed in or revoked. No separate acceptance credential is provisioned.",
               "type": "object",
               "additionalProperties": false,
               "required": [
@@ -409,16 +409,16 @@
                   "const": "user"
                 },
                 "principalRef": {
-                  "const": "staging-release-acceptance"
+                  "const": "host-acceptance-operator"
                 },
                 "authentication": {
-                  "const": "stored-session"
+                  "const": "existing-operator-session"
                 },
                 "credential": {
-                  "const": "SFX_API_ACCEPTANCE_SESSION"
+                  "const": "invoking-request-session"
                 },
                 "provisioning": {
-                  "const": "store-credential"
+                  "const": "existing-cli-login"
                 },
                 "sessionCheckPath": {
                   "const": "/sfx/v1/session"
@@ -427,15 +427,13 @@
                   "const": "own-runs"
                 },
                 "sessionUse": {
-                  "description": "The stored session serves every acceptance until it expires or is revoked. The operator stores a new one with store-credential.",
-                  "const": "stored-until-expiry"
+                  "const": "single-acceptance-invocation"
                 },
                 "release": {
-                  "description": "The stored session bearer is released only at the declared credential pointer. It never reaches source, testimony, observations or the receipt.",
-                  "const": "declared-credential-pointer"
+                  "const": "request-scoped-memory"
                 },
                 "principalId": {
-                  "const": "00e053bd-b090-4ff9-be25-64089d170fb2"
+                  "const": "565de6d4-ebcd-408b-9359-04d21dc62183"
                 }
               }
             },
@@ -724,22 +722,22 @@
                 "refreshOwner",
                 "passwordPrompt",
                 "accountSwitch",
-                "revokeStoredSession",
                 "secretInInputOrEvidence",
-                "fallbackPrincipal"
+                "fallbackPrincipal",
+                "revokeSession"
               ],
               "properties": {
                 "initiator": {
                   "const": "existing-operator-session"
                 },
                 "probe": {
-                  "const": "host-vault-stored-session"
+                  "const": "existing-operator-session"
                 },
                 "provisioning": {
-                  "const": "store-credential"
+                  "const": "none"
                 },
                 "refreshOwner": {
-                  "const": "host-operator"
+                  "const": "existing-login"
                 },
                 "passwordPrompt": {
                   "const": false
@@ -747,13 +745,13 @@
                 "accountSwitch": {
                   "const": false
                 },
-                "revokeStoredSession": {
-                  "const": false
-                },
                 "secretInInputOrEvidence": {
                   "const": false
                 },
                 "fallbackPrincipal": {
+                  "const": false
+                },
+                "revokeSession": {
                   "const": false
                 }
               }

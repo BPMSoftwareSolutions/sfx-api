@@ -1,6 +1,6 @@
-# Hosted execution invocation: version 4 payloads and protocol
+# Hosted execution invocation: version 5 payloads and protocol
 
-**Version 4 deployed; acceptance unfulfilled.** The authoritative behavior is [hosted-execution-profile.feature](../features/hosted-execution-profile.feature). The profile pin is `sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d`. The [latest host diagnosis](../docs/hosted-execution-v4-2026-11-04/credential-diagnosis/README.md) identifies a mismatch between the stored credential and the API session-bearer format expected by acceptance, before T1–T7. The host owns client support, declared dispatch, authentication bindings, persistent evidence and the live completion proof. These requirements add no consumer password workflow.
+**Version 5 deployed and accepted live.** All T1-T7 checks passed; the [retained delivery proof](../docs/hosted-execution-v5-2026-11-04/README.md) is FULFILLED. The owner directed removal of the added acceptance-session dependency. The profile pin is `sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33`. Acceptance uses the existing signed-in operator session end to end, without separate credentials. The [host handoff](hosted-execution-review.md) records completion obligations; the [version 4 record](../docs/hosted-execution-v4-2026-11-04/README.md) remains historical.
 
 ## Data contracts
 
@@ -8,16 +8,16 @@ All object schemas are closed: required fields must exist and unknown fields are
 
 | Boundary | Authoritative schema | Complete example |
 | --- | --- | --- |
-| Deployment promises, identity bindings and invocation obligations | [profile](hosted-execution-profile.v1.schema.json) | [version 4 profile](sfx-api-hosted-csharp.v1.profile.json) |
-| CLI acceptance input and POST body | [request](hosted-execution-acceptance-request.v1.schema.json) | [request.json](examples/hosted-execution-v4/request.json) |
-| Internal coordinator input, constructed only by trusted host ingress | [context](hosted-execution-acceptance-context.v1.schema.json) | [trusted-context.json](examples/hosted-execution-v4/trusted-context.json) |
-| T1–T7 receipt, including invocation identity | [acceptance receipt](hosted-execution-acceptance.v1.schema.json) | [ACCEPTED](examples/hosted-execution-v4/receipt-accepted.json), [REJECTED](examples/hosted-execution-v4/receipt-rejected.json) |
-| Failure when no receipt was returned | [invocation error](hosted-execution-invocation-error.v1.schema.json) | [unsupported client](examples/hosted-execution-v4/error-unsupported-client.json), [missing session](examples/hosted-execution-v4/error-missing-session.json), [unknown response](examples/hosted-execution-v4/error-unknown-response.json) |
-| Retained attempt lookup input | [read request](hosted-execution-acceptance-read-request.v1.schema.json) | [read-request.json](examples/hosted-execution-v4/read-request.json) |
-| Retained attempt lookup result | [read result](hosted-execution-acceptance-read-result.v1.schema.json) | [receipt available](examples/hosted-execution-v4/read-result-receipt.json), [running](examples/hosted-execution-v4/read-result-running.json), [unknown](examples/hosted-execution-v4/read-result-unknown.json), [failed](examples/hosted-execution-v4/read-result-failed.json), [not found](examples/hosted-execution-v4/read-result-not_found.json) |
-| Live caller-to-host-to-caller fulfillment evidence | [delivery proof](hosted-execution-delivery-proof.v1.schema.json) | [delivery-proof-fulfilled.json](examples/hosted-execution-v4/delivery-proof-fulfilled.json) |
+| Deployment promises, identity bindings and invocation obligations | [profile](hosted-execution-profile.v1.schema.json) | [version 5 profile](sfx-api-hosted-csharp.v1.profile.json) |
+| CLI acceptance input and POST body | [request](hosted-execution-acceptance-request.v1.schema.json) | [request.json](examples/hosted-execution-v5/request.json) |
+| Internal coordinator input, constructed only by trusted host ingress | [context](hosted-execution-acceptance-context.v1.schema.json) | [trusted-context.json](examples/hosted-execution-v5/trusted-context.json) |
+| T1–T7 receipt, including invocation identity | [acceptance receipt](hosted-execution-acceptance.v1.schema.json) | [ACCEPTED](examples/hosted-execution-v5/receipt-accepted.json), [REJECTED](examples/hosted-execution-v5/receipt-rejected.json) |
+| Failure when no receipt was returned | [invocation error](hosted-execution-invocation-error.v1.schema.json) | [unsupported client](examples/hosted-execution-v5/error-unsupported-client.json), [missing session](examples/hosted-execution-v5/error-missing-session.json), [unknown response](examples/hosted-execution-v5/error-unknown-response.json) |
+| Retained attempt lookup input | [read request](hosted-execution-acceptance-read-request.v1.schema.json) | [read-request.json](examples/hosted-execution-v5/read-request.json) |
+| Retained attempt lookup result | [read result](hosted-execution-acceptance-read-result.v1.schema.json) | [receipt available](examples/hosted-execution-v5/read-result-receipt.json), [running](examples/hosted-execution-v5/read-result-running.json), [unknown](examples/hosted-execution-v5/read-result-unknown.json), [failed](examples/hosted-execution-v5/read-result-failed.json), [not found](examples/hosted-execution-v5/read-result-not_found.json) |
+| Live caller-to-host-to-caller fulfillment evidence | [delivery proof](hosted-execution-delivery-proof.v1.schema.json) | [delivery-proof-fulfilled.json](examples/hosted-execution-v5/delivery-proof-fulfilled.json) |
 
-Every linked example is **synthetic test data**. No example authorizes deployment or claims that acceptance ran. Negative payload examples and their expected rejection reasons are in [the fixture guide](examples/hosted-execution-v4/README.md).
+Every linked example is **synthetic test data**. No example authorizes deployment or claims that acceptance ran. Negative payload examples and their expected rejection reasons are in [the fixture guide](examples/hosted-execution-v5/README.md).
 
 ## Supported invocation and wire shape
 
@@ -27,7 +27,7 @@ The host must publish client support for the existing surface:
 sfx-api capability observe accept-hosted-execution-profile --input '{}' --input-type json --json --auth user
 ```
 
-The updated client is installed and its live invocation is recorded above. It first invokes the existing `read-hosted-execution-profile` capability, verifies its returned text/digest and schema, and selects the declared request route. Discovery completes before the coordinator starts. The profile origin must equal the authenticated CLI origin. Unsupported routing is a typed failure; the client must not fall through to a worker run.
+The updated client discovers the active supported profile before invoking acceptance. It first invokes the existing `read-hosted-execution-profile` capability, verifies its returned text/digest and schema, and selects the declared request route. Discovery completes before the coordinator starts. The profile origin must equal the authenticated CLI origin. Unsupported routing is a typed failure; the client must not fall through to a worker run.
 
 The acceptance input and POST body are exactly:
 
@@ -42,7 +42,7 @@ POST /sfx/v1/hosted-execution/acceptance
 Content-Type: application/json
 Authorization: Bearer <existing operator session; injected from the secure client session store>
 X-SFX-Acceptance-Attempt-Id: <new lowercase UUID>
-X-SFX-Hosted-Profile-Digest: sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d
+X-SFX-Hosted-Profile-Digest: sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33
 
 {}
 ```
@@ -56,30 +56,25 @@ Angle-bracket text describes runtime values; it is not literal input. The bearer
 | `expectedProfileDigest` | Client's verified discovery result | Must equal the active host profile or return `PROFILE_CHANGED`. |
 | `caller.kind`, `caller.principalId` | Authenticated ingress | Must resolve to user `565de6d4-ebcd-408b-9359-04d21dc62183`, the pinned `host-acceptance-operator`. |
 | `requestExecutionId`, `executionPath` | Actual host request admission | Request execution identity and `request`; never supplied by the body or invented by the evaluator. |
-| Probe principal | Pinned profile/bundle | `staging-release-acceptance`, `00e053bd-b090-4ff9-be25-64089d170fb2`. |
-| Probe bearer | Host vault at declared provider boundary | `SFX_API_ACCEPTANCE_SESSION`, checked through `/sfx/v1/session`; no password sign-in, session revocation or account switching. |
+| Probe principal | Authenticated operator and pinned profile | `host-acceptance-operator`, `565de6d4-ebcd-408b-9359-04d21dc62183`; same principal as the initiator. |
+| Probe bearer | Invocation-scoped provider memory | The existing authenticated request session; validated against the same pinned operator, never stored or returned. |
 
-The host constructs the **internal context** from those sources. Its complete JSON shape is shown in [trusted-context.json](examples/hosted-execution-v4/trusted-context.json). That document is never a caller-supplied request body. Passing context schema validation is not authorization; the provider must still compare the authenticated caller against its trusted operator binding before releasing any credential.
+The host constructs the **internal context** from those sources. Its complete JSON shape is shown in [trusted-context.json](examples/hosted-execution-v5/trusted-context.json). That document is never a caller-supplied request body. Passing context schema validation is not authorization; the provider must still compare the authenticated caller against its trusted operator binding before releasing any credential.
 
-The operator gate is a deliberate version 4 change from version 3's dedicated-principal caller gate. It applies only to initiating acceptance and reading its non-secret records. It does not widen access to probe runs or grant arbitrary users a delegated credential.
+The pinned operator gate protects initiation and readback. Probes use that same principal and ordinary own-run authorization. This revision removes the separate probe account and stored-session dependency at the owner's direction.
 
-## Existing credential-provisioning contract
+## No additional credential provisioning
 
-Provisioning remains the existing `store-credential` capability with `store-credential-request.v1` and `store-credential-result.v1`; this revision does not redefine those estate contracts. The host binds their admitted declarations. This is a separate secure provisioning operation, not the acceptance request body. The owner has already reported storing this reference; acceptance must reuse it rather than prompt or overwrite it.
+Version 5 uses the existing operator session for the coordinator and all probes.
+The host does not read `SFX_API_ACCEPTANCE_SESSION` and does not require a dedicated
+acceptance account. The ordinary installed CLI login is sufficient.
 
-The standard input shape is:
-
-```json
-{
-  "contractId": "store-credential-request.v1",
-  "payload": {
-    "referenceName": "SFX_API_ACCEPTANCE_SESSION",
-    "secret": "<session supplied only through the standard private provisioning channel>"
-  }
-}
-```
-
-The placeholder is explanatory, not a real secret or an executable example. The store's non-disclosing result carries `disposition`, `referenceName`, `entryId`, `storedAt`, `formatVersion`, `nonDisclosureVerified`, and optional `realization`; it carries no value or derivative of the secret. Readiness requires the actual `CREDENTIAL_STORED` result and the coordinator's subsequent live session/principal check. A stored receipt alone does not establish that a session remains unexpired. Expiry is handled by the host operator through the same standard provisioning contract, without a consumer password script.
+Declared ingress holds the request bearer outside graph values, binds it to the
+host's request UUID, and permits one use by that invocation. It registers the
+bearer with observation redaction. The coordinator validates the session and
+pinned operator through HTTPS before submitting probes. It never signs in,
+stores, renews, revokes or returns a credential. Caller identity in a body cannot
+replace the authenticated request context. Readback releases no credential.
 
 ## Responses and failures
 

@@ -25,10 +25,10 @@
       "const": "sfx-api-hosted-csharp"
     },
     "profileVersion": {
-      "const": 4
+      "const": 5
     },
     "profileDigest": {
-      "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+      "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
     },
     "deployment": {
       "type": "object",
@@ -236,13 +236,13 @@
           }
         },
         "probePrincipalId": {
-          "const": "00e053bd-b090-4ff9-be25-64089d170fb2"
+          "const": "565de6d4-ebcd-408b-9359-04d21dc62183"
         },
         "authoritySource": {
           "const": "authenticated-caller-and-pinned-host-bindings"
         },
         "expectedProfileDigest": {
-          "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+          "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
         }
       }
     }

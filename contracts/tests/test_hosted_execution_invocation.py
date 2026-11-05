@@ -78,7 +78,7 @@ class HostedInvocationTests(unittest.TestCase):
         for path, value in (("owner", "consumer"), ("dispatch.executionPath", "worker"),
                             ("dispatch.automaticRetry", True), ("dispatch.maximumConcurrentCoordinators", 2),
                             ("credentials.passwordPrompt", True), ("credentials.accountSwitch", True),
-                            ("credentials.revokeStoredSession", True), ("credentials.fallbackPrincipal", True),
+                            ("credentials.revokeSession", True), ("credentials.fallbackPrincipal", True),
                             ("completion.consumerClientImplementationRequired", True)):
             broken = copy.deepcopy(self.profile)
             target = broken["acceptance"]["invocation"]
@@ -99,9 +99,9 @@ class HostedInvocationTests(unittest.TestCase):
             if defect == "requestExecutionId":
                 broken["invocation"][defect] = IDS[10]
             elif defect == "initiator":
-                broken["invocation"][defect]["principalId"] = broken["invocation"]["probePrincipalId"]
+                broken["invocation"][defect]["principalId"] = IDS[0]
             elif defect == "probePrincipalId":
-                broken["invocation"][defect] = broken["invocation"]["initiator"]["principalId"]
+                broken["invocation"][defect] = IDS[0]
             else:
                 broken["invocation"]["executionPath"] = "worker"
             with self.assertRaises(ValueError):
@@ -211,7 +211,7 @@ class HostedInvocationTests(unittest.TestCase):
             validator.validate_readback(dict(absent, receipt=self.good))
 
     def test_checked_in_payload_examples_match_their_contracts(self):
-        examples = ROOT / "contracts/examples/hosted-execution-v4"
+        examples = ROOT / "contracts/examples/hosted-execution-v5"
         schemas = {"request.json": "hosted-execution-acceptance-request.v1.schema.json",
                    "trusted-context.json": "hosted-execution-acceptance-context.v1.schema.json",
                    "read-request.json": "hosted-execution-acceptance-read-request.v1.schema.json"}

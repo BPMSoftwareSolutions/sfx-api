@@ -1,0 +1,14 @@
+{
+  "observedAt": "2026-11-04T23:37:44.252641+00:00",
+  "app": "sfx-api-test",
+  "registryBuild": "cab3",
+  "tag": "hosted-v5-a",
+  "profileVersion": 5,
+  "profileDigest": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33",
+  "imageDigest": "sha256:9b626f660c56a9089fc73f18ca6f270ca44213abc1e2fb2616e8980c7b23d6fa",
+  "bundleDigest": "sha256-base64:FXzM/XtVovxt1M0Zu6Fb4e2QrYwbTes1+2tTin0DFwA=",
+  "kernelArtifactDigest": "sha256:244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+  "hostFilesDigest": "sha256:82871ab7745a02d340d135672eb895fe4c4e7d0c76a0b4a0f7176859ebd9c6d7",
+  "source": "ACR completed build, configured App Service image, verified final image context, actual deployed receipt and independent readback agree",
+  "verifiedAt": "2026-11-04T23:41:48.511953+00:00"
+}

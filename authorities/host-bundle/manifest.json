@@ -5,7 +5,7 @@
       "capabilityId": "accept-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/accept-hosted-execution-profile.json",
-      "sha256Base64": "pyKHoDASIQkEcYBWYqTHdM4rvU2u4x4tigH4DWG89p0="
+      "sha256Base64": "nhLGjsNfAPnA8m0lf2IcTDB2TzjvMpbiJES1zT6/e+c="
     },
     {
       "capabilityId": "admit-api-run-live",
@@ -113,7 +113,7 @@
       "capabilityId": "read-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-hosted-execution-profile.json",
-      "sha256Base64": "/rJRBb5QE50PtTrNVbUDwFE1SZ3IovoVBxpemDp6eb0="
+      "sha256Base64": "rfPx5nf7IqZTVPAJuiBgoUDg+A+KE+VWsxendsueNxE="
     },
     {
       "capabilityId": "read-run-graphs",
@@ -137,7 +137,7 @@
       "capabilityId": "resolve-http-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/resolve-http-request.json",
-      "sha256Base64": "8t+tjqoRdIFtHZJqmtyV355WpjUmAPaXtoQn0UeFYTo="
+      "sha256Base64": "+wByJDztXFM9Q2UNGt4bNpKtTVg9HbzUP8Noe43PWbs="
     },
     {
       "capabilityId": "revoke-api-session",
@@ -155,13 +155,13 @@
       "capabilityId": "serve-api-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-api-request.json",
-      "sha256Base64": "TgpyxcgHGWbrqgDmmLWPU4pkmRNexws9WhlLnp8SkHE="
+      "sha256Base64": "EHMqJfxlFB+JSKZokJyjvZWGdg7PX7swdhz8PCAY1Hs="
     },
     {
       "capabilityId": "serve-http-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-http-request.json",
-      "sha256Base64": "emHK+fFb9HdfnKdry+jtahGRtii6+tO7EQ9QMziSdJY="
+      "sha256Base64": "6msIuromjILH3gqntdLfpd0fNfMN4GTg7C9xuCpJkyY="
     },
     {
       "capabilityId": "subscribe-estate-live-observation",

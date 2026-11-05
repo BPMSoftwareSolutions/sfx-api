@@ -1,6 +1,6 @@
 {
   "endpoint": "https://sfx-api-test.azurewebsites.net",
-  "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2",
+  "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
   "budgetMs": 150000,
   "probes": [
     {

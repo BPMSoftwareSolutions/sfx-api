@@ -15,6 +15,25 @@ void Check(bool condition,string message) { if(!condition)throw new Exception(me
 JsonNode Load(string p)=>HostedAcceptance.Parse(File.ReadAllText(Path.Combine(repo,p)));
 var id="11111111-1111-4111-8111-000000000011";
 try {
+    var synthetic=Convert.ToBase64String(Enumerable.Range(0,32).Select(x=>(byte)x).ToArray());
+    string Request(string headers,string body="{}")=>"POST /sfx/v1/hosted-execution/acceptance HTTP/1.1\r\n"+headers+"\r\n\r\n"+body;
+    HostedAcceptance.CaptureRequestCredential(id,Request("Authorization: Bearer "+synthetic));
+    Check(HostedAcceptance.TakeRequestCredential(id)==synthetic,"request session not available");
+    Check(HostedAcceptance.TakeRequestCredential(id)=="","request session replay");
+    HostedAcceptance.CaptureRequestCredential(id,Request("Authorization: Bearer "+synthetic));
+    Check(HostedAcceptance.TakeRequestCredential(Guid.NewGuid().ToString())=="","cross-request credential release");
+    Check(HostedAcceptance.TakeRequestCredential(id)=="","mismatched request left credential");
+    foreach(var raw in new[]{Request("Authorization: Bearer "+synthetic+"\r\nauthorization: Bearer "+synthetic),
+        Request("", "Authorization: Bearer "+synthetic), Request("Authorization: Bearer invalid"),
+        Request("Authorization: Bearer "+synthetic).Replace("POST ","GET "),
+        Request("Authorization: Bearer "+synthetic).Replace("/acceptance ","/acceptance/other ")}) {
+        HostedAcceptance.CaptureRequestCredential(id,raw);Check(HostedAcceptance.TakeRequestCredential(id)=="","invalid credential carrier admitted");
+    }
+    HostedAcceptance.CaptureRequestCredential(id,Request("Authorization: Bearer "+synthetic));
+    HostedAcceptance.CaptureRequestCredential("","");
+    Check(HostedAcceptance.TakeRequestCredential(id)=="","next ingress did not clear credential");
+    var redacted=ScenarioKernel.Bootstrap.ReleasedCredentials.Process.Redact(new JsonObject{["text"]=synthetic});
+    Check(!redacted.ToJsonString().Contains(synthetic),"request session not registered for redaction");
     foreach(var value in new[]{"{\"a\":1,\"\\u0061\":2}","{\"x\":{\"a\":1,\"a\":2}}"}) {
         bool refused=false; try{HostedAcceptance.Parse(value);}catch(InvalidDataException){refused=true;} Check(refused,"duplicate accepted");
     }
@@ -23,11 +42,11 @@ try {
     var wrong=HostedAcceptance.Read(new JsonObject{["attemptId"]=id,["caller"]=new JsonObject{["kind"]="user",["principalId"]="forged"}},context,CancellationToken.None);
     Check(wrong["code"]!.GetValue<string>()=="ACCEPTANCE_PRINCIPAL_REQUIRED","caller gate");
     Check(!Directory.EnumerateFiles(directory).Any(),"unauthorized read touched records");
-    var forged=Load("contracts/examples/hosted-execution-v4/trusted-context.json");
+    var forged=Load("contracts/examples/hosted-execution-v5/trusted-context.json");
     var gate=await HostedAcceptance.Accept(new JsonObject{["context"]=new JsonObject{["invocation"]=forged}},context,CancellationToken.None);
     Check(gate.OutcomeValue!["code"]!.GetValue<string>()=="ACCEPTANCE_REQUEST_PATH_REQUIRED","forged request path admitted");
     var absent=HostedAcceptance.ReadRecord(directory,id); Check(absent["status"]!.GetValue<string>()=="NOT_FOUND","read created an attempt");
-    var record=Load("contracts/examples/hosted-execution-v4/read-result-running.json"); id=record["attemptId"]!.GetValue<string>();
+    var record=Load("contracts/examples/hosted-execution-v5/read-result-running.json"); id=record["attemptId"]!.GetValue<string>();
     File.WriteAllText(Path.Combine(directory,id+".json"),record.ToJsonString());
     var unknown=HostedAcceptance.ReadRecord(directory,id); Check(unknown["status"]!.GetValue<string>()=="UNKNOWN","abandoned attempt not unknown");
     Check(LoadExternal(Path.Combine(directory,id+".json"))["status"]!.GetValue<string>()=="UNKNOWN","unknown not durable");
@@ -47,7 +66,7 @@ try {
         await Task.Delay(10); afterCrash=HostedAcceptance.ReadRecord(directory,id);
     }
     Check(afterCrash["status"]!.GetValue<string>()=="UNKNOWN","crash retained admission ownership");
-    var retained=Load("contracts/examples/hosted-execution-v4/read-result-receipt.json");
+    var retained=Load("contracts/examples/hosted-execution-v5/read-result-receipt.json");
     id=retained["attemptId"]!.GetValue<string>();File.WriteAllText(Path.Combine(directory,id+".json"),retained.ToJsonString());
     Check(JsonNode.DeepEquals(HostedAcceptance.ReadRecord(directory,id),retained),"receipt bytes changed after restart");
     var authority=Load("authorities/host-bundle/capabilities/serve-api-request.json");
@@ -67,7 +86,7 @@ try {
     Check(unauth["dispatchRequest"]?["body"]?["contractId"]?.GetValue<string>()=="hosted-execution-invocation-error.v1","unauthenticated request lacks typed failure");
     Check(unauth["dispatchRequest"]?["body"]?["requestExecutionId"] is null,"unauthenticated failure claims coordinator identity");
     var expression=Load("providers/hosted/receipt-expression.json").AsObject();
-    var example=Load("contracts/examples/hosted-execution-v4/receipt-accepted.json");
+    var example=Load("contracts/examples/hosted-execution-v5/receipt-accepted.json");
     var observations=new JsonObject{["contractId"]="hosted-acceptance-observations.v1",["executionId"]=example["evaluator"]!["executionId"]!.DeepClone(),
         ["executedAt"]=example["executedAt"]!.DeepClone(),["deployment"]=example["deployment"]!.DeepClone(),["invocation"]=forged.DeepClone(),
         ["coordinator"]=new JsonObject{["executionPath"]="request",["workerSlots"]=0},["checks"]=new JsonObject()};
@@ -86,11 +105,15 @@ try {
     Check(receipt["evaluator"]!["executionId"]!.GetValue<string>()==receipt["invocation"]!["requestExecutionId"]!.GetValue<string>(),"receipt lost actual request identity");
     // Exercise the exact declared ingress program with mixed-case duplicate headers.
     var provider=Load("providers/host-provider-authority.json")["declaredProviders"]!.AsArray().Single(p=>p!["providerProfileId"]!.GetValue<string>()=="sfx-api-ingress-resolve.v2")!.AsObject();
+    provider["assembly"]=typeof(HostedAcceptance).Assembly.Location;
     var ingress=DeclaredProviderResolver.ResolveProvider(provider);
+    var ingressBinding=Load("authorities/host-bundle/capabilities/serve-http-request.json")["graphSource"]!["interfaceAuthority"]!["portBindings"]!.AsArray()
+        .Single(b=>b!["portId"]!.GetValue<string>()=="serve-http-request-ingress")!;
+    var ingressContext=context with { Configuration=new JsonObject{["binding"]=ingressBinding.DeepClone()} };
     foreach(var duplicate in new[]{false,true}) {
         var raw="POST /sfx/v1/hosted-execution/acceptance HTTP/1.1\r\nX-SFX-Acceptance-Attempt-Id: "+id+"\r\n"+
             (duplicate?"x-sfx-acceptance-attempt-id: "+id+"\r\n":"")+"\r\n{}";
-        var parsed=await ingress(new JsonObject{["raw"]=raw,["requestExecutionId"]=id,["executionPath"]="request"},context,CancellationToken.None);
+        var parsed=await ingress(new JsonObject{["raw"]=raw,["requestExecutionId"]=id,["executionPath"]="request"},ingressContext,CancellationToken.None);
         Check(parsed.OutcomeValue!["headers"]!["x-sfx-acceptance-attempt-id"]!.GetValue<string>()==(duplicate?"":id),"duplicate header ambiguity");
     }
     var hostAuthority=Load("providers/host-provider-authority.json");

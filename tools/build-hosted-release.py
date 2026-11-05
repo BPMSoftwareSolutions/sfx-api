@@ -1,4 +1,4 @@
-"""Project the hosted v4 source declarations into the image's pinned host bundle.
+"""Project the current hosted source declarations into the image's pinned host bundle.
 
 Build providers/hosted/HostedProviders.csproj first. No deployment or credentials.
 """
@@ -40,7 +40,6 @@ plan=read(ROOT / "providers/hosted/acceptance-plan.json")
 config={"operatorPrincipalId":operator,"profileDigest":pin,"requestKernelTimeout":"195000",
         "path":profile["acceptance"]["coordinator"]["path"],
         "recordDirectory":"/home/sjones/.local/share/sfx/hosted-acceptance",
-        "credentialReference":"SFX_API_ACCEPTANCE_SESSION",
         "receiptValidator":"/opt/sfx/providers/hosted/validate.py",
         "receiptExpression":read(ROOT / "providers/hosted/receipt-expression.json"),
         "observationProgram":(ROOT / "providers/host-acceptance.py").read_text(encoding="utf-8"),
@@ -50,12 +49,12 @@ config={"operatorPrincipalId":operator,"profileDigest":pin,"requestKernelTimeout
             "configuration":{"recordDirectory":"/home/sjones/.local/share/sfx/hosted-acceptance",
                 "operatorPrincipalId":operator,"requestKernelTimeout":"195000"}}}
 doc=capability('accept-hosted-execution-profile')
-binding(doc,'authorize')['configuration']['expression']=obj(
+binding(doc,'authorize')['configuration']['expression']=obj(context=obj(
     admission=when(both(equal(ref('caller.kind'),lit('user')),equal(ref('caller.principalId'),lit(operator))),lit('ADMITTED'),lit('ACCEPTANCE_PRINCIPAL_REQUIRED')),
-    invocation=ref(''),plan={'op':'merge','values':[lit(plan),obj(requestExecutionId=ref('requestExecutionId'))]})
+    invocation=ref(''),plan={'op':'merge','values':[lit(plan),obj(requestExecutionId=ref('requestExecutionId'))]}))
 binding(doc,'exchange')['configuration']=copy.deepcopy(config)
-doc['graphSource']['executionAuthorities'][0]['operations']=[op for op in doc['graphSource']['executionAuthorities'][0]['operations'] if not op['portId'].endswith('-evaluate')]
-doc['graphSource']['interfaceAuthority']['portBindings']=[b for b in bindings(doc) if not b['portId'].endswith('-evaluate')]
+doc['graphSource']['executionAuthorities'][0]['operations']=[op for op in doc['graphSource']['executionAuthorities'][0]['operations'] if op['portId'].endswith(('-authorize','-exchange'))]
+doc['graphSource']['interfaceAuthority']['portBindings']=[b for b in bindings(doc) if b['portId'].endswith(('-port','-authorize','-exchange'))]
 doc['graphSource']['contractAuthorities']['contracts']['accept-hosted-execution-profile-request.v1']['schema']={'type':'object'}
 # Full 2020-12 admission (including unevaluatedProperties and asserted formats)
 # runs inside the provider before persistence. The kernel's older validator has
@@ -144,7 +143,7 @@ accept['input']={'attemptId':'$header.x-sfx-acceptance-attempt-id','expectedProf
     'requestExecutionId':'$request.requestExecutionId','executionPath':'$request.executionPath',
     'caller':{'kind':'$caller.kind','principalId':'$caller.principalId'},
     'request':{'method':'$request.method','path':config['path'],'body':'$body'}}
-accept['meaning']='The pinned host operator initiates the v4 coordinator with an empty body. Ingress binds the caller and actual request admission identity; headers only correlate the attempt and discovered profile.'
+accept['meaning']='The pinned host operator initiates the coordinator with an empty body. Ingress binds the caller and actual request admission identity; the same request session serves probes without vault provisioning.'
 operations[:]=[o for o in operations if o['operationId']!='read-hosted-execution-acceptance']
 operations.append({'operationId':'read-hosted-execution-acceptance','method':'GET','path':'/hosted-execution/acceptance/{attemptId}',
     'callers':['user'],'resolves':{'kind':'capability','capabilityId':'read-hosted-execution-acceptance'},
@@ -194,12 +193,20 @@ for identity,method,mechanic in [('sfx-api-host-http-request','Accept','sfx-api-
         'sourceProviderDefinitionDigest':source})
     authority['overlayBindings'].append({'mechanicId':mechanic,'providerProfileId':identity,'providerProfileDigest':source,
         'implementationRef':'providers/hosted/HostedAcceptance.cs#'+method})
-for provider in authority['declaredProviders']:
-    if provider['providerProfileId']=='sfx-api-ingress-resolve.v2':
-        provider['operations'][0]['parameters']=copy.deepcopy(operation['parameters'])
-        provider['operations'][0]['program']=copy.deepcopy(program)
-        provider['sourceProviderDefinitionDigest']=digest((ROOT/'providers/sfx-api-ingress.dependency.json').read_bytes())
-        next(b for b in authority['overlayBindings'] if b['providerProfileId']==provider['providerProfileId'])['providerProfileDigest']=provider['sourceProviderDefinitionDigest']
+parser={'providerProfileId':'sfx-api-ingress-parser.v2','language':'csharp',
+    'type':'System.Text.RegularExpressions.Regex','method':'.ctor','assembly':'System.Text.RegularExpressions',
+    'factory':True,'effectClassification':'observation','operations':[{
+        'operationId':operation['operationId'],'parameters':copy.deepcopy(operation['parameters']),
+        'result':copy.deepcopy(operation['result']),'program':copy.deepcopy(program)}]}
+for name in ('serve-http-request','resolve-http-request'):
+    ingress_doc=capability(name)
+    binding(ingress_doc,'ingress')['configuration']={'requestKernelTimeout':config['requestKernelTimeout'],'parser':copy.deepcopy(parser)}
+    save(ingress_doc)
+authority['declaredProviders'][:]=[p for p in authority['declaredProviders'] if p['providerProfileId']!='sfx-api-ingress-resolve.v2']
+authority['declaredProviders'].append({'providerProfileId':'sfx-api-ingress-resolve.v2','language':'csharp',
+    'type':'Sfx.HostedProviders.HostedAcceptance','assembly':'../../providers/hosted/Sfx.HostedProviders.dll',
+    'method':'Ingress','effectClassification':'observation','sourceProviderDefinitionDigest':source})
+next(b for b in authority['overlayBindings'] if b['providerProfileId']=='sfx-api-ingress-resolve.v2')['providerProfileDigest']=source
 
 manifest=read(BUNDLE/'manifest.json')
 for name in ('accept-hosted-execution-profile','read-hosted-execution-profile','read-hosted-execution-acceptance','serve-api-request','serve-http-request','resolve-http-request','read-api-host-configuration','admit-api-run-live'):

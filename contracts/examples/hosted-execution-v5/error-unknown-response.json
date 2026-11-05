@@ -1,0 +1,12 @@
+{
+  "contractId": "hosted-execution-invocation-error.v1",
+  "attemptId": "11111111-1111-4111-8111-000000000011",
+  "outcome": "UNKNOWN",
+  "stage": "collection",
+  "code": "ACCEPTANCE_TRANSPORT_UNCERTAIN",
+  "httpStatus": 0,
+  "requestExecutionId": null,
+  "message": "Synthetic fixture only; not live execution evidence.",
+  "automaticRetry": false,
+  "receipt": null
+}

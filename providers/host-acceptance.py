@@ -1,18 +1,19 @@
 """The HTTPS client of accept-hosted-execution-profile (contracts/sfx-api-hosted-csharp.v1.profile.json, acceptance).
 
-The C# program of sfx-api-host-http-request opens the host-vault entry SFX_API_ACCEPTANCE_SESSION, which the operator
-stores with store-credential, inside its own call. It starts this script under /usr/bin/timeout in an empty environment
-that holds only SFX_ACCEPTANCE_SESSION and SFX_API_IMAGE_DIGEST. argv[1] is the acceptance plan the coordinator declares.
+The declared ingress holds the invoking operator's session in request-kernel memory outside graph values.
+The acceptance provider consumes it once for that host request UUID and starts this script under timeout,
+in an empty environment holding only the invocation session and SFX_API_IMAGE_DIGEST. No vault entry,
+separate account, sign-in, session renewal or credential storage is part of acceptance.
 The script:
 
 - attests the deployment it runs on: the deployer's recorded image digest, the bundle pin, the kernel install root it
   runs in, and the SHA-256 over the deployed host files;
-- confirms over HTTPS that GET /sfx/v1/session names the plan's principalId for the stored session;
+- confirms over HTTPS that GET /sfx/v1/session names the plan's principalId for the invoking session;
 - submits each probe of the plan through POST /sfx/v1/runs, follows each run's event stream to its end frame, and reads
   its state and its output through the same endpoint, without following redirects;
 - measures the payload probe's /output/payload from the HTTPS response, as UTF-8 bytes and their SHA-256.
 
-It never signs in and never revokes the stored session. It answers one JSON object of observations: what each request
+It never signs in and never revokes the invoking session. It answers one JSON object of observations: what each request
 answered, or the stage and code at which a check could not be observed. It decides no disposition: the coordinator's
 declared evaluation does. The session never leaves this process.
 """
@@ -167,22 +168,22 @@ class Client:
 
 
 def session_check(client, plan, session):
-    """The stored session, confirmed by GET /sfx/v1/session to be the plan principal's, or Failure at precondition."""
+    """The invoking session, confirmed by GET /sfx/v1/session to be the plan principal's, or Failure at precondition."""
     if not session:
-        raise Failure("precondition", "ACCEPTANCE_CREDENTIAL_UNAVAILABLE", "the host vault released no acceptance session")
+        raise Failure("precondition", "ACCEPTANCE_CREDENTIAL_UNAVAILABLE", "the request ingress supplied no invocation session")
     if not SESSION_BEARER.fullmatch(session):
         raise Failure("precondition", "ACCEPTANCE_SESSION_FORMAT_INVALID",
-                      "the stored credential does not satisfy the API's declared session bearer format")
+                      "the invocation credential does not satisfy the API's declared session bearer format")
     client.bearer = session
     status, answer = client.json("precondition", "GET", "/sfx/v1/session")
     if status != 200 or not isinstance(answer, dict) or answer.get("status") != "READ":
         client.bearer = None
         raise Failure("precondition", "ACCEPTANCE_SESSION_REJECTED",
-                      "the stored acceptance session was not accepted: GET /sfx/v1/session answered %d" % status)
+                      "the invoking acceptance session was not accepted: GET /sfx/v1/session answered %d" % status)
     principal = str(answer.get("principalId", "")).lower()
     if principal != plan["principalId"]:
         client.bearer = None
-        raise Failure("precondition", "ACCEPTANCE_PRINCIPAL_MISMATCH", "the stored acceptance session names another principal")
+        raise Failure("precondition", "ACCEPTANCE_PRINCIPAL_MISMATCH", "the invoking acceptance session names another principal")
     return {"disposition": "CONFIRMED", "principalId": principal, "sessionExpiresAt": answer.get("sessionExpiresAt")}
 
 
@@ -363,7 +364,7 @@ def main():
         path = "unknown: " + type(failure).__name__
     answer["coordinator"] = {"executionPath": path, "workerSlots": 0 if path == "request" else 1 if path == "worker" else -1}
     if path != "request":
-        # Only the request path's acceptance route admits the caller by its session: anywhere else, the stored session
+        # Only the request path's acceptance route admits the caller by its session: anywhere else, the invoking session
         # is not used.
         answer["deployment"] = {"established": False, "code": "ACCEPTANCE_NOT_ON_REQUEST_PATH",
                                 "message": "the coordinator runs on the %s path, not the request path" % path}
@@ -384,7 +385,7 @@ def main():
         answer["checks"] = observe_checks(client, plan)
         answer["checks"][plan["concurrency"]["checkId"]] = observe_concurrency(client, plan)
     finally:
-        # The stored session serves later acceptances until it expires: it is never revoked here.
+        # The invoking session serves later acceptances until it expires: it is never revoked here.
         client.bearer = None
     answer["elapsedMs"] = int((time.monotonic() - STARTED) * 1000)
     return answer

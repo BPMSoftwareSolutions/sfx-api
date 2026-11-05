@@ -6,6 +6,10 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using ScenarioKernel.Adapters.Graph;
 using ScenarioKernel.Adapters.Consumer;
+using ScenarioKernel.Bootstrap;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Tests")]
 
 namespace Sfx.HostedProviders;
 
@@ -13,6 +17,41 @@ namespace Sfx.HostedProviders;
 // paths, the measurement plan and the receipt expression are port configuration.
 public static class HostedAcceptance
 {
+    // Each request kernel serves one HTTP request at a time. The credential is
+    // held outside graph values, keyed to the host admission UUID, and consumed
+    // once. Every later ingress clears a failed request's unused credential.
+    static readonly object CredentialGate = new();
+    static (string Id, string Bearer, long Until)? requestCredential;
+    internal static void CaptureRequestCredential(string id, string raw)
+    {
+        lock (CredentialGate) {
+            requestCredential = null;
+            if (!Uuid.IsMatch(id) || !Regex.IsMatch(raw, @"\APOST /sfx/v1/hosted-execution/acceptance HTTP/1\.[01]\r?\n")) return;
+            var head = Regex.Split(raw, @"\r?\n\r?\n", RegexOptions.None, TimeSpan.FromSeconds(1))[0];
+            var headers = Regex.Matches(head, @"(?im)^authorization:[^\r\n]*");
+            if (headers.Count != 1) return;
+            var match = Regex.Match(headers[0].Value, @"\A(?i:authorization:[ \t]*bearer[ \t]+)([A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=)[ \t]*\z");
+            if (!match.Success) return;
+            var bearer = match.Groups[1].Value;
+            ReleasedCredentials.Process.Register(bearer);
+            requestCredential = (id, bearer, Environment.TickCount64 + 195000);
+        }
+    }
+    internal static string TakeRequestCredential(string id)
+    {
+        lock (CredentialGate) {
+            var held = requestCredential; requestCredential = null;
+            return held is { } value && value.Id == id && Environment.TickCount64 < value.Until ? value.Bearer : "";
+        }
+    }
+    public static async Task<GraphProviderOutcome> Ingress(JsonNode input, GraphExecutionContext context, CancellationToken token)
+    {
+        var config = Config(context);
+        CaptureRequestCredential(RequestPath(config) ? Text(input["requestExecutionId"]) : "", Text(input["raw"]));
+        try {
+            return await DeclaredProviderResolver.ResolveProvider(config["parser"]!.AsObject())(input, context, token);
+        } catch { TakeRequestCredential(Text(input["requestExecutionId"])); throw; }
+    }
     static readonly Regex Uuid = new("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
     static string Text(JsonNode? n) => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : "";
     static JsonObject Config(GraphExecutionContext c) => c.Configuration!["binding"]!["configuration"]!.AsObject();
@@ -186,30 +225,8 @@ public static class HostedAcceptance
     }
     static async Task<JsonNode> Observe(JsonNode input, JsonObject config, CancellationToken token)
     {
-        byte[]? key = null, plaintext = null;
-        string secret;
-        try {
-            var reference = Text(config["credentialReference"]);
-            if (Text(input["credentialReference"]) != reference) throw new CredentialUnavailable();
-            var vault = input["vault"]!; var entry = vault["entries"]![reference]!;
-            var start = new ProcessStartInfo("secret-tool") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-            foreach (var arg in new[] { "lookup", "service", Text(input["keyService"]), "key", Text(input["keyReference"]) }) start.ArgumentList.Add(arg);
-            using var process = Process.Start(start) ?? throw new CredentialUnavailable();
-            using var bound = CancellationTokenSource.CreateLinkedTokenSource(token); bound.CancelAfter(10000);
-            var stderr = process.StandardError.ReadToEndAsync(bound.Token);
-            string output;
-            try { output = await process.StandardOutput.ReadToEndAsync(bound.Token); await process.WaitForExitAsync(bound.Token); await stderr; }
-            finally { if (!process.HasExited) { process.Kill(true); await process.WaitForExitAsync(CancellationToken.None); } }
-            if (process.ExitCode != 0) throw new CredentialUnavailable();
-            key = Convert.FromBase64String(output.Trim());
-            var ciphertext = Convert.FromBase64String(Text(entry["ciphertext"])); plaintext = new byte[ciphertext.Length];
-            var associated = Encoding.UTF8.GetBytes("{\"keyVersion\":" + entry["keyVersion"]!.ToJsonString() + ",\"referenceName\":\"" + reference + "\",\"vaultId\":\"" + Text(vault["vaultId"]) + "\"}");
-            using var cipher = new AesGcm(key, 16);
-            cipher.Decrypt(Convert.FromBase64String(Text(entry["nonce"])), ciphertext, Convert.FromBase64String(Text(entry["tag"])), plaintext, associated);
-            secret = new UTF8Encoding(false, true).GetString(plaintext);
-        } catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-        catch { throw new CredentialUnavailable(); }
-        finally { if (key is not null) CryptographicOperations.ZeroMemory(key); if (plaintext is not null) CryptographicOperations.ZeroMemory(plaintext); }
+        var secret = TakeRequestCredential(Text(input["context"]?["invocation"]?["requestExecutionId"]));
+        if (secret.Length == 0) throw new CredentialUnavailable();
         var child = new ProcessStartInfo("/usr/bin/timeout") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
         child.Environment.Clear(); child.Environment["SFX_ACCEPTANCE_SESSION"] = secret;
         child.Environment["SFX_API_IMAGE_DIGEST"] = Environment.GetEnvironmentVariable("SFX_API_IMAGE_DIGEST");

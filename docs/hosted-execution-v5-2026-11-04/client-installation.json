@@ -1,0 +1,11 @@
+{
+  "installedAt": "2026-11-04T23:35:11.455Z",
+  "installedVersion": "2d41ff928c0c3bcca3e41d6f7d8526e6bb3fb9c7582b885fd1b520a6c29d190a",
+  "destination": "C:\\Users\\Sidney Jones\\AppData\\Local\\sfx\\api-client\\2d41ff928c0c3bcca3e41d6f7d8526e6bb3fb9c7582b885fd1b520a6c29d190a",
+  "sourceRepository": "sfx-platform",
+  "sourceDirectory": "clients/api",
+  "existingOperatorSessionPreserved": true,
+  "whoamiPrincipalId": "565de6d4-ebcd-408b-9359-04d21dc62183",
+  "clientVersion": "hosted-v5-2160e9933c4b6f1e",
+  "clientArtifactDigest": "sha256:2160e9933c4b6f1e3c40df7059b52cb819e6416f512436f968bc5a4e4d5f9637"
+}

@@ -1,0 +1,177 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractId",
+    "status",
+    "attemptId",
+    "observedAt",
+    "client",
+    "exchange",
+    "receiptArtifact",
+    "receipt"
+  ],
+  "properties": {
+    "contractId": {
+      "const": "hosted-execution-delivery-proof.v1"
+    },
+    "status": {
+      "enum": [
+        "FULFILLED",
+        "UNFULFILLED"
+      ]
+    },
+    "attemptId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "version",
+        "artifactDigest",
+        "surface",
+        "capabilityId",
+        "input",
+        "authentication"
+      ],
+      "properties": {
+        "product": {
+          "const": "sfx-api"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifactDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "surface": {
+          "const": "capability observe"
+        },
+        "capabilityId": {
+          "const": "accept-hosted-execution-profile"
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        },
+        "authentication": {
+          "const": "existing-operator-session"
+        }
+      }
+    },
+    "exchange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "url",
+        "httpStatus",
+        "redirected",
+        "dispatch",
+        "coordinatorWorkerSlots",
+        "attemptId"
+      ],
+      "properties": {
+        "method": {
+          "const": "POST"
+        },
+        "url": {
+          "const": "https://sfx-api-test.azurewebsites.net/sfx/v1/hosted-execution/acceptance"
+        },
+        "httpStatus": {
+          "const": 200
+        },
+        "redirected": {
+          "const": false
+        },
+        "dispatch": {
+          "const": "declared-request-route"
+        },
+        "coordinatorWorkerSlots": {
+          "const": 0
+        },
+        "attemptId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      }
+    },
+    "receiptArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "sha256",
+        "byteLength",
+        "readbackVerified"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "readbackVerified": {
+          "const": true
+        }
+      }
+    },
+    "receipt": {
+      "$ref": "hosted-execution-acceptance.v1.schema.json"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hosted-execution-delivery-proof.v1.schema.json",
+  "description": "Host-retained proof of the live supported-client invocation and receipt returned through HTTPS. The verifier retrieves the receipt artifact, checks exact bytes and equality with receipt, and reconciles attempts, request execution, run and deployment identities independently. A constructed fixture is not evidence.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "FULFILLED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "receipt": {
+            "properties": {
+              "status": {
+                "const": "ACCEPTED"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "receipt": {
+            "properties": {
+              "status": {
+                "const": "REJECTED"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "contractId": "hosted-execution-profile.v1",
   "profileId": "sfx-api-hosted-csharp",
-  "profileVersion": 4,
+  "profileVersion": 5,
   "host": {
     "deployment": "sfx-api-test",
     "endpoint": "https://sfx-api-test.azurewebsites.net"
@@ -146,15 +146,15 @@
       ],
       "probeAuthority": {
         "caller": "user",
-        "principalRef": "staging-release-acceptance",
-        "authentication": "stored-session",
-        "credential": "SFX_API_ACCEPTANCE_SESSION",
-        "provisioning": "store-credential",
+        "principalRef": "host-acceptance-operator",
+        "authentication": "existing-operator-session",
+        "credential": "invoking-request-session",
+        "provisioning": "existing-cli-login",
         "sessionCheckPath": "/sfx/v1/session",
-        "release": "declared-credential-pointer",
+        "release": "request-scoped-memory",
         "runVisibility": "own-runs",
-        "sessionUse": "stored-until-expiry",
-        "principalId": "00e053bd-b090-4ff9-be25-64089d170fb2"
+        "sessionUse": "single-acceptance-invocation",
+        "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183"
       },
       "requestKernelsRequired": 2,
       "budgetMs": 150000,
@@ -280,14 +280,14 @@
       },
       "credentials": {
         "initiator": "existing-operator-session",
-        "probe": "host-vault-stored-session",
-        "provisioning": "store-credential",
-        "refreshOwner": "host-operator",
+        "probe": "existing-operator-session",
+        "provisioning": "none",
+        "refreshOwner": "existing-login",
         "passwordPrompt": false,
         "accountSwitch": false,
-        "revokeStoredSession": false,
         "secretInInputOrEvidence": false,
-        "fallbackPrincipal": false
+        "fallbackPrincipal": false,
+        "revokeSession": false
       },
       "failureContract": "hosted-execution-invocation-error.v1",
       "uncertainOutcome": "retain-attempt-and-investigate-before-explicit-retry",

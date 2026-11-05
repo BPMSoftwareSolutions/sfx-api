@@ -1,0 +1,15 @@
+{
+  "attemptId": "11111111-1111-4111-8111-000000000011",
+  "expectedProfileDigest": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33",
+  "requestExecutionId": "11111111-1111-4111-8111-000000000001",
+  "executionPath": "request",
+  "caller": {
+    "kind": "user",
+    "principalId": "565de6d4-ebcd-408b-9359-04d21dc62183"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/sfx/v1/hosted-execution/acceptance",
+    "body": {}
+  }
+}

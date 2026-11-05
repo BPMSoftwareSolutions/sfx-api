@@ -113,11 +113,1005 @@
           "portId": "serve-http-request-ingress",
           "platformCapabilityId": "sfx-api-ingress-resolve-port.v2",
           "configuration": {
-            "providerId": "sfx-api-ingress-resolve.v2",
-            "dependency": {
-              "objectKind": "DEPENDENCY",
-              "namespace": "sidefx:dependencies",
-              "id": "sfx-api-ingress"
+            "requestKernelTimeout": "195000",
+            "parser": {
+              "providerProfileId": "sfx-api-ingress-parser.v2",
+              "language": "csharp",
+              "type": "System.Text.RegularExpressions.Regex",
+              "method": ".ctor",
+              "assembly": "System.Text.RegularExpressions",
+              "factory": true,
+              "effectClassification": "observation",
+              "operations": [
+                {
+                  "operationId": "resolve-request",
+                  "parameters": [
+                    {
+                      "name": "raw",
+                      "source": "input",
+                      "path": "raw"
+                    },
+                    {
+                      "name": "requestExecutionId",
+                      "source": "input",
+                      "path": "requestExecutionId"
+                    },
+                    {
+                      "name": "executionPath",
+                      "source": "input",
+                      "path": "executionPath"
+                    }
+                  ],
+                  "result": {
+                    "from": "value"
+                  },
+                  "program": [
+                    {
+                      "bind": "requestPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "\\A([A-Z]+) (/[^ \\r\\n]*) [^\\r\\n]*\\r?\\n((?:[^\\r\\n]+\\r?\\n)*)\\r?\\n([\\s\\S]*)\\z"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "request",
+                      "invocation": "requestPattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "raw"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "requestGroups",
+                      "invocation": "request.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "methodGroup",
+                      "invocation": "requestGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "method",
+                      "invocation": "methodGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "targetGroup",
+                      "invocation": "requestGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "bind": "target",
+                      "invocation": "targetGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "headGroup",
+                      "invocation": "requestGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 3
+                      }
+                    },
+                    {
+                      "bind": "head",
+                      "invocation": "headGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "bodyGroup",
+                      "invocation": "requestGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 4
+                      }
+                    },
+                    {
+                      "bind": "body",
+                      "invocation": "bodyGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "uri",
+                      "invocation": "new System.Uri, System.Private.Uri",
+                      "arguments": [
+                        {
+                          "op": "join",
+                          "value": {
+                            "op": "array",
+                            "items": [
+                              {
+                                "op": "literal",
+                                "value": "http://sfx-api.local"
+                              },
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "target"
+                              }
+                            ]
+                          },
+                          "separator": ""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "path",
+                      "invocation": "uri.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "LocalPath"
+                      }
+                    },
+                    {
+                      "bind": "slash",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "/"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "segments",
+                      "invocation": "slash.Split",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "path"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "query",
+                      "invocation": "uri.GetComponents",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": 32
+                        },
+                        {
+                          "op": "literal",
+                          "value": 1
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "querySpaced",
+                      "invocation": "query.Replace",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "+"
+                        },
+                        {
+                          "op": "literal",
+                          "value": "%20"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "quotePattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "%(22|5[Cc])"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryQuoted",
+                      "invocation": "quotePattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "querySpaced"
+                        },
+                        {
+                          "op": "literal",
+                          "value": "%5C%$1"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "controlPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "%([01][0-9A-Fa-f])"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryControlled",
+                      "invocation": "controlPattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryQuoted"
+                        },
+                        {
+                          "op": "literal",
+                          "value": "%5Cu00$1"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "keylessPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?:\\A|(?<=&))=[^&]*"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryKeyed",
+                      "invocation": "keylessPattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryControlled"
+                        },
+                        {
+                          "op": "literal",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "runPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "&+"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryCollapsed",
+                      "invocation": "runPattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryKeyed"
+                        },
+                        {
+                          "op": "literal",
+                          "value": "&"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "edgePattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "\\A&|&\\z"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryTrimmed",
+                      "invocation": "edgePattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryCollapsed"
+                        },
+                        {
+                          "op": "literal",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "pairPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "([^=&]+)(?:=([^&]*))?"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryMembers",
+                      "invocation": "pairPattern.Replace",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryTrimmed"
+                        },
+                        {
+                          "op": "literal",
+                          "value": "\"$1\":\"$2\""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryJoined",
+                      "invocation": "queryMembers.Replace",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "&"
+                        },
+                        {
+                          "op": "literal",
+                          "value": ","
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryUri",
+                      "invocation": "new System.Uri, System.Private.Uri",
+                      "arguments": [
+                        {
+                          "op": "join",
+                          "value": {
+                            "op": "array",
+                            "items": [
+                              {
+                                "op": "literal",
+                                "value": "http://sfx-api.local/?{"
+                              },
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "queryJoined"
+                              },
+                              {
+                                "op": "literal",
+                                "value": "}"
+                              }
+                            ]
+                          },
+                          "separator": ""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "queryJson",
+                      "invocation": "queryUri.GetComponents",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": 32
+                        },
+                        {
+                          "op": "literal",
+                          "value": 2
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "carrierPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)\\A(?:(?=[\\s\\S]*?^authorization:[ \\t]*bearer[ \\t]+((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*\\r?$)|(?=[\\s\\S]*?^cookie:(?:[^\\r\\n]*?;)?[ \\t]*(?-i:__Host-sfx-session)=((?-i:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=))[ \\t]*(?:;|\\r?$)))"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "carrier",
+                      "invocation": "carrierPattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "carried",
+                      "invocation": "carrier.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Success"
+                      }
+                    },
+                    {
+                      "bind": "carrierGroups",
+                      "invocation": "carrier.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "bearerGroup",
+                      "invocation": "carrierGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "bearer",
+                      "invocation": "bearerGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "cookieGroup",
+                      "invocation": "carrierGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "bind": "cookieToken",
+                      "invocation": "cookieGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "hasher",
+                      "invocation": "new System.Security.Cryptography.SHA256Managed, System.Security.Cryptography",
+                      "release": {
+                        "invocation": "hasher.Dispose"
+                      }
+                    },
+                    {
+                      "bind": "verifier",
+                      "invocation": "hasher.ComputeHash",
+                      "arguments": [
+                        {
+                          "op": "join",
+                          "value": {
+                            "op": "array",
+                            "items": [
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "bearer"
+                              },
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "cookieToken"
+                              }
+                            ]
+                          },
+                          "separator": ""
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "sessionDigest",
+                      "invocation": "hasher.ComputeHash",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "verifier"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "sourcePattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)\\A(?:(?=[\\s\\S]*?^x-client-ip:[ \\t]*([^\\s,]+))|(?=[\\s\\S]*?^x-forwarded-for:[ \\t]*([^\\s,]+)))"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "sourceMatch",
+                      "invocation": "sourcePattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "sourceGroups",
+                      "invocation": "sourceMatch.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "clientIpGroup",
+                      "invocation": "sourceGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "clientIp",
+                      "invocation": "clientIpGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "forwardedGroup",
+                      "invocation": "sourceGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "bind": "forwarded",
+                      "invocation": "forwardedGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "keyPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)^idempotency-key:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "keyMatch",
+                      "invocation": "keyPattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "keyGroups",
+                      "invocation": "keyMatch.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "keyGroup",
+                      "invocation": "keyGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "idempotencyKey",
+                      "invocation": "keyGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "lastEventPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)^last-event-id:[ \t]*([^\r\n]*?)[ \t]*\r?$"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "lastEventMatch",
+                      "invocation": "lastEventPattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "lastEventGroups",
+                      "invocation": "lastEventMatch.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "lastEventGroup",
+                      "invocation": "lastEventGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "lastEventId",
+                      "invocation": "lastEventGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "bind": "headers",
+                      "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": null
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "headers.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "idempotency-key"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "idempotencyKey"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "headers.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "last-event-id"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "lastEventId"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedAttemptPattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)\\A(?![\\s\\S]*^x-sfx-acceptance-attempt-id:[\\s\\S]*^x-sfx-acceptance-attempt-id:)[\\s\\S]*?^x-sfx-acceptance-attempt-id:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedAttemptMatch",
+                      "invocation": "hostedAttemptPattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedAttemptGroups",
+                      "invocation": "hostedAttemptMatch.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "hostedAttemptGroup",
+                      "invocation": "hostedAttemptGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "hostedAttempt",
+                      "invocation": "hostedAttemptGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "invocation": "headers.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "x-sfx-acceptance-attempt-id"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "hostedAttempt"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedProfilePattern",
+                      "invocation": "new System.Text.RegularExpressions.Regex, System.Text.RegularExpressions",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "(?im)\\A(?![\\s\\S]*^x-sfx-hosted-profile-digest:[\\s\\S]*^x-sfx-hosted-profile-digest:)[\\s\\S]*?^x-sfx-hosted-profile-digest:[ \\t]*([^\\r\\n]*?)[ \\t]*\\r?$"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedProfileMatch",
+                      "invocation": "hostedProfilePattern.Match",
+                      "arguments": [
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "head"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "hostedProfileGroups",
+                      "invocation": "hostedProfileMatch.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Groups"
+                      }
+                    },
+                    {
+                      "bind": "hostedProfileGroup",
+                      "invocation": "hostedProfileGroups.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "bind": "hostedProfile",
+                      "invocation": "hostedProfileGroup.$computed.$read",
+                      "selector": {
+                        "op": "literal",
+                        "value": "Value"
+                      }
+                    },
+                    {
+                      "invocation": "headers.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "x-sfx-hosted-profile-digest"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "hostedProfile"
+                        }
+                      ]
+                    },
+                    {
+                      "bind": "value",
+                      "invocation": "new System.Text.Json.Nodes.JsonObject, System.Text.Json",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": null
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "method"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "method"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "segments"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "segments"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "queryJson"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "queryJson"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "body"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "body"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "carried"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "carried"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "sessionDigest"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "sessionDigest"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "source"
+                        },
+                        {
+                          "op": "join",
+                          "value": {
+                            "op": "array",
+                            "items": [
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "clientIp"
+                              },
+                              {
+                                "op": "path",
+                                "from": "scope",
+                                "path": "forwarded"
+                              }
+                            ]
+                          },
+                          "separator": ""
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "headers"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "headers"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "requestExecutionId"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "requestExecutionId"
+                        }
+                      ]
+                    },
+                    {
+                      "invocation": "value.Add",
+                      "arguments": [
+                        {
+                          "op": "literal",
+                          "value": "executionPath"
+                        },
+                        {
+                          "op": "path",
+                          "from": "scope",
+                          "path": "executionPath"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           }
         },
@@ -1116,7 +2110,7 @@
       "event_id": "serve-http-request-requested",
       "responsibility": "the kernel resolves the request, runs the frontdoor and composes the response",
       "outcome_id": "serve-http-request-outcome",
-      "scenario_definition_digest": "Tz+m05vij8vlHwF2l/wcCpfKUSzM41VM4hDzpswpA30="
+      "scenario_definition_digest": "EjluzEimMtUpyvhaxDA/pUXHUPRwONnb9/lJtjVYh0c="
     }
   ]
 }

@@ -1,15 +1,12 @@
-# Canonical feature of the hosted execution profile, revision 4, 2026-11-04.
-# Version 4 is deployed. Live attempt 5f8d64d2-7922-4436-84fb-3f303991212a was REJECTED:
-# the stored probe session returned 401 before any T1-T7 run. Fulfillment remains outstanding.
-# Evidence: docs/hosted-execution-v4-2026-11-04/README.md and its receipt/readback/delivery-proof JSON.
-# Latest hosted-v4-c diagnosis: attempt 3043cd09-ffe9-454e-a4e5-f0dfd58c1010 reports
-# ACCEPTANCE_SESSION_FORMAT_INVALID; see the credential-diagnosis/ evidence in that report.
-# Installed tags establish implementation, not successful live T1-T7 acceptance.
+# Canonical feature of the hosted execution profile, revision 5, 2026-11-04.
+# Version 5 removes the separate acceptance credential at the owner's direction.
+# Version 5 is deployed. Attempt 2693926c-0714-4c75-989d-ded69182e3ef passed T1-T7.
+# Exact receipt/readback and FULFILLED proof: docs/hosted-execution-v5-2026-11-04/README.md.
 # Tags, terms and the owner's direction are in features/README.md. As in the provider features of 2026-11-03,
 # @capability and @provider are on each scenario.
 # Sources:
 # - the contract: contracts/hosted-execution-profile.v1.schema.json, this deployment's profile
-#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d),
+#   contracts/sfx-api-hosted-csharp.v1.profile.json (sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33),
 #   and the receipt contract contracts/hosted-execution-acceptance.v1.schema.json;
 # - the consolidated host-consumer contract revision (2026-11-04), prepared for host review;
 # - sfx-api.config.json, deploy/Dockerfile and SDA's DeclaredProviderResolver.cs at 29355da, read from the code.
@@ -31,7 +28,7 @@
 #                                        provider sfx-api-acceptance-python-only: declared only for python, so a csharp
 #                                        worker must refuse it
 #
-# Current revision 4 implementation:
+# Current revision 5 implementation:
 # - host/serve.py assigns requestExecutionId at actual kernel admission; declared ingress carries it with the
 #   authenticated caller into the pinned provider. Mixed-case duplicate correlation/profile headers are refused.
 # - providers/hosted/HostedAcceptance.cs implements the declared HTTP and record ports. Configuration owns the
@@ -42,42 +39,9 @@
 #   profile, dispatches once, retains evidence and independently checks readback before constructing a proof.
 # - hostFilesDigest extends the historical five-file order with Sfx.HostedProviders.dll, hosted/validate.py and
 #   contracts/validate-hosted-execution-receipt.py. Image and bundle pins are in the deployment record.
-# - Live negative cases and a concurrent ACCEPTANCE_BUSY response are recorded. The rejected receipt survived
-#   a confirmed container restart. Successful probes, T7 scheduling and a FULFILLED proof remain unverified.
+# - Version 4 retains historical negative, busy and restart evidence. Version 5 has a real ACCEPTED receipt
+#   and independently verified FULFILLED proof; T7 scheduling and UTF-8 payload transport passed live.
 #
-# Historical slice 3 implementation (profile version 3); revision 4 scenarios below supersede its caller gate:
-# - accept-hosted-execution-profile runs authorize > vault (sfx-vault-host-read-port.v1) > reference > open
-#   (sfx-vault-reference-carry-port.v1) > exchange (sfx-api-host-http-request-port.v1) > evaluate, on the request path,
-#   routed POST /sfx/v1/hosted-execution/acceptance for callers user with input {principalId: $caller.principalId}.
-# - authorize admits only principalId 00e053bd-b090-4ff9-be25-64089d170fb2 (staging-release-acceptance, identifier
-#   staging-release-acceptance) and declares the plan; reference requires the vault entry SFX_API_ACCEPTANCE_SESSION.
-#   Each leaves an admission code. A declared expression cannot fail its cell on this kernel (SDA
-#   SemanticExecutionGraphMechanicProvider passes a refusing expression's input through), so the HTTPS program's first
-#   step fails on any code but ADMITTED, before it opens an entry: the API answers 422 CELL_EXECUTION_FAILED naming
-#   ACCEPTANCE_PRINCIPAL_REQUIRED or ACCEPTANCE_CREDENTIAL_NOT_PROVISIONED.
-# - sfx-api-host-http-request opens the entry inside its own call (ADR-0019) and runs providers/host-acceptance.py under
-#   /usr/bin/timeout --kill-after=5 175 with an environment that holds only the stored session and SFX_API_IMAGE_DIGEST. The
-#   script attests the deployment (hostFilesDigest over serve.py, sfx-api.config.json, start.sh, kernel-host.json and
-#   the provider authority, in that order; the bundle pin checked against the deployed manifest; the kernel root it
-#   runs in), confirms GET /sfx/v1/session names the acceptance principal, submits T4, T1, T2, T5, T6 and T3 at once,
-#   follows each stream to its end frame, reads state and output, measures T4, then submits the three T7 holds. It never
-#   signs in and never revokes the stored session, which stays in it.
-# - The image digest is the App Service setting SFX_API_IMAGE_DIGEST, which the deployer sets to the digest it deploys.
-#   A host without it fails the exchange step and issues no receipt.
-# - T6's settingsDigest is the SHA-256 of read-api-host-configuration's literal answer as canonical JSON (keys sorted,
-#   no whitespace, UTF-8), read by the configuration probe from the deployed bundle with the request wait and the
-#   waiting runs.
-# - evaluate derives each check from the client's observations with the profile's and the receipt schema's values,
-#   and answers the receipt; without the client's observations or an established deployment it answers 422 with
-#   ACCEPTANCE_CLIENT_FAILED or ACCEPTANCE_DEPLOYMENT_UNESTABLISHED. T7's arithmetic covers exactly the three holds.
-# - Run admission refuses accept-hosted-execution-profile (ADMISSION_REQUEST_PATH_ONLY, admit-api-run-live.feature): a
-#   run's input could claim any principal. The client also reads the kernel it runs under from /proc and uses the
-#   session only on the request path, so T7's coordinatorExecutionPath and coordinatorWorkerSlots are measured; elsewhere it
-#   answers ACCEPTANCE_NOT_ON_REQUEST_PATH and no receipt.
-# - Known limit: a failure of the program itself (vault open, start of the child) fails the request with no receipt.
-
-@project:sfx-api
-@status:installed
 Feature: The host declares what it promises the capabilities it executes
   As a consumer that declares capabilities and their providers
   I want the host's execution promises as a versioned contract I can read, check by digest and require
@@ -160,15 +124,15 @@ Feature: The host declares what it promises the capabilities it executes
     @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
-    Scenario: The existing operator starts acceptance and the stored session owns only its probes
+    Scenario: The existing operator starts acceptance and the invoking session owns its probes
       Given the profile and pinned host bundle bind host-acceptance-operator to 565de6d4-ebcd-408b-9359-04d21dc62183
-      And they bind staging-release-acceptance to 00e053bd-b090-4ff9-be25-64089d170fb2 for probe execution
+      And probe execution uses that same authenticated operator identity
       When a live user session requests POST /sfx/v1/hosted-execution/acceptance
       Then the coordinator compares its ingress-authenticated principalId to the operator binding before releasing a credential
       And a different principal, missing binding, expired session or unauthenticated caller is refused before any probe
       And a principal name or id supplied in the request body cannot grant admission
-      And the operator does not switch accounts, enter an acceptance password or obtain the stored probe bearer
-      And probe ownership and own-runs visibility remain with the dedicated acceptance principal
+      And the operator does not switch accounts, enter an acceptance password or provision another probe bearer
+      And probe ownership and own-runs visibility remain with the invoking operator
       # The host's existing session resolution yields caller kind user. This declaration adds no machine-bearer resolver.
 
   Rule: The host delivers and proves the complete supported invocation, not just a coordinator that assumes one
@@ -180,7 +144,7 @@ Feature: The host declares what it promises the capabilities it executes
     Scenario: The existing capability command reaches the declared request route
       Given the host publishes and installs a versioned sfx-api client that supports this profile's invocation descriptor
       And the existing operator CLI session resolves to the profile's host-acceptance-operator binding
-      And the standard store-credential process has provisioned SFX_API_ACCEPTANCE_SESSION
+      And the existing CLI already has its ordinary authenticated user session
       When the operator or its authorized agent executes this existing command surface:
         """
         sfx-api capability observe accept-hosted-execution-profile --input '{}' --input-type json --json --auth user
@@ -242,19 +206,15 @@ Feature: The host declares what it promises the capabilities it executes
 
     @status:installed
     @capability:accept-hosted-execution-profile
-    @provider:sfx-vault-host-read-port.v1
-    @provider:sfx-vault-reference-carry-port.v1
     @provider:sfx-api-host-http-request-port.v1
-    Scenario: Credential readiness belongs to the host's standard lifecycle
-      Given the operator has already used store-credential to provision SFX_API_ACCEPTANCE_SESSION
+    Scenario: Acceptance needs no additional credential provisioning
+      Given the operator is signed in through the existing CLI
       When an authorized acceptance invocation begins
-      Then the host checks the stored session against the dedicated probe principal before admitting probes
-      And an absent, expired, revoked or mismatched session is an explicit typed failure
-      And the host operator refreshes it through store-credential when necessary
-      And the consumer is not required to create a separate password flow or certify vault readiness
-      And a deployment-established coordinator returns failed checks in a REJECTED receipt when it can do so
-      And failure before a receipt can be constructed returns hosted-execution-invocation-error.v1 with no fabricated receipt
-      And the provider never signs in, revokes the stored session or discloses its value
+      Then the host reuses that request session for its probes and own-run reads
+      And no host-vault entry or dedicated acceptance account is required
+      And the host validates the session and operator identity before admitting probes
+      And an expired, revoked or mismatched session produces an explicit typed failure
+      And the provider never signs in, stores a session, revokes it or discloses its value
 
     @status:installed
     @capability:accept-hosted-execution-profile
@@ -270,7 +230,7 @@ Feature: The host declares what it promises the capabilities it executes
       And the client preserves a received receipt before any subsequent validation or cleanup failure
       And the client bounds discovery and the coordinator HTTP exchange separately by the profile's client wait limits
       And the coordinator still stops measuring by 150 s within the unchanged 195000 ms delivery and 198000 ms answer bounds
-      # No failure branch revokes the stored session. A new attempt is not evidence that the previous one was cancelled.
+      # No failure branch revokes the invoking session. A new attempt is not evidence that the previous one was cancelled.
 
     @status:installed
     @capability:accept-hosted-execution-profile
@@ -282,7 +242,7 @@ Feature: The host declares what it promises the capabilities it executes
       Then the receipt includes the actual attemptId, request executionId, route and ingress-authenticated operator binding
       And invocation.expectedProfileDigest equals the receipt profileDigest and the client's verified request header
       And invocation.requestExecutionId equals evaluator.executionId and neither is a replacement UUID invented by the evaluator
-      And the receipt's probe principal matches the trusted dedicated binding and every probe belongs to that principal
+      And the receipt's probe principal matches the trusted operator binding and every probe belongs to that principal
       And the host retains the returned receipt and a hosted-execution-delivery-proof.v1 naming the client version and artifact digest
       And the proof's attemptId, exchange.attemptId and receipt.invocation.attemptId all identify the same actual request
       And a declared read of the retained receipt artifact yields exactly its byteLength and SHA-256 and the embedded receipt value
@@ -325,23 +285,24 @@ Feature: The host declares what it promises the capabilities it executes
       And NOT_FOUND after an uncertain POST remains missing evidence and does not authorize automatic replay
       # The read request contract accepts only attemptId; routing and authorization are host declarations.
 
-  Rule: The coordinator measures the host under the declared stored-session authority
+  Rule: The coordinator measures the host under the invoking operator authority
 
     @status:installed
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
-    @provider:sfx-vault-host-read-port.v1
-    @provider:sfx-vault-reference-carry-port.v1
-    Scenario: The coordinator uses the dedicated acceptance principal's stored session
-      Given the operator stored that principal's session with store-credential under SFX_API_ACCEPTANCE_SESSION
-      When the admitted coordinator releases it at the declared credential pointer
-      Then it confirms through HTTPS that GET /sfx/v1/session names the declared staging-release-acceptance principalId
-      And it uses that session for the probes, event streams and readback belonging to that principal
-      And it never signs in, never revokes the stored session and preserves the existing own-runs visibility
-      And the session never reaches source, testimony, observations, the receipt or caller-controlled input
-      # The owner, 2026-11-04: "The standard process was used. Stick to it." Store run 876426ad answered
-      # CREDENTIAL_STORED for SFX_API_ACCEPTANCE_SESSION at 19:15:04 UTC. Profile version 3 replaced version 2's password
-      # sign-in, which no owner approval covered.
+    Scenario: The coordinator reuses the session of its authenticated invocation
+      Given the existing CLI authenticated the operator's request
+      When declared ingress receives that request on the request kernel
+      Then it retains the bearer only in request-scoped provider memory outside graph values
+      And it binds consumption to the host-generated requestExecutionId
+      And only that acceptance invocation can consume it once
+      And another request clears any unconsumed credential
+      And duplicate Authorization headers cannot establish a probe session
+      And HTTPS GET /sfx/v1/session must confirm the pinned operator principal
+      And the same session serves the probes, event streams and own-run readback
+      And the session never reaches source, testimony, observations or retained evidence
+      And a credential in a caller-controlled body cannot substitute for the authenticated header
+      # Owner direction: remove the added acceptance-session dependency or make it frictionless.
 
     @status:installed
     @capability:accept-hosted-execution-profile
@@ -355,10 +316,10 @@ Feature: The host declares what it promises the capabilities it executes
 
       Examples:
         | defect                                                  |
-        | the host vault has no SFX_API_ACCEPTANCE_SESSION entry    |
-        | the stored value is not in the API session bearer format  |
-        | the stored session is rejected: expired or revoked       |
-        | the stored session names a different principalId         |
+        | the invocation-scoped session is absent or already consumed    |
+        | the invoking value is not in the API session bearer format  |
+        | the invoking session is rejected: expired or revoked       |
+        | the invoking session names a different principalId         |
         | the acceptance session expires or is revoked during the run |
 
     @status:installed
@@ -466,7 +427,7 @@ Feature: The host declares what it promises the capabilities it executes
       When accept-hosted-execution-profile issues a receipt
       Then every runId the receipt cites comes from an actual admission on this deployment
       And every PASSED check cites terminal runs with verified capability, inputs and measurements
-      And every probe run belongs to the dedicated acceptance principal bound by that host bundle
+      And every probe run belongs to the invoking operator bound by that host bundle
       And a failed check preserves its known admission and attempt evidence when execution or collection could not finish
       And it verifies the coordinator's request executionId separately from the worker runIds
       And T4's URL names its verified payload run and T7's intervals name exactly its three verified hold runs
@@ -521,8 +482,6 @@ Feature: The host declares what it promises the capabilities it executes
     @capability:accept-hosted-execution-profile
     @provider:sfx-api-host-http-request-port.v1
     @provider:read-run-state
-    @provider:sfx-vault-host-read-port.v1
-    @provider:sfx-vault-reference-carry-port.v1
     @provider:read-hosted-execution-profile
     @provider:serve-http-request
     @provider:sfx-api-host-acceptance-record-port.v1
@@ -533,8 +492,8 @@ Feature: The host declares what it promises the capabilities it executes
         | acceptance request and attempt readback    | serve-http-request                                                   | authenticated request-path dispatch and typed response | actual request identity, route and caller context |
         | retain attempt and terminal receipt bytes  | sfx-api-host-acceptance-record-port.v1                                 | durable non-secret attempt and exact receipt bytes before response | write disposition, attempt identity and receipt digest |
         | read retained acceptance attempt          | sfx-api-host-acceptance-record-port.v1                                 | typed read-result for the named attempt without credentials | declared read and matching decoded bytes |
-        | acceptance session release               | sfx-vault-host-read-port.v1 and sfx-vault-reference-carry-port.v1      | the stored session at the declared credential pointer | credential-release disposition without its value |
-        | acceptance session check                 | sfx-api-host-http-request-port.v1                                    | the stored session names the bound principal           | session-check disposition and principalId without bearer |
+        | acceptance session release               | sfx-api-ingress-resolve-port.v2      | the invoking session at the declared credential pointer | request UUID binding and non-disclosure evidence |
+        | acceptance session check                 | sfx-api-host-http-request-port.v1                                    | the invoking session names the bound principal           | session-check disposition and principalId without bearer |
         | probe admission and output/state HTTP reads | sfx-api-host-http-request-port.v1, provider sfx-api-host-http-request | deployed HTTPS response or explicit transport failure | HTTP provider testimony in the coordinator's request |
         | the runs every check cites                | read-run-state                                                       | run state and available evidence; terminal intervals for passing checks | the nested deliveries' testimony |
       When accept-hosted-execution-profile runs

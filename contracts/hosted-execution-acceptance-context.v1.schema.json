@@ -15,7 +15,7 @@
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "expectedProfileDigest": {
-      "const": "sha256:0b5856fbe48aa9dba5783631e969d6628f681707b6bdcfa762fb058ca65d8f8d"
+      "const": "sha256:9760b6001d84576090a47a1ac02a4db5d728fdb1aea8cbef66b57376ff152f33"
     },
     "requestExecutionId": {
       "type": "string",
@@ -67,5 +67,5 @@
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "hosted-execution-acceptance-context.v1.schema.json",
-  "description": "Internal capability input built by the host interface. Caller comes only from authenticated ingress; execution identity/path come from the actual host request; attempt and expected profile digest come from validated headers. This document is never accepted as a caller-supplied body. Schema-valid context still requires comparison with the operator binding before vault release."
+  "description": "Internal capability input built by the host interface. Caller comes only from authenticated ingress; execution identity/path come from the actual host request; attempt and expected profile digest come from validated headers. This document is never accepted as a caller-supplied body. Schema-valid context still requires comparison with the operator binding before consuming the invocation-scoped session."
 }
