@@ -1,0 +1,178 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-published-content",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-published-content",
+  "graphSource": {
+    "capabilityId": "read-api-published-content",
+    "rootScenarioId": "read-api-published-content",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-published-content",
+        "input": {
+          "inputId": "read-api-published-content-request",
+          "contract": {
+            "contractId": "read-api-published-content-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-published-content-requested",
+          "executionAuthorityId": "read-api-published-content.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-published-content-outcome",
+          "contract": {
+            "contractId": "read-api-published-content-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-published-content",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-published-content.v1",
+        "owningScenarioId": "read-api-published-content",
+        "operations": [
+          {
+            "operationId": "read-api-published-content.prepare",
+            "kind": "invoke-port",
+            "portId": "read-api-published-content-prepare"
+          },
+          {
+            "operationId": "read-api-published-content.source",
+            "kind": "invoke-port",
+            "portId": "read-api-published-content-source"
+          },
+          {
+            "operationId": "read-api-published-content.answer",
+            "kind": "invoke-port",
+            "portId": "read-api-published-content-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-published-content-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-published-content",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-published-content-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-published-content-prepare",
+          "platformCapabilityId": "sfx-api-publication-selection-port.v1",
+          "configuration": {
+            "operation": "public",
+            "readerCapabilityId": "read-content-publications",
+            "writerCapabilityId": "apply-verified-content-publication"
+          }
+        },
+        {
+          "portId": "read-api-published-content-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-published-content-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-published-content-request.v1": {
+          "schemaRef": "read-api-published-content-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "read-api-published-content-result.v1": {
+          "schemaRef": "read-api-published-content-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-published-content-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-published-content",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-published-content",
+      "input_id": "read-api-published-content-request",
+      "event_id": "read-api-published-content-requested",
+      "responsibility": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin.",
+      "outcome_id": "read-api-published-content-outcome",
+      "scenario_definition_digest": "KHZLY9EqqN4nodpS56sfcyExoyVB5Qr1+n9Ut8LiOP4="
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "resolve-api-content-digest",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "resolve-api-content-digest",
+  "graphSource": {
+    "capabilityId": "resolve-api-content-digest",
+    "rootScenarioId": "resolve-api-content-digest",
+    "scenarios": [
+      {
+        "scenarioId": "resolve-api-content-digest",
+        "input": {
+          "inputId": "resolve-api-content-digest-request",
+          "contract": {
+            "contractId": "resolve-api-content-digest-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "resolve-api-content-digest-requested",
+          "executionAuthorityId": "resolve-api-content-digest.v1"
+        },
+        "outcome": {
+          "outcomeId": "resolve-api-content-digest-outcome",
+          "contract": {
+            "contractId": "resolve-api-content-digest-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "resolve-api-content-digest",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "resolve-api-content-digest.v1",
+        "owningScenarioId": "resolve-api-content-digest",
+        "operations": [
+          {
+            "operationId": "resolve-api-content-digest.prepare",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-prepare"
+          },
+          {
+            "operationId": "resolve-api-content-digest.source",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-source"
+          },
+          {
+            "operationId": "resolve-api-content-digest.receipts",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-receipts"
+          },
+          {
+            "operationId": "resolve-api-content-digest.receipt-source",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-receipt-source"
+          },
+          {
+            "operationId": "resolve-api-content-digest.retained",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-retained"
+          },
+          {
+            "operationId": "resolve-api-content-digest.retained-source",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-retained-source"
+          },
+          {
+            "operationId": "resolve-api-content-digest.project",
+            "kind": "invoke-port",
+            "portId": "resolve-api-content-digest-project"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "resolve-api-content-digest-cli",
+          "kind": "cli",
+          "rootScenarioId": "resolve-api-content-digest",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "resolve-api-content-digest-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "resolve-api-content-digest-prepare",
+          "platformCapabilityId": "sfx-api-content-selection-port.v1",
+          "configuration": {
+            "operation": "resolve",
+            "sourceCapabilityId": "read-owned-html-source"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-receipts",
+          "platformCapabilityId": "sfx-api-content-receipts-port.v1",
+          "configuration": {
+            "receiptCapabilityId": "read-principal-html-receipts"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-receipt-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-retained",
+          "platformCapabilityId": "sfx-api-content-retained-reference-port.v1",
+          "configuration": {
+            "retainedCapabilityId": "read-retained-artifact"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-retained-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "resolve-api-content-digest-project",
+          "platformCapabilityId": "sfx-api-content-projection-port.v1",
+          "configuration": {
+            "python": "/usr/local/bin/python3",
+            "analyzer": "/opt/sfx/providers/content/package.py",
+            "writerCapabilityId": "apply-verified-content-publication",
+            "interactiveProfile": {
+              "profileId": "interactive-document",
+              "profileVersion": "1",
+              "capabilityId": "render-scenario-topology-page",
+              "rendererId": "sidefx-circuit-page-v1",
+              "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+              "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "resolve-api-content-digest-request.v1": {
+          "schemaRef": "resolve-api-content-digest-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "resolve-api-content-digest-result.v1": {
+          "schemaRef": "resolve-api-content-digest-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "resolve-api-content-digest-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "resolve-api-content-digest",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "resolve-api-content-digest",
+      "input_id": "resolve-api-content-digest-request",
+      "event_id": "resolve-api-content-digest-requested",
+      "responsibility": "Resolve a digest through a principal-owned source address or the principal's successful retained producer receipt, then inspect its bytes offline. A digest or caller-supplied receipt grants no access.",
+      "outcome_id": "resolve-api-content-digest-outcome",
+      "scenario_definition_digest": "gNLb1Tn374ZL6xNak1eyEKs+VURtWkfFrq9woHsoM3A="
+    }
+  ]
+}

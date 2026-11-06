@@ -13,12 +13,15 @@ RUN apt-get update \
  && mkdir -p /opt/sfx \
  && chown sjones:sjones /opt/sfx
 ARG KERNEL_DIGEST
+RUN printf '%s' "$KERNEL_DIGEST" | grep -Eq '^[0-9a-f]{64}$'
 COPY --chown=sjones:sjones kernel/ /opt/sfx/kernel/${KERNEL_DIGEST}/
 # The kernel's boot configuration is the host's (deploy/kernel-host.json): it names the host's provider authority, which
 # binds the declared-read port to answer-host-declared-read over the pinned bundle (answer-host-declared-read.feature).
 COPY --chown=sjones:sjones kernel-host.json /opt/sfx/kernel/${KERNEL_DIGEST}/kernel-host.json
 COPY --chown=sjones:sjones providers/host-provider-authority.json /opt/sfx/providers/host-provider-authority.json
 COPY --chown=sjones:sjones providers/hosted/ /opt/sfx/providers/hosted/
+COPY --chown=sjones:sjones providers/content/ /opt/sfx/providers/content/
+RUN python3 -m pip install --no-cache-dir --no-deps --target /opt/sfx/providers/content/python -r /opt/sfx/providers/content/requirements.txt
 COPY --chown=sjones:sjones contracts/ /opt/sfx/contracts/
 RUN python3 -m pip install --no-cache-dir --no-deps --target /opt/sfx/providers/schema-python -r /opt/sfx/providers/hosted/requirements.txt
 COPY --chown=sjones:sjones authorities/host-bundle/ /opt/sfx/authorities/host-bundle/

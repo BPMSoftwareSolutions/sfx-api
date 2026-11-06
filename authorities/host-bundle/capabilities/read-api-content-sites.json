@@ -1,0 +1,178 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-content-sites",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-content-sites",
+  "graphSource": {
+    "capabilityId": "read-api-content-sites",
+    "rootScenarioId": "read-api-content-sites",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-content-sites",
+        "input": {
+          "inputId": "read-api-content-sites-request",
+          "contract": {
+            "contractId": "read-api-content-sites-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-content-sites-requested",
+          "executionAuthorityId": "read-api-content-sites.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-content-sites-outcome",
+          "contract": {
+            "contractId": "read-api-content-sites-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-content-sites",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-content-sites.v1",
+        "owningScenarioId": "read-api-content-sites",
+        "operations": [
+          {
+            "operationId": "read-api-content-sites.prepare",
+            "kind": "invoke-port",
+            "portId": "read-api-content-sites-prepare"
+          },
+          {
+            "operationId": "read-api-content-sites.source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-sites-source"
+          },
+          {
+            "operationId": "read-api-content-sites.answer",
+            "kind": "invoke-port",
+            "portId": "read-api-content-sites-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-content-sites-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-content-sites",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-content-sites-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-content-sites-prepare",
+          "platformCapabilityId": "sfx-api-publication-selection-port.v1",
+          "configuration": {
+            "operation": "sites",
+            "readerCapabilityId": "read-content-publications",
+            "writerCapabilityId": "apply-verified-content-publication"
+          }
+        },
+        {
+          "portId": "read-api-content-sites-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-sites-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-content-sites-request.v1": {
+          "schemaRef": "read-api-content-sites-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "read-api-content-sites-result.v1": {
+          "schemaRef": "read-api-content-sites-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-content-sites-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-content-sites",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-content-sites",
+      "input_id": "read-api-content-sites-request",
+      "event_id": "read-api-content-sites-requested",
+      "responsibility": "Caller-bound publication authority: sites. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "outcome_id": "read-api-content-sites-outcome",
+      "scenario_definition_digest": "xq4DunQ7EdZED+gnhhS1sC8iciBNAY6wVS5ZMXxK45g="
+    }
+  ]
+}

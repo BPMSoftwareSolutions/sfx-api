@@ -1,0 +1,178 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-content-publications",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-content-publications",
+  "graphSource": {
+    "capabilityId": "read-api-content-publications",
+    "rootScenarioId": "read-api-content-publications",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-content-publications",
+        "input": {
+          "inputId": "read-api-content-publications-request",
+          "contract": {
+            "contractId": "read-api-content-publications-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-content-publications-requested",
+          "executionAuthorityId": "read-api-content-publications.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-content-publications-outcome",
+          "contract": {
+            "contractId": "read-api-content-publications-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-content-publications",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-content-publications.v1",
+        "owningScenarioId": "read-api-content-publications",
+        "operations": [
+          {
+            "operationId": "read-api-content-publications.prepare",
+            "kind": "invoke-port",
+            "portId": "read-api-content-publications-prepare"
+          },
+          {
+            "operationId": "read-api-content-publications.source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-publications-source"
+          },
+          {
+            "operationId": "read-api-content-publications.answer",
+            "kind": "invoke-port",
+            "portId": "read-api-content-publications-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-content-publications-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-content-publications",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-content-publications-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-content-publications-prepare",
+          "platformCapabilityId": "sfx-api-publication-selection-port.v1",
+          "configuration": {
+            "operation": "list",
+            "readerCapabilityId": "read-content-publications",
+            "writerCapabilityId": "apply-verified-content-publication"
+          }
+        },
+        {
+          "portId": "read-api-content-publications-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-publications-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-content-publications-request.v1": {
+          "schemaRef": "read-api-content-publications-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "read-api-content-publications-result.v1": {
+          "schemaRef": "read-api-content-publications-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-content-publications-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-content-publications",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-content-publications",
+      "input_id": "read-api-content-publications-request",
+      "event_id": "read-api-content-publications-requested",
+      "responsibility": "Caller-bound publication authority: list. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "outcome_id": "read-api-content-publications-outcome",
+      "scenario_definition_digest": "z25WPDT8oyjpyJel+9vUlQZtJAIiyqAOvLf3TfoqHjw="
+    }
+  ]
+}

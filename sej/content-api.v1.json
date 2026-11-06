@@ -1,0 +1,186 @@
+{
+  "contractId": "sfx-api-content-operations.v1",
+  "version": "1.2.0",
+  "sourceCapabilityId": "read-owned-html-source",
+  "receiptCapabilityId": "read-principal-html-receipts",
+  "retainedCapabilityId": "read-retained-artifact",
+  "interactiveProfile": {
+    "profileId": "interactive-document",
+    "profileVersion": "1",
+    "capabilityId": "render-scenario-topology-page",
+    "rendererId": "sidefx-circuit-page-v1",
+    "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+    "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+  },
+  "providers": {
+    "selection": "sfx-api-content-selection",
+    "receipts": "sfx-api-content-receipts",
+    "retained": "sfx-api-content-retained-reference",
+    "projection": "sfx-api-content-projection",
+    "python": "/usr/local/bin/python3",
+    "analyzer": "/opt/sfx/providers/content/package.py"
+  },
+  "operations": [
+    {
+      "operationId": "read-api-content-library",
+      "projection": "library",
+      "path": "/content/artifacts",
+      "query": [
+        "mediaType",
+        "collectionId",
+        "limit",
+        "cursor"
+      ],
+      "meaning": "Read the authenticated principal's bounded owned HTML addresses and successful root producer receipts without a run admission. Report partial coverage while nested producer receipt inventory remains incomplete. Library summaries do not claim a dependency inspection."
+    },
+    {
+      "operationId": "resolve-api-content-digest",
+      "projection": "resolve",
+      "path": "/content/resolve",
+      "query": [
+        "contentDigest"
+      ],
+      "meaning": "Resolve a digest through a principal-owned source address or the principal's successful retained producer receipt, then inspect its bytes offline. A digest or caller-supplied receipt grants no access."
+    },
+    {
+      "operationId": "read-api-content-revision",
+      "projection": "revision",
+      "path": "/content/artifacts/{artifactId}",
+      "query": [
+        "revision"
+      ],
+      "meaning": "Read one authorized immutable source revision and inspect its original UTF-8 HTML without execution. Missing dependencies remain explicit."
+    },
+    {
+      "operationId": "read-api-content-body",
+      "projection": "body",
+      "path": "/content/artifacts/{artifactId}/revisions/{revision}/body",
+      "query": [],
+      "meaning": "Reauthorize an exact owned source revision and return its verified bytes in content-bytes.v1 JSON. Executable HTML is never served on the privileged API origin."
+    },
+    {
+      "operationId": "read-api-retained-content-body",
+      "projection": "retained-body",
+      "path": "/content/retained/{contentDigest}/revisions/{revision}/body",
+      "query": [],
+      "meaning": "Reauthorize the retained digest through an owned source address or successful principal-scoped producer receipt, then return exactly the selected immutable bytes in content-bytes.v1 JSON."
+    },
+    {
+      "operationId": "read-api-content-sites",
+      "projection": "sites",
+      "path": "/content/sites",
+      "query": [],
+      "meaning": "Caller-bound publication authority: sites. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "family": "publication"
+    },
+    {
+      "operationId": "read-api-content-publications",
+      "projection": "list",
+      "path": "/content/publications",
+      "query": [
+        "offset",
+        "limit"
+      ],
+      "meaning": "Caller-bound publication authority: list. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "family": "publication"
+    },
+    {
+      "operationId": "read-api-content-publication",
+      "projection": "publication",
+      "path": "/content/publications/{publicationId}",
+      "query": [],
+      "meaning": "Caller-bound publication authority: publication. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "family": "publication"
+    },
+    {
+      "operationId": "read-api-content-publication-history",
+      "projection": "history",
+      "path": "/content/publications/{publicationId}/history",
+      "query": [
+        "offset",
+        "limit"
+      ],
+      "meaning": "Caller-bound publication authority: history. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "family": "publication"
+    },
+    {
+      "operationId": "read-api-content-publication-request",
+      "projection": "request",
+      "path": "/content/publication-requests/{idempotencyKey}",
+      "query": [],
+      "meaning": "Caller-bound publication authority: request. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs.",
+      "family": "publication"
+    },
+    {
+      "operationId": "read-api-published-content",
+      "projection": "public",
+      "path": "/published-content/{targetId}/{path}",
+      "query": [],
+      "meaning": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin.",
+      "family": "publication",
+      "callers": [
+        "anonymous",
+        "user"
+      ]
+    },
+    {
+      "operationId": "publish-api-content",
+      "projection": "publish",
+      "path": "/content/publications",
+      "query": [],
+      "meaning": "Explicit authorized publish of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "method": "POST"
+    },
+    {
+      "operationId": "update-api-content-publication",
+      "projection": "update",
+      "path": "/content/publications/{publicationId}/update",
+      "query": [],
+      "meaning": "Explicit authorized update of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "method": "POST"
+    },
+    {
+      "operationId": "withdraw-api-content-publication",
+      "projection": "withdraw",
+      "path": "/content/publications/{publicationId}/withdraw",
+      "query": [],
+      "meaning": "Explicit authorized withdraw of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "family": "publication",
+      "method": "POST"
+    },
+    {
+      "operationId": "resolve-api-published-content-path",
+      "projection": "public",
+      "path": "/published-content/{targetId}",
+      "query": [
+        "path"
+      ],
+      "meaning": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin.",
+      "family": "publication",
+      "callers": [
+        "anonymous",
+        "user"
+      ]
+    },
+    {
+      "operationId": "read-api-content-asset",
+      "projection": "asset",
+      "path": "/content/artifacts/{artifactId}/revisions/{revision}/assets",
+      "query": [
+        "path"
+      ],
+      "meaning": "Reauthorize the original page and its pinned manifest; return only the exact listed dependency bytes. A path or digest alone grants no access. Query path carries nested directories through hosted ingress."
+    },
+    {
+      "operationId": "read-api-retained-content-asset",
+      "projection": "retained-asset",
+      "path": "/content/retained/{contentDigest}/revisions/{revision}/assets",
+      "query": [
+        "path"
+      ],
+      "meaning": "Reauthorize the original page and its pinned manifest; return only the exact listed dependency bytes. A path or digest alone grants no access. Query path carries nested directories through hosted ingress."
+    }
+  ],
+  "writerCapabilityId": "apply-verified-content-publication",
+  "publicationReaderCapabilityId": "read-content-publications"
+}

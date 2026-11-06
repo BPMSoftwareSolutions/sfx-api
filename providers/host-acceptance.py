@@ -31,7 +31,8 @@ from datetime import datetime, timezone
 STARTED = time.monotonic()
 HOST_FILES = ["/opt/sfx/host/serve.py", "/opt/sfx/sfx-api.config.json", "/opt/sfx/start.sh", None,
               "/opt/sfx/providers/host-provider-authority.json", "/opt/sfx/providers/hosted/Sfx.HostedProviders.dll",
-              "/opt/sfx/providers/hosted/validate.py", "/opt/sfx/contracts/validate-hosted-execution-receipt.py"]
+              "/opt/sfx/providers/hosted/validate.py", "/opt/sfx/contracts/validate-hosted-execution-receipt.py",
+              "/opt/sfx/providers/content/package.py", "/opt/sfx/providers/content/requirements.txt"]
 MANIFEST = "/opt/sfx/authorities/host-bundle/manifest.json"
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")

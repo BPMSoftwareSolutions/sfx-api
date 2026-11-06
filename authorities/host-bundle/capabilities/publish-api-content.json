@@ -1,0 +1,280 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "publish-api-content",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "publish-api-content",
+  "graphSource": {
+    "capabilityId": "publish-api-content",
+    "rootScenarioId": "publish-api-content",
+    "scenarios": [
+      {
+        "scenarioId": "publish-api-content",
+        "input": {
+          "inputId": "publish-api-content-request",
+          "contract": {
+            "contractId": "publish-api-content-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "publish-api-content-requested",
+          "executionAuthorityId": "publish-api-content.v1"
+        },
+        "outcome": {
+          "outcomeId": "publish-api-content-outcome",
+          "contract": {
+            "contractId": "publish-api-content-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "publish-api-content",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "publish-api-content.v1",
+        "owningScenarioId": "publish-api-content",
+        "operations": [
+          {
+            "operationId": "publish-api-content.prepare",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-prepare"
+          },
+          {
+            "operationId": "publish-api-content.source",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-source"
+          },
+          {
+            "operationId": "publish-api-content.receipts",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-receipts"
+          },
+          {
+            "operationId": "publish-api-content.receipt-source",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-receipt-source"
+          },
+          {
+            "operationId": "publish-api-content.retained",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-retained"
+          },
+          {
+            "operationId": "publish-api-content.retained-source",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-retained-source"
+          },
+          {
+            "operationId": "publish-api-content.project",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-project"
+          },
+          {
+            "operationId": "publish-api-content.writer",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-writer"
+          },
+          {
+            "operationId": "publish-api-content.answer",
+            "kind": "invoke-port",
+            "portId": "publish-api-content-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "publish-api-content-cli",
+          "kind": "cli",
+          "rootScenarioId": "publish-api-content",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "publish-api-content-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "publish-api-content-prepare",
+          "platformCapabilityId": "sfx-api-content-selection-port.v1",
+          "configuration": {
+            "operation": "publish",
+            "sourceCapabilityId": "read-owned-html-source"
+          }
+        },
+        {
+          "portId": "publish-api-content-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "publish-api-content-receipts",
+          "platformCapabilityId": "sfx-api-content-receipts-port.v1",
+          "configuration": {
+            "receiptCapabilityId": "read-principal-html-receipts"
+          }
+        },
+        {
+          "portId": "publish-api-content-receipt-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "publish-api-content-retained",
+          "platformCapabilityId": "sfx-api-content-retained-reference-port.v1",
+          "configuration": {
+            "retainedCapabilityId": "read-retained-artifact"
+          }
+        },
+        {
+          "portId": "publish-api-content-retained-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "publish-api-content-project",
+          "platformCapabilityId": "sfx-api-content-package-port.v1",
+          "configuration": {
+            "python": "/usr/local/bin/python3",
+            "analyzer": "/opt/sfx/providers/content/package.py",
+            "writerCapabilityId": "apply-verified-content-publication",
+            "interactiveProfile": {
+              "profileId": "interactive-document",
+              "profileVersion": "1",
+              "capabilityId": "render-scenario-topology-page",
+              "rendererId": "sidefx-circuit-page-v1",
+              "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+              "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+            }
+          }
+        },
+        {
+          "portId": "publish-api-content-writer",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "publish-api-content-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "publish-api-content-request.v1": {
+          "schemaRef": "publish-api-content-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "publish-api-content-result.v1": {
+          "schemaRef": "publish-api-content-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "publish-api-content-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "publish-api-content",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "publish-api-content",
+      "input_id": "publish-api-content-request",
+      "event_id": "publish-api-content-requested",
+      "responsibility": "Explicit authorized publish of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "outcome_id": "publish-api-content-outcome",
+      "scenario_definition_digest": "5qlW+vs0A4rzLm/vZ7izI/rwuxXRm2TDOOWksIwyKu4="
+    }
+  ]
+}

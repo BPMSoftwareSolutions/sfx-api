@@ -5,7 +5,7 @@
       "capabilityId": "accept-hosted-execution-profile",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/accept-hosted-execution-profile.json",
-      "sha256Base64": "nhLGjsNfAPnA8m0lf2IcTDB2TzjvMpbiJES1zT6/e+c="
+      "sha256Base64": "0pRGftQzEoCQQGlP3SckImJdGJCEl4e/cZzO4lYO6KU="
     },
     {
       "capabilityId": "admit-api-run-live",
@@ -68,10 +68,70 @@
       "sha256Base64": "HNClvPZYaE8GKwUFxVTSShvwkYwx17XkOvbGLqN8lpk="
     },
     {
+      "capabilityId": "publish-api-content",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/publish-api-content.json",
+      "sha256Base64": "lLMftw80OJjqWT5/zqVbthAPVPNeVch2u7KKF7NDZqo="
+    },
+    {
       "capabilityId": "publish-estate-live-observation",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/publish-estate-live-observation.json",
       "sha256Base64": "9JpFyX8WK1iNt/2MHk77MEDqc96GZrNjJp04WYsVWoQ="
+    },
+    {
+      "capabilityId": "read-api-content-asset",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-asset.json",
+      "sha256Base64": "jBhG4EXjzbcceAAgKkQ3q0iGQnzT/PLO3YInSNfV6Us="
+    },
+    {
+      "capabilityId": "read-api-content-body",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-body.json",
+      "sha256Base64": "g7uyjq7JduDTJBlJ4uAw9qN4vl7cw6fdLLooiv4tcWE="
+    },
+    {
+      "capabilityId": "read-api-content-library",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-library.json",
+      "sha256Base64": "5ycipBoJl/wtGKOHbgqMP87SH2ZcoAskbuOIPrWkvq8="
+    },
+    {
+      "capabilityId": "read-api-content-publication-history",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-publication-history.json",
+      "sha256Base64": "GaqzhyiCGTGKl5QRNmDd3/8GiQM1UODUEhSxknMF6gI="
+    },
+    {
+      "capabilityId": "read-api-content-publication-request",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-publication-request.json",
+      "sha256Base64": "bbWkN9AFymHYpedW0FDWbBp2nHWSPj1uStfcfXIg1Pc="
+    },
+    {
+      "capabilityId": "read-api-content-publication",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-publication.json",
+      "sha256Base64": "sj7NmnQiJvy06OIVpqxh+nqYz/renpP96PsmplO8pyY="
+    },
+    {
+      "capabilityId": "read-api-content-publications",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-publications.json",
+      "sha256Base64": "TpviUIrhPhjVUcdNS4VGOXpA7130dG8gdxklvqxmj5c="
+    },
+    {
+      "capabilityId": "read-api-content-revision",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-revision.json",
+      "sha256Base64": "rapZ0lvXyC6I9g5UmoiidXnfp+Fb1mht+zrNMq9Bot8="
+    },
+    {
+      "capabilityId": "read-api-content-sites",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-content-sites.json",
+      "sha256Base64": "pdmodOmwxbYf971CwmSW/HJznEPWpGU7gTK5T+T6Eqg="
     },
     {
       "capabilityId": "read-api-estate-scopes",
@@ -84,6 +144,24 @@
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/read-api-host-configuration.json",
       "sha256Base64": "UbExtExXWj+OehR5aTzPv7lM3oWCqVhqEVo5rhQ7F5k="
+    },
+    {
+      "capabilityId": "read-api-published-content",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-published-content.json",
+      "sha256Base64": "7rxlQuOWsO0jpuVrAINFuwGNOtHR6A44it1JfP7+JlQ="
+    },
+    {
+      "capabilityId": "read-api-retained-content-asset",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-retained-content-asset.json",
+      "sha256Base64": "N/WQKfUvxuj7lS4PiBD7GRwH4zwkZ4p71/LxNH7evyE="
+    },
+    {
+      "capabilityId": "read-api-retained-content-body",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/read-api-retained-content-body.json",
+      "sha256Base64": "C9WwUyMYnOI7p8zccGsMjuzPO3oO+Tacxg8OuIjl8Bs="
     },
     {
       "capabilityId": "read-api-session",
@@ -128,6 +206,18 @@
       "sha256Base64": "yTcKtRgM/Pz9wMyThco9GwoOpMVUXSE+pTKExfyu+wc="
     },
     {
+      "capabilityId": "resolve-api-content-digest",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/resolve-api-content-digest.json",
+      "sha256Base64": "/rqxtAShNIntnvP1Y1Ato4BBZSW84SS8rZ/L8KsSv/o="
+    },
+    {
+      "capabilityId": "resolve-api-published-content-path",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/resolve-api-published-content-path.json",
+      "sha256Base64": "jwBaIELWrtCnfyN3weChdmz4KTJcB6kl76lOhyhRNLs="
+    },
+    {
       "capabilityId": "resolve-http-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/resolve-http-request.json",
@@ -149,7 +239,7 @@
       "capabilityId": "serve-api-request",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/serve-api-request.json",
-      "sha256Base64": "EHMqJfxlFB+JSKZokJyjvZWGdg7PX7swdhz8PCAY1Hs="
+      "sha256Base64": "Gz90itG4yhN5LZhKI7xC1jmVlMewgGR6iuo3xRfAlBE="
     },
     {
       "capabilityId": "serve-http-request",
@@ -164,10 +254,22 @@
       "sha256Base64": "z7d+KLH2KTfFZi0FXq8/NgwGjOm52wwKlpVdi5vaWrk="
     },
     {
+      "capabilityId": "update-api-content-publication",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/update-api-content-publication.json",
+      "sha256Base64": "tqc24xTa5kZQyy6cLoScK53qy0bwdBIsIY3rerWB6OE="
+    },
+    {
       "capabilityId": "verify-password-derivation",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/verify-password-derivation.json",
       "sha256Base64": "mKZy6DEnSmvm7HQOm8qvB0pMvLyl1AIIjKX82j2wV10="
+    },
+    {
+      "capabilityId": "withdraw-api-content-publication",
+      "namespaceId": "sidefx:capabilities",
+      "document": "capabilities/withdraw-api-content-publication.json",
+      "sha256Base64": "u668kCmfoUNxzCQej+/KinmKYPD/NYgoGAHIMQvNZ9w="
     }
   ]
 }

@@ -1,0 +1,280 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "update-api-content-publication",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "update-api-content-publication",
+  "graphSource": {
+    "capabilityId": "update-api-content-publication",
+    "rootScenarioId": "update-api-content-publication",
+    "scenarios": [
+      {
+        "scenarioId": "update-api-content-publication",
+        "input": {
+          "inputId": "update-api-content-publication-request",
+          "contract": {
+            "contractId": "update-api-content-publication-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "update-api-content-publication-requested",
+          "executionAuthorityId": "update-api-content-publication.v1"
+        },
+        "outcome": {
+          "outcomeId": "update-api-content-publication-outcome",
+          "contract": {
+            "contractId": "update-api-content-publication-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "update-api-content-publication",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "update-api-content-publication.v1",
+        "owningScenarioId": "update-api-content-publication",
+        "operations": [
+          {
+            "operationId": "update-api-content-publication.prepare",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-prepare"
+          },
+          {
+            "operationId": "update-api-content-publication.source",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-source"
+          },
+          {
+            "operationId": "update-api-content-publication.receipts",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-receipts"
+          },
+          {
+            "operationId": "update-api-content-publication.receipt-source",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-receipt-source"
+          },
+          {
+            "operationId": "update-api-content-publication.retained",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-retained"
+          },
+          {
+            "operationId": "update-api-content-publication.retained-source",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-retained-source"
+          },
+          {
+            "operationId": "update-api-content-publication.project",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-project"
+          },
+          {
+            "operationId": "update-api-content-publication.writer",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-writer"
+          },
+          {
+            "operationId": "update-api-content-publication.answer",
+            "kind": "invoke-port",
+            "portId": "update-api-content-publication-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "update-api-content-publication-cli",
+          "kind": "cli",
+          "rootScenarioId": "update-api-content-publication",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "update-api-content-publication-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "update-api-content-publication-prepare",
+          "platformCapabilityId": "sfx-api-content-selection-port.v1",
+          "configuration": {
+            "operation": "update",
+            "sourceCapabilityId": "read-owned-html-source"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-receipts",
+          "platformCapabilityId": "sfx-api-content-receipts-port.v1",
+          "configuration": {
+            "receiptCapabilityId": "read-principal-html-receipts"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-receipt-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-retained",
+          "platformCapabilityId": "sfx-api-content-retained-reference-port.v1",
+          "configuration": {
+            "retainedCapabilityId": "read-retained-artifact"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-retained-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-project",
+          "platformCapabilityId": "sfx-api-content-package-port.v1",
+          "configuration": {
+            "python": "/usr/local/bin/python3",
+            "analyzer": "/opt/sfx/providers/content/package.py",
+            "writerCapabilityId": "apply-verified-content-publication",
+            "interactiveProfile": {
+              "profileId": "interactive-document",
+              "profileVersion": "1",
+              "capabilityId": "render-scenario-topology-page",
+              "rendererId": "sidefx-circuit-page-v1",
+              "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+              "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+            }
+          }
+        },
+        {
+          "portId": "update-api-content-publication-writer",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "update-api-content-publication-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "update-api-content-publication-request.v1": {
+          "schemaRef": "update-api-content-publication-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "update-api-content-publication-result.v1": {
+          "schemaRef": "update-api-content-publication-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "update-api-content-publication-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "update-api-content-publication",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "update-api-content-publication",
+      "input_id": "update-api-content-publication-request",
+      "event_id": "update-api-content-publication-requested",
+      "responsibility": "Explicit authorized update of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "outcome_id": "update-api-content-publication-outcome",
+      "scenario_definition_digest": "xuvuCwgo73s7Ve237ZQpJqPisoVpx315ub1YGyqx91E="
+    }
+  ]
+}

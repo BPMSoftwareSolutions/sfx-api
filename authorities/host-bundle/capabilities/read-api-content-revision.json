@@ -1,0 +1,251 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-content-revision",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-content-revision",
+  "graphSource": {
+    "capabilityId": "read-api-content-revision",
+    "rootScenarioId": "read-api-content-revision",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-content-revision",
+        "input": {
+          "inputId": "read-api-content-revision-request",
+          "contract": {
+            "contractId": "read-api-content-revision-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-content-revision-requested",
+          "executionAuthorityId": "read-api-content-revision.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-content-revision-outcome",
+          "contract": {
+            "contractId": "read-api-content-revision-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-content-revision",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-content-revision.v1",
+        "owningScenarioId": "read-api-content-revision",
+        "operations": [
+          {
+            "operationId": "read-api-content-revision.prepare",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-prepare"
+          },
+          {
+            "operationId": "read-api-content-revision.source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-source"
+          },
+          {
+            "operationId": "read-api-content-revision.receipts",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-receipts"
+          },
+          {
+            "operationId": "read-api-content-revision.receipt-source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-receipt-source"
+          },
+          {
+            "operationId": "read-api-content-revision.retained",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-retained"
+          },
+          {
+            "operationId": "read-api-content-revision.retained-source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-retained-source"
+          },
+          {
+            "operationId": "read-api-content-revision.project",
+            "kind": "invoke-port",
+            "portId": "read-api-content-revision-project"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-content-revision-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-content-revision",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-content-revision-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-content-revision-prepare",
+          "platformCapabilityId": "sfx-api-content-selection-port.v1",
+          "configuration": {
+            "operation": "revision",
+            "sourceCapabilityId": "read-owned-html-source"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-receipts",
+          "platformCapabilityId": "sfx-api-content-receipts-port.v1",
+          "configuration": {
+            "receiptCapabilityId": "read-principal-html-receipts"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-receipt-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-retained",
+          "platformCapabilityId": "sfx-api-content-retained-reference-port.v1",
+          "configuration": {
+            "retainedCapabilityId": "read-retained-artifact"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-retained-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-revision-project",
+          "platformCapabilityId": "sfx-api-content-projection-port.v1",
+          "configuration": {
+            "python": "/usr/local/bin/python3",
+            "analyzer": "/opt/sfx/providers/content/package.py",
+            "writerCapabilityId": "apply-verified-content-publication",
+            "interactiveProfile": {
+              "profileId": "interactive-document",
+              "profileVersion": "1",
+              "capabilityId": "render-scenario-topology-page",
+              "rendererId": "sidefx-circuit-page-v1",
+              "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+              "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-content-revision-request.v1": {
+          "schemaRef": "read-api-content-revision-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "read-api-content-revision-result.v1": {
+          "schemaRef": "read-api-content-revision-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-content-revision-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-content-revision",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-content-revision",
+      "input_id": "read-api-content-revision-request",
+      "event_id": "read-api-content-revision-requested",
+      "responsibility": "Read one authorized immutable source revision and inspect its original UTF-8 HTML without execution. Missing dependencies remain explicit.",
+      "outcome_id": "read-api-content-revision-outcome",
+      "scenario_definition_digest": "1s7Ln/+DGu+iXF3Xr8MnoLHu9WhvLz/lioNaUd1QM9U="
+    }
+  ]
+}

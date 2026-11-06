@@ -1,0 +1,178 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "resolve-api-published-content-path",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "resolve-api-published-content-path",
+  "graphSource": {
+    "capabilityId": "resolve-api-published-content-path",
+    "rootScenarioId": "resolve-api-published-content-path",
+    "scenarios": [
+      {
+        "scenarioId": "resolve-api-published-content-path",
+        "input": {
+          "inputId": "resolve-api-published-content-path-request",
+          "contract": {
+            "contractId": "resolve-api-published-content-path-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "resolve-api-published-content-path-requested",
+          "executionAuthorityId": "resolve-api-published-content-path.v1"
+        },
+        "outcome": {
+          "outcomeId": "resolve-api-published-content-path-outcome",
+          "contract": {
+            "contractId": "resolve-api-published-content-path-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "resolve-api-published-content-path",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "resolve-api-published-content-path.v1",
+        "owningScenarioId": "resolve-api-published-content-path",
+        "operations": [
+          {
+            "operationId": "resolve-api-published-content-path.prepare",
+            "kind": "invoke-port",
+            "portId": "resolve-api-published-content-path-prepare"
+          },
+          {
+            "operationId": "resolve-api-published-content-path.source",
+            "kind": "invoke-port",
+            "portId": "resolve-api-published-content-path-source"
+          },
+          {
+            "operationId": "resolve-api-published-content-path.answer",
+            "kind": "invoke-port",
+            "portId": "resolve-api-published-content-path-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "resolve-api-published-content-path-cli",
+          "kind": "cli",
+          "rootScenarioId": "resolve-api-published-content-path",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "resolve-api-published-content-path-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "resolve-api-published-content-path-prepare",
+          "platformCapabilityId": "sfx-api-publication-selection-port.v1",
+          "configuration": {
+            "operation": "public",
+            "readerCapabilityId": "read-content-publications",
+            "writerCapabilityId": "apply-verified-content-publication"
+          }
+        },
+        {
+          "portId": "resolve-api-published-content-path-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "resolve-api-published-content-path-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "resolve-api-published-content-path-request.v1": {
+          "schemaRef": "resolve-api-published-content-path-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "resolve-api-published-content-path-result.v1": {
+          "schemaRef": "resolve-api-published-content-path-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "resolve-api-published-content-path-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "resolve-api-published-content-path",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "resolve-api-published-content-path",
+      "input_id": "resolve-api-published-content-path-request",
+      "event_id": "resolve-api-published-content-path-requested",
+      "responsibility": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin.",
+      "outcome_id": "resolve-api-published-content-path-outcome",
+      "scenario_definition_digest": "nAUemZFqbCU/UdRrpwIPyeDIWFmANUcyRihB0GNAKdk="
+    }
+  ]
+}

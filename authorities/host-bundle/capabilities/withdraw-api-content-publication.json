@@ -1,0 +1,178 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "withdraw-api-content-publication",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "withdraw-api-content-publication",
+  "graphSource": {
+    "capabilityId": "withdraw-api-content-publication",
+    "rootScenarioId": "withdraw-api-content-publication",
+    "scenarios": [
+      {
+        "scenarioId": "withdraw-api-content-publication",
+        "input": {
+          "inputId": "withdraw-api-content-publication-request",
+          "contract": {
+            "contractId": "withdraw-api-content-publication-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "withdraw-api-content-publication-requested",
+          "executionAuthorityId": "withdraw-api-content-publication.v1"
+        },
+        "outcome": {
+          "outcomeId": "withdraw-api-content-publication-outcome",
+          "contract": {
+            "contractId": "withdraw-api-content-publication-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "withdraw-api-content-publication",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "withdraw-api-content-publication.v1",
+        "owningScenarioId": "withdraw-api-content-publication",
+        "operations": [
+          {
+            "operationId": "withdraw-api-content-publication.prepare",
+            "kind": "invoke-port",
+            "portId": "withdraw-api-content-publication-prepare"
+          },
+          {
+            "operationId": "withdraw-api-content-publication.source",
+            "kind": "invoke-port",
+            "portId": "withdraw-api-content-publication-source"
+          },
+          {
+            "operationId": "withdraw-api-content-publication.answer",
+            "kind": "invoke-port",
+            "portId": "withdraw-api-content-publication-answer"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "withdraw-api-content-publication-cli",
+          "kind": "cli",
+          "rootScenarioId": "withdraw-api-content-publication",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "withdraw-api-content-publication-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "withdraw-api-content-publication-prepare",
+          "platformCapabilityId": "sfx-api-publication-selection-port.v1",
+          "configuration": {
+            "operation": "withdraw",
+            "readerCapabilityId": "read-content-publications",
+            "writerCapabilityId": "apply-verified-content-publication"
+          }
+        },
+        {
+          "portId": "withdraw-api-content-publication-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "withdraw-api-content-publication-answer",
+          "platformCapabilityId": "sfx-api-publication-answer-port.v1",
+          "configuration": {}
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "withdraw-api-content-publication-request.v1": {
+          "schemaRef": "withdraw-api-content-publication-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "withdraw-api-content-publication-result.v1": {
+          "schemaRef": "withdraw-api-content-publication-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "withdraw-api-content-publication-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "withdraw-api-content-publication",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "withdraw-api-content-publication",
+      "input_id": "withdraw-api-content-publication-request",
+      "event_id": "withdraw-api-content-publication-requested",
+      "responsibility": "Explicit authorized withdraw of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt.",
+      "outcome_id": "withdraw-api-content-publication-outcome",
+      "scenario_definition_digest": "5r5YJJAWrkhY3SiS1CzlQVb5n34b3duX/FWOGHDHWcY="
+    }
+  ]
+}

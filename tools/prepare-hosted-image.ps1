@@ -10,6 +10,8 @@ if (Test-Path -LiteralPath $target) { throw 'Build destination must be new.' }
 if ((Split-Path $kernel -Leaf) -notmatch '^[0-9a-f]{64}$') { throw 'Use the admitted kernel artifact directory.' }
 & 'C:/Program Files/dotnet/dotnet.exe' build (Join-Path $repo 'providers/hosted/HostedProviders.csproj') -c Release "-p:KernelRoot=$kernel" --nologo
 if ($LASTEXITCODE) { throw 'Provider build failed.' }
+& python -B (Join-Path $repo 'tools/build-content-release.py')
+if ($LASTEXITCODE) { throw 'Content declaration projection failed.' }
 & python -B (Join-Path $repo 'tools/build-hosted-release.py')
 if ($LASTEXITCODE) { throw 'Bundle projection failed.' }
 New-Item -ItemType Directory -Path $target | Out-Null
@@ -31,6 +33,10 @@ foreach ($name in @('validate.py','requirements.txt')) {
     Copy-Item -LiteralPath (Join-Path $repo "providers/hosted/$name") -Destination (Join-Path $target 'providers/hosted')
 }
 Copy-Item -LiteralPath (Join-Path $repo 'providers/hosted/bin/Release/net10.0/Sfx.HostedProviders.dll') -Destination (Join-Path $target 'providers/hosted')
+New-Item -ItemType Directory -Path (Join-Path $target 'providers/content') -Force | Out-Null
+foreach ($name in @('package.py','requirements.txt')) {
+    Copy-Item -LiteralPath (Join-Path $repo "providers/content/$name") -Destination (Join-Path $target 'providers/content')
+}
 Get-ChildItem -LiteralPath (Join-Path $repo 'contracts') -File | Where-Object { $_.Extension -in '.json','.py' } | Copy-Item -Destination (Join-Path $target 'contracts')
 # File-byte pins are verified from the final context, not merely the checkout.
 $verify = @'
@@ -46,7 +52,8 @@ assert base64.b64encode(hashlib.sha256(m.read_bytes()).digest()).decode()==expec
 # Hash the final image bytes, not the pre-overlay kernel/kernel-host.json.
 host_files=['host/serve.py','sfx-api.config.json','start.sh','kernel-host.json',
  'providers/host-provider-authority.json','providers/hosted/Sfx.HostedProviders.dll',
- 'providers/hosted/validate.py','contracts/validate-hosted-execution-receipt.py']
+ 'providers/hosted/validate.py','contracts/validate-hosted-execution-receipt.py',
+ 'providers/content/package.py','providers/content/requirements.txt']
 host_digest=hashlib.sha256()
 for name in host_files: host_digest.update((p/name).read_bytes())
 print('Host files: sha256:'+host_digest.hexdigest())

@@ -227,7 +227,7 @@
                       },
                       "sha256Base64": {
                         "op": "literal",
-                        "value": "cYmRFVRLSrW+5H0igNDXEW9/IiS8GzM67WtrH+4d8Uw="
+                        "value": "nYIJvz49/f5Uw146HBLhPuEGpKM3CQyz4p/JyPs6E00="
                       },
                       "carry": {
                         "op": "path",
@@ -422,7 +422,7 @@
                       },
                       "pin": {
                         "op": "literal",
-                        "value": "sha256-base64:cYmRFVRLSrW+5H0igNDXEW9/IiS8GzM67WtrH+4d8Uw="
+                        "value": "sha256-base64:nYIJvz49/f5Uw146HBLhPuEGpKM3CQyz4p/JyPs6E00="
                       }
                     },
                     "value": {
@@ -765,6 +765,48 @@
       "providerProfileId": "sfx-api-host-child-process",
       "providerProfileDigest": "sha256:e00165030723dca2604255912f006659cb159012aaeac61f12a927288a93598a",
       "implementationRef": "sidefx:dependencies/sfx-api-host-child-process"
+    },
+    {
+      "mechanicId": "sfx-api-content-selection-port.v1",
+      "providerProfileId": "sfx-api-content-selection",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/ContentProjection.cs#Prepare"
+    },
+    {
+      "mechanicId": "sfx-api-content-receipts-port.v1",
+      "providerProfileId": "sfx-api-content-receipts",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/ContentProjection.cs#Receipts"
+    },
+    {
+      "mechanicId": "sfx-api-content-retained-reference-port.v1",
+      "providerProfileId": "sfx-api-content-retained-reference",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/ContentProjection.cs#BodyReference"
+    },
+    {
+      "mechanicId": "sfx-api-content-projection-port.v1",
+      "providerProfileId": "sfx-api-content-projection",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/ContentProjection.cs#Project"
+    },
+    {
+      "mechanicId": "sfx-api-content-package-port.v1",
+      "providerProfileId": "sfx-api-content-package",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/ContentProjection.cs#PreparePublication"
+    },
+    {
+      "mechanicId": "sfx-api-publication-selection-port.v1",
+      "providerProfileId": "sfx-api-publication-selection",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/PublicationProjection.cs#Prepare"
+    },
+    {
+      "mechanicId": "sfx-api-publication-answer-port.v1",
+      "providerProfileId": "sfx-api-publication-answer",
+      "providerProfileDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855",
+      "implementationRef": "providers/hosted/PublicationProjection.cs#Answer"
     },
     {
       "mechanicId": "sfx-api-host-http-request-port.v1",
@@ -3056,6 +3098,69 @@
         }
       ],
       "sourceProviderDefinitionDigest": "sha256:e00165030723dca2604255912f006659cb159012aaeac61f12a927288a93598a"
+    },
+    {
+      "providerProfileId": "sfx-api-content-selection",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.ContentProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Prepare",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-content-receipts",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.ContentProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Receipts",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-content-retained-reference",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.ContentProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "BodyReference",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-content-projection",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.ContentProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Project",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-content-package",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.ContentProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "PreparePublication",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-publication-selection",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.PublicationProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Prepare",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
+    },
+    {
+      "providerProfileId": "sfx-api-publication-answer",
+      "language": "csharp",
+      "type": "Sfx.HostedProviders.PublicationProjection",
+      "assembly": "../../providers/hosted/Sfx.HostedProviders.dll",
+      "method": "Answer",
+      "effectClassification": "observation",
+      "sourceProviderDefinitionDigest": "sha256:fa72aa7637ec0f0a2a38bea517e744c818dc0c31e7165a11d0c56adc0a3ad855"
     },
     {
       "providerProfileId": "sfx-api-host-http-request",

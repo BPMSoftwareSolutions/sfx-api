@@ -477,8 +477,16 @@
           }
          },
          "then": {
-          "op": "literal",
-          "value": false
+          "op": "includes",
+          "in": {
+           "op": "path",
+           "from": "operation",
+           "path": "callers"
+          },
+          "value": {
+           "op": "literal",
+           "value": "anonymous"
+          }
          },
          "else": {
           "op": "includes",

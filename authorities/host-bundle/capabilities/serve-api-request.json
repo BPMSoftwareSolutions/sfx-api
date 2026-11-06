@@ -1238,6 +1238,526 @@
                             }
                           },
                           {
+                            "operationId": "read-api-content-library",
+                            "method": "GET",
+                            "path": "/content/artifacts",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "artifacts"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "mediaType": "$query.mediaType",
+                              "collectionId": "$query.collectionId",
+                              "limit": "$query.limit",
+                              "cursor": "$query.cursor"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-library"
+                            },
+                            "meaning": "Read the authenticated principal's bounded owned HTML addresses and successful root producer receipts without a run admission. Report partial coverage while nested producer receipt inventory remains incomplete. Library summaries do not claim a dependency inspection."
+                          },
+                          {
+                            "operationId": "resolve-api-content-digest",
+                            "method": "GET",
+                            "path": "/content/resolve",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "resolve"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "contentDigest": "$query.contentDigest"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "resolve-api-content-digest"
+                            },
+                            "meaning": "Resolve a digest through a principal-owned source address or the principal's successful retained producer receipt, then inspect its bytes offline. A digest or caller-supplied receipt grants no access."
+                          },
+                          {
+                            "operationId": "read-api-content-revision",
+                            "method": "GET",
+                            "path": "/content/artifacts/{artifactId}",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "artifacts",
+                              "5": {
+                                "param": "artifactId"
+                              }
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "artifactId": "$path.artifactId",
+                              "revision": "$query.revision"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-revision"
+                            },
+                            "meaning": "Read one authorized immutable source revision and inspect its original UTF-8 HTML without execution. Missing dependencies remain explicit."
+                          },
+                          {
+                            "operationId": "read-api-content-body",
+                            "method": "GET",
+                            "path": "/content/artifacts/{artifactId}/revisions/{revision}/body",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "artifacts",
+                              "5": {
+                                "param": "artifactId"
+                              },
+                              "6": "revisions",
+                              "7": {
+                                "param": "revision"
+                              },
+                              "8": "body"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "artifactId": "$path.artifactId",
+                              "revision": "$path.revision"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-body"
+                            },
+                            "meaning": "Reauthorize an exact owned source revision and return its verified bytes in content-bytes.v1 JSON. Executable HTML is never served on the privileged API origin."
+                          },
+                          {
+                            "operationId": "read-api-retained-content-body",
+                            "method": "GET",
+                            "path": "/content/retained/{contentDigest}/revisions/{revision}/body",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "retained",
+                              "5": {
+                                "param": "contentDigest"
+                              },
+                              "6": "revisions",
+                              "7": {
+                                "param": "revision"
+                              },
+                              "8": "body"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "contentDigest": "$path.contentDigest",
+                              "revision": "$path.revision"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-retained-content-body"
+                            },
+                            "meaning": "Reauthorize the retained digest through an owned source address or successful principal-scoped producer receipt, then return exactly the selected immutable bytes in content-bytes.v1 JSON."
+                          },
+                          {
+                            "operationId": "read-api-content-sites",
+                            "method": "GET",
+                            "path": "/content/sites",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "sites"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-sites"
+                            },
+                            "meaning": "Caller-bound publication authority: sites. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs."
+                          },
+                          {
+                            "operationId": "read-api-content-publications",
+                            "method": "GET",
+                            "path": "/content/publications",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "offset": "$query.offset",
+                              "limit": "$query.limit"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-publications"
+                            },
+                            "meaning": "Caller-bound publication authority: list. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs."
+                          },
+                          {
+                            "operationId": "read-api-content-publication",
+                            "method": "GET",
+                            "path": "/content/publications/{publicationId}",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications",
+                              "5": {
+                                "param": "publicationId"
+                              }
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "publicationId": "$path.publicationId"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-publication"
+                            },
+                            "meaning": "Caller-bound publication authority: publication. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs."
+                          },
+                          {
+                            "operationId": "read-api-content-publication-history",
+                            "method": "GET",
+                            "path": "/content/publications/{publicationId}/history",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications",
+                              "5": {
+                                "param": "publicationId"
+                              },
+                              "6": "history"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "publicationId": "$path.publicationId",
+                              "offset": "$query.offset",
+                              "limit": "$query.limit"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-publication-history"
+                            },
+                            "meaning": "Caller-bound publication authority: history. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs."
+                          },
+                          {
+                            "operationId": "read-api-content-publication-request",
+                            "method": "GET",
+                            "path": "/content/publication-requests/{idempotencyKey}",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publication-requests",
+                              "5": {
+                                "param": "idempotencyKey"
+                              }
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "idempotencyKey": "$path.idempotencyKey"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-publication-request"
+                            },
+                            "meaning": "Caller-bound publication authority: request. Resolve only explicit immutable publication bindings; never render a source or admit reader jobs."
+                          },
+                          {
+                            "operationId": "read-api-published-content",
+                            "method": "GET",
+                            "path": "/published-content/{targetId}/{path}",
+                            "callers": [
+                              "anonymous",
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "published-content",
+                              "4": {
+                                "param": "targetId"
+                              },
+                              "5": {
+                                "param": "path"
+                              }
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "targetId": "$path.targetId",
+                              "path": "$path.path"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-published-content"
+                            },
+                            "meaning": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin."
+                          },
+                          {
+                            "operationId": "publish-api-content",
+                            "method": "POST",
+                            "path": "/content/publications",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "requestBody": "$body"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "publish-api-content"
+                            },
+                            "meaning": "Explicit authorized publish of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt."
+                          },
+                          {
+                            "operationId": "update-api-content-publication",
+                            "method": "POST",
+                            "path": "/content/publications/{publicationId}/update",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications",
+                              "5": {
+                                "param": "publicationId"
+                              },
+                              "6": "update"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "publicationId": "$path.publicationId",
+                              "requestBody": "$body"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "update-api-content-publication"
+                            },
+                            "meaning": "Explicit authorized update of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt."
+                          },
+                          {
+                            "operationId": "withdraw-api-content-publication",
+                            "method": "POST",
+                            "path": "/content/publications/{publicationId}/withdraw",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "publications",
+                              "5": {
+                                "param": "publicationId"
+                              },
+                              "6": "withdraw"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "publicationId": "$path.publicationId",
+                              "requestBody": "$body"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "withdraw-api-content-publication"
+                            },
+                            "meaning": "Explicit authorized withdraw of one selected publication through the estate writer, with immutable source verification, optimistic concurrency and a durable idempotency receipt."
+                          },
+                          {
+                            "operationId": "resolve-api-published-content-path",
+                            "method": "GET",
+                            "path": "/published-content/{targetId}",
+                            "callers": [
+                              "anonymous",
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "published-content",
+                              "4": {
+                                "param": "targetId"
+                              }
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "targetId": "$path.targetId",
+                              "path": "$query.path"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "resolve-api-published-content-path"
+                            },
+                            "meaning": "Anonymous read of an active pinned publication or its exact declared asset only. Withdrawal revokes every path. Return verified bytes in JSON, never executable HTML on the API origin."
+                          },
+                          {
+                            "operationId": "read-api-content-asset",
+                            "method": "GET",
+                            "path": "/content/artifacts/{artifactId}/revisions/{revision}/assets",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "artifacts",
+                              "5": {
+                                "param": "artifactId"
+                              },
+                              "6": "revisions",
+                              "7": {
+                                "param": "revision"
+                              },
+                              "8": "assets"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "artifactId": "$path.artifactId",
+                              "revision": "$path.revision",
+                              "path": "$query.path"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-content-asset"
+                            },
+                            "meaning": "Reauthorize the original page and its pinned manifest; return only the exact listed dependency bytes. A path or digest alone grants no access. Query path carries nested directories through hosted ingress."
+                          },
+                          {
+                            "operationId": "read-api-retained-content-asset",
+                            "method": "GET",
+                            "path": "/content/retained/{contentDigest}/revisions/{revision}/assets",
+                            "callers": [
+                              "user"
+                            ],
+                            "segments": {
+                              "0": "",
+                              "1": "sfx",
+                              "2": "v1",
+                              "3": "content",
+                              "4": "retained",
+                              "5": {
+                                "param": "contentDigest"
+                              },
+                              "6": "revisions",
+                              "7": {
+                                "param": "revision"
+                              },
+                              "8": "assets"
+                            },
+                            "input": {
+                              "principalId": "$caller.principalId",
+                              "requestExecutionId": "$request.requestExecutionId",
+                              "executionPath": "$request.executionPath",
+                              "contentDigest": "$path.contentDigest",
+                              "revision": "$path.revision",
+                              "path": "$query.path"
+                            },
+                            "resolves": {
+                              "kind": "capability",
+                              "capabilityId": "read-api-retained-content-asset"
+                            },
+                            "meaning": "Reauthorize the original page and its pinned manifest; return only the exact listed dependency bytes. A path or digest alone grants no access. Query path carries nested directories through hosted ingress."
+                          },
+                          {
                             "operationId": "read-hosted-execution-acceptance",
                             "method": "GET",
                             "path": "/hosted-execution/acceptance/{attemptId}",
@@ -1806,8 +2326,16 @@
                                   }
                                 },
                                 "then": {
-                                  "op": "literal",
-                                  "value": false
+                                  "op": "includes",
+                                  "in": {
+                                    "op": "path",
+                                    "from": "operation",
+                                    "path": "callers"
+                                  },
+                                  "value": {
+                                    "op": "literal",
+                                    "value": "anonymous"
+                                  }
                                 },
                                 "else": {
                                   "op": "includes",
@@ -3040,7 +3568,7 @@
       "event_id": "serve-api-request-requested",
       "responsibility": "the kernel identifies the caller, resolves the request against the interface its declaration carries, and runs the operation's capability",
       "outcome_id": "serve-api-request-outcome",
-      "scenario_definition_digest": "VOPQdD8XYj8/EnkSbqKh0D9sjoqqwb5IsD/mcb9OSjk="
+      "scenario_definition_digest": "itxHBb+cMF6sz9TlFddij2iwE0vQ0jpkP+3xwxkt4pQ="
     }
   ]
 }

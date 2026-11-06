@@ -1,0 +1,251 @@
+{
+  "contractId": "sfx-api-host-capability.v1",
+  "capabilityId": "read-api-content-asset",
+  "namespaceId": "sidefx:capabilities",
+  "rootScenarioId": "read-api-content-asset",
+  "graphSource": {
+    "capabilityId": "read-api-content-asset",
+    "rootScenarioId": "read-api-content-asset",
+    "scenarios": [
+      {
+        "scenarioId": "read-api-content-asset",
+        "input": {
+          "inputId": "read-api-content-asset-request",
+          "contract": {
+            "contractId": "read-api-content-asset-request.v1"
+          }
+        },
+        "event": {
+          "eventId": "read-api-content-asset-requested",
+          "executionAuthorityId": "read-api-content-asset.v1"
+        },
+        "outcome": {
+          "outcomeId": "read-api-content-asset-outcome",
+          "contract": {
+            "contractId": "read-api-content-asset-result.v1"
+          },
+          "terminal": true
+        }
+      }
+    ],
+    "scenarioOutcomes": [
+      {
+        "scenarioId": "read-api-content-asset",
+        "variants": [
+          {
+            "variantId": "RETURNED",
+            "classification": "success"
+          }
+        ]
+      }
+    ],
+    "transitions": [],
+    "executionAuthorities": [
+      {
+        "id": "read-api-content-asset.v1",
+        "owningScenarioId": "read-api-content-asset",
+        "operations": [
+          {
+            "operationId": "read-api-content-asset.prepare",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-prepare"
+          },
+          {
+            "operationId": "read-api-content-asset.source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-source"
+          },
+          {
+            "operationId": "read-api-content-asset.receipts",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-receipts"
+          },
+          {
+            "operationId": "read-api-content-asset.receipt-source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-receipt-source"
+          },
+          {
+            "operationId": "read-api-content-asset.retained",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-retained"
+          },
+          {
+            "operationId": "read-api-content-asset.retained-source",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-retained-source"
+          },
+          {
+            "operationId": "read-api-content-asset.project",
+            "kind": "invoke-port",
+            "portId": "read-api-content-asset-project"
+          }
+        ]
+      }
+    ],
+    "interfaceAuthority": {
+      "interfaceAuthorityType": "consumer-interface-authority.v1",
+      "contractValidatorCapabilityId": "sda-schema-contract-admission.v1",
+      "contractCatalog": "contracts/contract-catalog.json",
+      "interfaces": [
+        {
+          "interfaceId": "read-api-content-asset-cli",
+          "kind": "cli",
+          "rootScenarioId": "read-api-content-asset",
+          "platformCapabilityId": "sda-json-cli.v1",
+          "configuration": {
+            "input": {
+              "type": "json",
+              "contract": "read-api-content-asset-request.v1"
+            },
+            "display": {
+              "select": "outcome",
+              "as": "json"
+            }
+          }
+        }
+      ],
+      "portBindings": [
+        {
+          "portId": "read-api-content-asset-prepare",
+          "platformCapabilityId": "sfx-api-content-selection-port.v1",
+          "configuration": {
+            "operation": "asset",
+            "sourceCapabilityId": "read-owned-html-source"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-receipts",
+          "platformCapabilityId": "sfx-api-content-receipts-port.v1",
+          "configuration": {
+            "receiptCapabilityId": "read-principal-html-receipts"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-receipt-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-retained",
+          "platformCapabilityId": "sfx-api-content-retained-reference-port.v1",
+          "configuration": {
+            "retainedCapabilityId": "read-retained-artifact"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-retained-source",
+          "platformCapabilityId": "generic-capability-invocation.v1",
+          "configuration": {
+            "providerId": "generic-capability-invocation",
+            "authoritySource": "DATABASE",
+            "capabilityIdPath": "executionTarget",
+            "namespacePath": "executionNamespace",
+            "scenarioPath": "executionScenario",
+            "requestPath": "dispatchRequest",
+            "resultPath": "result",
+            "lineageMode": "retain-nested-execution"
+          }
+        },
+        {
+          "portId": "read-api-content-asset-project",
+          "platformCapabilityId": "sfx-api-content-projection-port.v1",
+          "configuration": {
+            "python": "/usr/local/bin/python3",
+            "analyzer": "/opt/sfx/providers/content/package.py",
+            "writerCapabilityId": "apply-verified-content-publication",
+            "interactiveProfile": {
+              "profileId": "interactive-document",
+              "profileVersion": "1",
+              "capabilityId": "render-scenario-topology-page",
+              "rendererId": "sidefx-circuit-page-v1",
+              "rendererDigest": "sha256:d361a3edf1f9056d056845f0ac774f25f63224aa0e09a92916b96cbab0b0dd0b",
+              "scriptDigest": "sha256:995abe47c247eae2c4b30d2dc994c7af9c0880a300461d4a7dea2e5785b15138"
+            }
+          }
+        }
+      ],
+      "projectionBindings": []
+    },
+    "semanticTransformations": [],
+    "contractAuthorities": {
+      "authorityType": "consumer-contract-authorities.v1",
+      "contracts": {
+        "read-api-content-asset-request.v1": {
+          "schemaRef": "read-api-content-asset-request.v1.schema.json",
+          "schema": {
+            "type": "object"
+          }
+        },
+        "read-api-content-asset-result.v1": {
+          "schemaRef": "read-api-content-asset-result.v1.schema.json",
+          "schema": {
+            "type": "object",
+            "required": [
+              "contractId",
+              "status",
+              "body"
+            ],
+            "properties": {
+              "contractId": {
+                "const": "api-response.v1"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cliConfiguration": {
+    "input": {
+      "type": "json",
+      "contract": "read-api-content-asset-request.v1"
+    },
+    "display": {
+      "select": "outcome",
+      "as": "json"
+    }
+  },
+  "closure": [
+    {
+      "downstream_scenario_id": "read-api-content-asset",
+      "minimum_depth": 0,
+      "cycle_detected": 0,
+      "owning_capability_id": "read-api-content-asset",
+      "input_id": "read-api-content-asset-request",
+      "event_id": "read-api-content-asset-requested",
+      "responsibility": "Reauthorize the original page and its pinned manifest; return only the exact listed dependency bytes. A path or digest alone grants no access. Query path carries nested directories through hosted ingress.",
+      "outcome_id": "read-api-content-asset-outcome",
+      "scenario_definition_digest": "FCsqECD3SMYgcFxPaADg/H8I3994x0jiO89Nh+pHuKc="
+    }
+  ]
+}
