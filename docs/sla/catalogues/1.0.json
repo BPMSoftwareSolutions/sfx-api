@@ -1,0 +1,411 @@
+{
+  "schema": "sfx-api.slo-catalogue.v1",
+  "version": "1.0",
+  "status": "effective",
+  "product": "sfx-api: the declared API host",
+  "owner": "sfx-api",
+  "governingDocument": "docs/sla/host-sla.md",
+  "productContract": {
+    "repository": "sfx-platform",
+    "path": "docs/sla/product-contract.md",
+    "commit": "2df87d8702ec334b8962bb299cc637bddf3b0f03",
+    "sha256": "sha256:1d8f6f562fb04361965338837437e1c525e6be99608f84be5a2b2a31cfdd439d"
+  },
+  "targetAuthority": "Each target is stated by the feature scenarios listed with it. Where a scenario and this catalogue disagree, the scenario wins; correct the catalogue and host-sla.md together and bump both versions. An objective with no scenario yet derives from the governing document its target basis names; its scenarios belong to the probe capability's feature (host-sla.md section 11).",
+  "effectiveFrom": "2026-11-07",
+  "effectiveAt": "2026-11-07T20:41:59Z",
+  "governedEnvironment": {
+    "name": "staging",
+    "apiOrigin": "https://sfx-api-test.azurewebsites.net"
+  },
+  "slos": [
+    {
+      "id": "api-availability",
+      "title": "API availability",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "30d", "status": "derived" },
+      "target": { "status": "derived", "basis": "The hosted browser holds sfx-platform PLT-BROWSER-AVAILABILITY at 99.5% over 30 days and depends on this API for sign-in, sessions and runs, so the API holds at least the same. No measurement of the API origin exists yet." },
+      "sli": {
+        "kind": "ratio",
+        "unit": "one probe sample of one route in the anonymous route set, on the governed origin",
+        "routes": [
+          { "request": "GET /sfx/v1/nope", "expect": "404 OPERATION_NOT_DECLARED" },
+          { "request": "GET /sfx/v1/session, no caller", "expect": "401 CALLER_REQUIRED" },
+          { "request": "POST /sfx/v1/session, empty identifier", "expect": "400 LOGIN_INPUT_INVALID" },
+          { "request": "POST /sfx/v1/session, an identifier no principal has", "expect": "401 AUTHENTICATION_REJECTED" },
+          { "request": "POST /sfx/v1/hosted-execution/acceptance, no caller", "expect": "401 CALLER_REQUIRED" }
+        ],
+        "good": "The expected status and error code, answered within request-answer-bound.",
+        "bad": "Timeout, connection failure, unexpected status or code, a 5xx from the host's own capacity (REQUEST_KERNEL_BUSY, a container start), or a named dependency failure without matching attribution evidence.",
+        "excluded": "A named refusal with independent attribution evidence that names the dependency's owner and matches the sample's route and time. A code alone is not attribution."
+      },
+      "objective": { "minimum": 0.995 },
+      "evidence": ["per-sample request, status, code and server time", "host build identity of the serving image", "attribution receipt for any exclusion"],
+      "measurement": { "status": "not-built", "method": "A probe capability declared in the host's bundle, invoked by the operator through the installed CLI on every release and on a schedule; when the host cannot answer, the invoking client's failure is the observation (host-sla.md section 11).", "automation": "none" },
+      "scenarios": []
+    },
+    {
+      "id": "explicit-failure",
+      "title": "Explicit failure",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "30d", "status": "derived" },
+      "target": { "status": "derived", "basis": "sfx-platform product-sla.md section 9 obliges sfx-api to refuse unavailable operations with a named code; content-delivery-boundary.v1 adds the responsible owner." },
+      "sli": {
+        "kind": "ratio",
+        "unit": "one observed failure of a request to the declared API",
+        "good": "Answered with a named uppercase code that names the unavailable operation, and whose named cause the record does not contradict.",
+        "bad": "A generic or blank error, a timeout with no code, a substituted result, or a named dependency failure when the dependency is shown healthy (2026-11-05: 503 IDENTITY_UNAVAILABLE while identity answered)."
+      },
+      "objective": { "minimum": 1 },
+      "evidence": ["the response bytes", "the attribution evidence for the named cause", "host build identity"],
+      "measurement": { "status": "not-built", "method": "Probe-observed failures from the api-availability probe; acceptance and defect-reported failures recorded by hand under the measurement contract.", "automation": "none" },
+      "scenarios": []
+    },
+    {
+      "id": "release-integrity",
+      "title": "Release integrity",
+      "surface": "host-release",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "derived", "basis": "docs/signin-outage-2026-11-05.md: 'Every deploy should probe sign-in. A frontdoor probe passes while sign-in is down.'" },
+      "sli": {
+        "kind": "ratio",
+        "unit": "one release transaction on the governed site: from setting SFX_API_IMAGE_DIGEST until the release probe set passes on the new digest or the previous digest serves again",
+        "good": "The new digest serves and passed the release probe set (every api-availability route, sign-in refusal through open-api-session included), with its host build identity retained; or the previous digest was restored.",
+        "bad": "Stranded: the site serves a digest that failed or skipped the release probe set and was not restored."
+      },
+      "objective": { "minimum": 1 },
+      "evidence": ["host build identity: source commit, image digest, bundle pin, kernel digest, host-files digest", "swap timeline", "release probe set responses"],
+      "measurement": { "status": "manual", "method": "Each deploy record under docs/ states its swap and probes; recorded by hand under the measurement contract.", "automation": "none" },
+      "scenarios": []
+    },
+    {
+      "id": "frontdoor-warm-latency",
+      "title": "Frontdoor warm latency",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": {
+        "kind": "bound-sample",
+        "unit": "one sample: 30 sequential requests alternating GET /sfx/v1/nope (404) and GET /sfx/v1/session without a credential (401), answered by warm request kernels on the governed origin; server time is time to first byte minus the TLS handshake, nearest-rank percentiles",
+        "good": "Both quantiles within their maxima.",
+        "bad": "Either quantile above its maximum."
+      },
+      "objective": { "unit": "s", "quantiles": { "p50": { "maximum": 0.88 }, "p95": { "maximum": 3.35 } }, "samples": "every qualified sample" },
+      "baseline": "p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image f32450fa, kernel 39881693, 2026-10-31)",
+      "evidence": ["per-request server times", "sample time and client", "host build identity"],
+      "measurement": { "status": "manual", "method": "Operator workstation samples recorded as summaries in docs/azure-test-*.md; per-request times are not retained.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/serve-http-request.feature", "scenario": "A warm request is served within the frontdoor's latency objective", "status": "proven" },
+        { "feature": "features/serve-api-request.feature", "scenario": "A warm request is answered within the frontdoor's latency objective", "status": "proven" },
+        { "feature": "features/sfx-api-ingress-resolve.feature", "scenario": "Every request is read within the frontdoor's latency objective", "status": "proven" },
+        { "feature": "features/sfx-api-ingress-compose.feature", "scenario": "Every response is written within the frontdoor's latency objective", "status": "proven" },
+        { "feature": "features/answer-host-declared-read.feature", "scenario": "The frontdoor's latency objective holds with the bundle", "status": "proven" }
+      ]
+    },
+    {
+      "id": "frontdoor-tail-explained",
+      "title": "Frontdoor tail explained",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "proposed" },
+      "sli": { "kind": "ratio", "unit": "one warm request over 1.05 s", "good": "The delivery's evidence names where its time went.", "bad": "No evidence names the cause." },
+      "objective": { "minimum": 1 },
+      "baseline": "5 of 30 took 1.2 to 4.0 s on 2026-10-31, cause open: the facade keeps no kernel evidence",
+      "evidence": ["delivery evidence per slow request"],
+      "measurement": { "status": "not-built", "method": "Nothing records a slow request's cause.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/host-facade.feature", "scenario": "Every slow warm request names where its time went", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "warm-definitions",
+      "title": "Warm definitions",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "bound-sample", "unit": "one warm envelope", "good": "No declaration read.", "bad": "Any declaration read." },
+      "objective": { "unit": "declaration reads", "maximum": 0, "samples": "every qualified sample" },
+      "baseline": "0 declaration reads, 0.3 to 20 ms (WSL); 1 query, the session's generation read (SDA 29355da, WSL)",
+      "evidence": ["kernel query count per envelope on the governed host"],
+      "measurement": { "status": "diagnostic-only", "method": "Probed on WSL only; no governed-environment observation.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/serve-api-request.feature", "scenario": "A warm envelope resolves its definitions without reading them", "status": "probed" },
+        { "feature": "features/answer-api-response.feature", "scenario": "Its definition is not read again in a warm envelope", "status": "probed" },
+        { "feature": "features/answer-host-declared-read.feature", "scenario": "A warm envelope reads no owned declaration again", "status": "probed" },
+        { "feature": "features/sfx-api-host-bundle-read.feature", "scenario": "A warm envelope reads no bundle document", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "request-answer-bound",
+      "title": "Request answer bound (SLA)",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "bound-sample", "unit": "one request", "good": "Answered within 230 s of receipt: its kernel's answer, the declared busy response or the declared failure response.", "bad": "No answer within 230 s." },
+      "objective": { "unit": "s", "maximum": 230, "quantile": 1 },
+      "baseline": "each request kernel's answer bound 198000 ms; a request waits at most the declared 30000 ms for a free kernel (sfx-api.config.json, declarations/25). The wait was 2 s until 2026-11-03, when it refused the Explorer's concurrent reads",
+      "evidence": ["request receipt and answer times"],
+      "measurement": { "status": "declared", "method": "The bounds are declared settings; no observation checks that requests are answered within them.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/host-facade.feature", "scenario": "No request outlives App Service's 230 s bound", "status": "installed" },
+        { "feature": "features/read-api-host-configuration.feature", "scenario": "The bounds of request-answer-bound and run-capacity are declared values", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "no-kernel-start-on-request",
+      "title": "No kernel start on request",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "bound-sample", "unit": "one request after the host listens", "good": "Paid no kernel start.", "bad": "Paid a kernel start." },
+      "objective": { "unit": "kernel starts", "maximum": 0, "samples": "every qualified sample" },
+      "baseline": "the first request after the f32450fa swap took 13.8 s, including the kernel's start; the 64f3a28 site's warm-up probe paid it",
+      "evidence": ["container start and listen times", "per-request times after listening"],
+      "measurement": { "status": "manual", "method": "Stated in docs/azure-test-2026-11-03.md for image 5eb18bf without a per-request record.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/host-facade.feature", "scenario": "No request pays a kernel start once the host listens", "status": "proven" }
+      ]
+    },
+    {
+      "id": "abandoned-request-release",
+      "title": "Abandoned request release",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "proposed", "conflict": "features/README.md Q2: freeing the kernel at once costs a kernel start (no-kernel-start-on-request)." },
+      "sli": { "kind": "bound-sample", "unit": "one request whose client gave up", "good": "Its kernel is released when the client goes.", "bad": "Its kernel stays held until it answers." },
+      "objective": { "description": "released when the client goes" },
+      "baseline": "30 abandoned requests queued the next request 68 s (WSL)",
+      "evidence": ["kernel hold time after client disconnect"],
+      "measurement": { "status": "not-built", "method": "Nothing measures it on the governed host.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/host-facade.feature", "scenario": "A request kernel is released when its client goes", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "session-setup",
+      "title": "Kernel estate session setup",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated", "until": "SDA KV-001" },
+      "sli": { "kind": "bound-sample", "unit": "one envelope", "good": "Session setup at most 0.34 s.", "bad": "Over 0.34 s." },
+      "objective": { "unit": "s", "maximum": 0.34, "quantile": 1 },
+      "baseline": "0.25 to 0.34 s, the generation read included",
+      "evidence": ["kernel session setup time per envelope on the governed host"],
+      "measurement": { "status": "diagnostic-only", "method": "README.md records it from WSL runs against the estate; no governed-environment observation.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/answer-host-declared-read.feature", "scenario": "The kernel's estate session costs at most 0.34 s per envelope, until KV-001", "status": "probed" }
+      ]
+    },
+    {
+      "id": "dispatched-request-latency",
+      "title": "Dispatched request latency",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "unset", "rule": "set from its first baseline, per operation" },
+      "sli": { "kind": "bound-sample", "unit": "server time on the governed origin of a request the frontdoor dispatches to a capability, per operation" },
+      "objective": null,
+      "baseline": "none: frontdoor-warm-latency measured refusals only",
+      "evidence": ["per-request server times per operation", "host build identity"],
+      "measurement": { "status": "not-built", "method": "Needs a signed-in sample.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/read-run-state.feature", "scenario": "Reading a run's state has a latency objective", "status": "not-built" },
+        { "feature": "features/read-run-output.feature", "scenario": "Reading a run's output has a latency objective", "status": "not-built" },
+        { "feature": "features/read-run-graphs.feature", "scenario": "Reading a run's graphs has a latency objective", "status": "not-built" },
+        { "feature": "features/read-api-session.feature", "scenario": "Reading the session has a latency objective", "status": "not-built" },
+        { "feature": "features/revoke-api-session.feature", "scenario": "Signing out has a latency objective", "status": "not-built" },
+        { "feature": "features/read-api-estate-scopes.feature", "scenario": "Reading the scopes has a latency objective", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "sign-in-refused-latency",
+      "title": "Refused sign-in latency",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "bound-sample", "unit": "server time of POST /sfx/v1/session with an empty identifier on the governed origin", "good": "Answered 400 within 0.47 s.", "bad": "Any other status, or over 0.47 s." },
+      "objective": { "unit": "s", "maximum": 0.47, "quantile": 1 },
+      "baseline": "0.47 s and 0.46 s (2026-10-31)",
+      "evidence": ["the response and its server time", "host build identity"],
+      "measurement": { "status": "manual", "method": "Single operator requests recorded as figures in docs/azure-test-*.md.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/serve-http-request.feature", "scenario": "A refused sign-in is answered within its objective", "status": "proven" }
+      ]
+    },
+    {
+      "id": "sign-in-latency",
+      "title": "Sign-in latency",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "unset", "rule": "none set: the record has no measurement" },
+      "sli": { "kind": "bound-sample", "unit": "server time on the governed origin of a sign-in sfx-identity-login-open answers" },
+      "objective": null,
+      "baseline": "none",
+      "evidence": ["the response and its server time"],
+      "measurement": { "status": "not-built", "method": "Needs a sign-in with a real identity.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/open-api-session.feature", "scenario": "A sign-in has a latency objective", "status": "not-built" },
+        { "feature": "features/sfx-identity-login-open.feature", "scenario": "A sign-in this provider answers has a latency objective", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "run-event-delivery",
+      "title": "Run event delivery",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "bound-sample", "unit": "one run stream", "good": "Each event written as observed; a quiet stream writes a keep-alive at least every 15 s.", "bad": "An event held back, or a quiet gap over 15 s without a keep-alive." },
+      "objective": { "unit": "s", "keepAliveMaximum": 15 },
+      "baseline": "events delivered as written over 2 s (stand-in)",
+      "evidence": ["stream frames with times, from a governed-host run"],
+      "measurement": { "status": "diagnostic-only", "method": "Shown against a stand-in kernel only.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/open-api-run-stream.feature", "scenario": "A run's events reach its stream as they are observed", "status": "probed" }
+      ]
+    },
+    {
+      "id": "session-recheck",
+      "title": "Session recheck",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "one open session's streams", "good": "Rechecked every 5000 ms, once for all of the session's streams.", "bad": "A missed interval or a recheck per stream." },
+      "objective": { "unit": "ms", "interval": 5000, "rechecksPerSessionPerInterval": 1 },
+      "baseline": "3 rechecks, not 6 (stand-in)",
+      "evidence": ["check-api-session invocations with times"],
+      "measurement": { "status": "diagnostic-only", "method": "Shown against a stand-in kernel only.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/check-api-session.feature", "scenario": "A session's streams are rechecked every 5000 ms, once for all of them", "status": "probed" },
+        { "feature": "features/subscribe-estate-live-observation.feature", "scenario": "A subscription's session is rechecked with the session's other streams", "status": "installed" }
+      ]
+    },
+    {
+      "id": "channel-batch",
+      "title": "Channel batch",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "one publish batch", "good": "At most 200 events and 1 MiB.", "bad": "Over either limit." },
+      "objective": { "maximumEvents": 200, "maximumBytes": 1048576 },
+      "baseline": "declared (declarations/25; today's values in sfx-api.config.json)",
+      "evidence": ["batch sizes from a governed-host run"],
+      "measurement": { "status": "declared", "method": "Declared limit; no observation checks it.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/publish-estate-live-observation.feature", "scenario": "A publish carries at most 200 events and 1 MiB", "status": "installed" }
+      ]
+    },
+    {
+      "id": "channel-retention",
+      "title": "Channel retention",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "the channel's replay buffer", "good": "At most 20000 frames and 32 MiB.", "bad": "Over either limit." },
+      "objective": { "maximumFrames": 20000, "maximumBytes": 33554432 },
+      "baseline": "declared",
+      "evidence": ["buffer size from a governed-host run"],
+      "measurement": { "status": "declared", "method": "Declared limit; no observation checks it.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/subscribe-estate-live-observation.feature", "scenario": "The channel keeps at most 20000 frames and 32 MiB for replay", "status": "installed" }
+      ]
+    },
+    {
+      "id": "trace-chunk",
+      "title": "Trace chunk",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "one retained trace chunk", "good": "At most 2000 events and 524288 bytes.", "bad": "Over either limit." },
+      "objective": { "maximumEvents": 2000, "maximumBytes": 524288 },
+      "baseline": "run f8a01553: 4 chunks to cursor 43 (README.md, Verified)",
+      "evidence": ["chunk sizes read back from the run store"],
+      "measurement": { "status": "acceptance-only", "method": "One run cited; not projected into the ledger.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/append-api-run-trace.feature", "scenario": "A run's trace is retained in chunks of at most 2000 events and 524288 bytes", "status": "proven" },
+        { "feature": "features/sfx-api-run-trace-encode.feature", "scenario": "A chunk holds at most 2000 events and 524288 bytes of events", "status": "proven" }
+      ]
+    },
+    {
+      "id": "run-events-bound",
+      "title": "Run events bound",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "one run", "good": "At most 50000 events kept, and at most 1 MiB per observation.", "bad": "Over either limit." },
+      "objective": { "maximumEvents": 50000, "maximumObservationBytes": 1048576 },
+      "baseline": "declared",
+      "evidence": ["event count and observation sizes from a governed-host run"],
+      "measurement": { "status": "declared", "method": "Declared limit; no observation checks it.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/project-api-run-events.feature", "scenario": "A run keeps at most 50000 events, and an observation at most 1 MiB whole", "status": "installed" }
+      ]
+    },
+    {
+      "id": "run-capacity",
+      "title": "Run capacity",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated", "proposedPart": "64 waiting" },
+      "sli": { "kind": "limit", "unit": "runs at one time", "good": "At most 2 executing and 64 waiting.", "bad": "More executing, or a run refused while fewer than 64 wait." },
+      "objective": { "maximumExecuting": 2, "maximumWaiting": 64 },
+      "baseline": "2 workers, each about 350 MB on the shared plan (README.md, Next 2)",
+      "evidence": ["worker and queue state from a governed-host run"],
+      "measurement": { "status": "declared", "method": "2 executing installed; 64 waiting not built.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/admit-api-run-live.feature", "scenario": "Two runs execute at once", "status": "installed" },
+        { "feature": "features/admit-api-run-live.feature", "scenario": "At most 64 runs wait for a worker", "status": "not-built" }
+      ]
+    },
+    {
+      "id": "plan-memory",
+      "title": "Plan memory",
+      "surface": "host-runtime",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "proposed" },
+      "sli": { "kind": "bound-sample", "unit": "the App Service plan's 5-minute memory average while the host runs", "good": "At most 64%.", "bad": "Over 64%." },
+      "objective": { "unit": "%", "maximum": 64 },
+      "baseline": "59% with one resident kernel; 64% while two containers overlapped in a swap (2026-10-31)",
+      "evidence": ["plan metrics export with times"],
+      "measurement": { "status": "manual", "method": "Read by the operator from Azure metrics and summarized in docs/azure-test-*.md.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/host-facade.feature", "scenario": "The host keeps the plan's memory within its objective", "status": "probed" }
+      ]
+    },
+    {
+      "id": "drawing-poll",
+      "title": "Drawing poll",
+      "surface": "declared-api",
+      "owner": "sfx-api",
+      "window": { "value": "90d", "status": "derived" },
+      "target": { "status": "stated" },
+      "sli": { "kind": "limit", "unit": "one drawing-change read", "good": "Every 2000 ms, at most 20 changes.", "bad": "Off interval, or more than 20 changes." },
+      "objective": { "unit": "ms", "interval": 2000, "maximumChanges": 20 },
+      "baseline": "declared",
+      "evidence": ["read times and sizes from a governed-host run"],
+      "measurement": { "status": "declared", "method": "Declared limit; no observation checks it.", "automation": "none" },
+      "scenarios": [
+        { "feature": "features/read-estate-drawing-changes.feature", "scenario": "Drawing changes are read every 2000 ms, at most 20 at a time", "status": "installed" }
+      ]
+    }
+  ]
+}

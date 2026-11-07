@@ -1,0 +1,48 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-03-release-integrity-5eb18bf",
+  "eventId": "release:sha256:540bf6a968e0da2016dc5143a99e4cd06123369e35b3c7afeb79aa6477e8aded",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "5eb18bf",
+    "imageDigest": "sha256:540bf6a968e0da2016dc5143a99e4cd06123369e35b3c7afeb79aa6477e8aded",
+    "bundlePin": "1SOc/FEhT0S012t7URdaOIBCzkbTPdqi7q9S6igzV/8=",
+    "kernelDigest": "244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+    "hostFilesDigest": null
+  },
+  "slo": "release-integrity",
+  "source": "retained-record",
+  "subject": "Release of 5eb18bf, the first image served from the bundle",
+  "observedAt": "2026-11-03T21:29:40Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 0,
+  "bad": 1,
+  "attribution": "host",
+  "excluded": 0,
+  "evidence": ["docs/azure-test-2026-11-03.md", "docs/signin-outage-2026-11-05.md", "commit f2bf96f message"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "Sign-in was not probed at the release. f2bf96f's message states that sign-in through the bundle host answered 503 IDENTITY_UNAVAILABLE 'since the first bundle image, 5eb18bf', reproduced with that image's files on WSL; no probe of the deployed image is retained. The swap timeline is a retained narrative, not probe output.",
+    "evidence": ["docs/azure-test-2026-11-03.md", "docs/signin-outage-2026-11-05.md", "commit f2bf96f message"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-11-03.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:a3458229fd6aa779fe71700b6f18ce76ecb96854cb3109a084ab35ee697204f7"
+  },
+  "detail": {
+    "timeline": [
+      "21:29:40 image set",
+      "21:31:08 the new facade stopped before listening: a kernel did not answer read-api-host-configuration; exit 1 after 60.1 s",
+      "21:31:17 to 21:31:27 App Service answered 503",
+      "21:31:40 App Service started the same image again",
+      "21:32:00 the site started"
+    ],
+    "outage": "about 50 s",
+    "releaseProbes": "GET /sfx/v1/nope every 10 s; no sign-in probe",
+    "ended": "Serving the new digest with sign-in answering 503 IDENTITY_UNAVAILABLE; fixed forward by f2bf96f, not restored",
+    "rollback": "sha256:4d63139135377f3e6fd4f78d23e21d6dc8669d8f56f4d175fa12d331d2660ee8 (sfx-api:a57ebba), not used"
+  }
+}

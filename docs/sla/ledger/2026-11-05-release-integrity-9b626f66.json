@@ -1,0 +1,40 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-05-release-integrity-9b626f66",
+  "eventId": "release:sha256:9b626f660c56a9089fc73f18ca6f270ca44213abc1e2fb2616e8980c7b23d6fa",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": null,
+    "imageDigest": "sha256:9b626f660c56a9089fc73f18ca6f270ca44213abc1e2fb2616e8980c7b23d6fa",
+    "bundlePin": null,
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "release-integrity",
+  "source": "retained-record",
+  "subject": "The release that served sign-in broken until ccb82ed replaced it",
+  "observedAt": "2026-11-05T01:35:25Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 0,
+  "bad": 1,
+  "attribution": "host",
+  "excluded": 0,
+  "evidence": ["docs/signin-outage-2026-11-05.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "The record names this image only as the one ccb82ed replaced. Its source commit, swap time and release probes are not retained, and the record says the outage window 'is not established'. observedAt is when ccb82ed's image was set. Deploys after f2bf96f were verified with GET /sfx/v1/nope and route probes, not a sign-in. Other releases built from 24e8d51 or later may have served the same fault; they are not identified, so this objective's coverage is incomplete.",
+    "evidence": ["docs/signin-outage-2026-11-05.md"]
+  },
+  "baseline": {
+    "reference": "docs/signin-outage-2026-11-05.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:ed75ffc9d18c90cbc858649cb86d2986456e7f9a746343ef87734265e318f87f"
+  },
+  "detail": {
+    "cause": "tools/build-hosted-release.py rebuilt the manifest from every JSON file in capabilities/, re-listing the stale open-api-session.json that f2bf96f had only unlisted",
+    "releaseProbes": "GET /sfx/v1/nope and route probes; no sign-in probe",
+    "ended": "Fixed forward by ccb82ed, not restored"
+  }
+}

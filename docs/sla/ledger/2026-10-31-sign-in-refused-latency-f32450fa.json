@@ -1,0 +1,33 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-10-31-sign-in-refused-latency-f32450fa",
+  "eventId": "baseline:2026-10-31-sign-in-refused-latency-f32450fa",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "32a5aeb",
+    "imageDigest": "sha256:f32450fa95369041934ed64d5b9163a114b7e050eba9020600c0cc0079be0a10",
+    "bundlePin": null,
+    "kernelDigest": "3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
+    "hostFilesDigest": null
+  },
+  "slo": "sign-in-refused-latency",
+  "source": "retained-record",
+  "subject": "One refused sign-in (POST /sfx/v1/session, empty identifier) after the resident-kernel redeploy",
+  "observedAt": "2026-10-31T21:38:47Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "value": 0.47,
+  "evidence": ["docs/azure-test-2026-10-31.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "One figure in a table; the response status, code and request time are not retained for this image (the 400 is recorded for 64f3a28 and 26aeb9d, not here). observedAt is an upper bound: the next image's site started at 21:38:47Z. The target was set from this figure.",
+    "evidence": ["docs/azure-test-2026-10-31.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-10-31.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:ebf9bf37bbda82cec0078b10f9a3f74c5029731ef6a8c0f6845e5044760249df"
+  },
+  "detail": { "unit": "s", "before": "2.18 s on image dbe0814f, a kernel per request" }
+}

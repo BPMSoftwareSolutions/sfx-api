@@ -1,0 +1,45 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-05-explicit-failure-sign-in-identity-unavailable",
+  "eventId": "baseline:2026-11-05-explicit-failure-sign-in-identity-unavailable",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": null,
+    "imageDigest": "sha256:9b626f660c56a9089fc73f18ca6f270ca44213abc1e2fb2616e8980c7b23d6fa",
+    "bundlePin": null,
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "explicit-failure",
+  "source": "retained-record",
+  "subject": "Sign-in answered 503 IDENTITY_UNAVAILABLE while the identity service answered",
+  "observedAt": "2026-11-05T01:32:53Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 0,
+  "bad": 1,
+  "attribution": "host",
+  "excluded": 0,
+  "evidence": [
+    "docs/signin-outage-2026-11-05.md",
+    "estate run 10ed8170 (list-principal-runs: READ)",
+    "estate run 8d398554 (verify-password-derivation: MATCHES)"
+  ],
+  "qualification": {
+    "status": "unverified",
+    "reason": "The 503 response is not retained as bytes. Its time is not retained either: observedAt is an upper bound, when the fix's SFX_API_IMAGE_DIGEST was set. The cause (the bundle's own open-api-session, unopened connection string) was reproduced by a scratch replay on WSL, which this repo's records treat as diagnostic. The code named a dependency that the live checks show was healthy, so the code is explicit and the attribution it states is false.",
+    "evidence": ["docs/signin-outage-2026-11-05.md"]
+  },
+  "baseline": {
+    "reference": "docs/signin-outage-2026-11-05.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:ed75ffc9d18c90cbc858649cb86d2986456e7f9a746343ef87734265e318f87f"
+  },
+  "detail": {
+    "request": "POST /sfx/v1/session",
+    "answer": "503 {\"status\":\"IDENTITY_UNAVAILABLE\"}",
+    "healthyChecks": ["whoami: AUTHENTICATED", "list-principal-runs: READ, 70,857 runs", "verify-password-derivation: MATCHES", "GET /sfx/v1/nope: 404 OPERATION_NOT_DECLARED"],
+    "kernelAnswer": "CELL_EXECUTION_FAILED at cell:mechanic:open-api-session.login: The ConnectionString property has not been initialized."
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-10-31-frontdoor-warm-latency-f32450fa",
+  "eventId": "baseline:2026-10-31-frontdoor-warm-latency-f32450fa",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "32a5aeb",
+    "imageDigest": "sha256:f32450fa95369041934ed64d5b9163a114b7e050eba9020600c0cc0079be0a10",
+    "bundlePin": null,
+    "kernelDigest": "3988169345c45bb057763ed8fa57b9b5b0c24814c546da32401b63b2848ac224",
+    "hostFilesDigest": null
+  },
+  "slo": "frontdoor-warm-latency",
+  "source": "retained-record",
+  "subject": "30 sequential warm requests after the resident-kernel redeploy",
+  "observedAt": "2026-10-31T21:38:47Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "quantiles": { "p50": 0.88, "p95": 3.35 },
+  "evidence": ["docs/azure-test-2026-10-31.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "The record retains summary percentiles only: no per-request times, sample time or client. observedAt is an upper bound: the next image's site started at 21:38:47Z. This sample set the target; it cannot also attest that the target was met.",
+    "evidence": ["docs/azure-test-2026-10-31.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-10-31.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:ebf9bf37bbda82cec0078b10f9a3f74c5029731ef6a8c0f6845e5044760249df"
+  },
+  "detail": {
+    "requests": 30,
+    "routes": ["GET /sfx/v1/nope (404)", "GET /sfx/v1/session without a credential (401)"],
+    "min": 0.81,
+    "max": 4.04,
+    "note": "25 of 30 took 0.81 to 1.05 s; five took 1.2 to 4.0 s with their cause open (frontdoor-tail-explained)."
+  }
+}

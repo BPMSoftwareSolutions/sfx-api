@@ -1,0 +1,39 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-03-api-availability-ba0cdb4-2216",
+  "eventId": "baseline:2026-11-03-api-availability-ba0cdb4-2216",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "ba0cdb4",
+    "imageDigest": "sha256:99a620e393af50de6318b56539f148caaa12bc82e77a9bd1b5f64a81e926dab4",
+    "bundlePin": null,
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "api-availability",
+  "source": "retained-record",
+  "subject": "The 22:16 latency sample's answers: four of 30 refused 503",
+  "observedAt": "2026-11-03T22:16:00Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 26,
+  "bad": 4,
+  "attribution": "host",
+  "excluded": 0,
+  "evidence": ["docs/azure-test-2026-11-03.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "The record states four 503 answers in 30; that the other 26 answered as expected is inferred, not stated, and no response is retained. The refusals come from the host's own capacity: 'A request still waiting after the declared 2 s is refused' on a one-vCPU plan. That is host-attributed and never excluded.",
+    "evidence": ["docs/azure-test-2026-11-03.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-11-03.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:a3458229fd6aa779fe71700b6f18ce76ecb96854cb3109a084ab35ee697204f7"
+  },
+  "detail": {
+    "routes": ["GET /sfx/v1/nope (404)", "GET /sfx/v1/session without a credential (401)"],
+    "related": "The same record: 17 requests answered 5xx between 21:55 and 21:58 on 5eb18bf while the Explorer followed a run, shown as 'Circuit unavailable (REQUEST_KERNEL_BUSY)'. Not projected: not samples of this route set."
+  }
+}

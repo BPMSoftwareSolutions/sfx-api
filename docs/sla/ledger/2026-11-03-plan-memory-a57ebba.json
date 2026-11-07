@@ -1,0 +1,33 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-03-plan-memory-a57ebba",
+  "eventId": "baseline:2026-11-03-plan-memory-a57ebba",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "a57ebba",
+    "imageDigest": "sha256:4d63139135377f3e6fd4f78d23e21d6dc8669d8f56f4d175fa12d331d2660ee8",
+    "bundlePin": null,
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "plan-memory",
+  "source": "retained-record",
+  "subject": "Plan memory before the 5eb18bf swap, 21:19 to 21:28 UTC",
+  "observedAt": "2026-11-03T21:28:00Z",
+  "recordedAt": "2026-11-07T20:41:59Z",
+  "value": 78,
+  "evidence": ["docs/azure-test-2026-11-03.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "5-minute averages summarized as a range (77 to 78%); no metrics export is retained. The value is the range's upper end, over the 64% maximum. The section names this image only as the one replaced; a57ebba predates the bundle.",
+    "evidence": ["docs/azure-test-2026-11-03.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-11-03.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:a3458229fd6aa779fe71700b6f18ce76ecb96854cb3109a084ab35ee697204f7"
+  },
+  "detail": { "unit": "%", "plan": "ASP-sidefxgroup-ad2e (P0v3)", "range": "77 to 78%", "cpu": "8 to 9%" }
+}

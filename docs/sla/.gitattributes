@@ -1,0 +1,2 @@
+# Catalogue and ledger digests cover exact bytes; checkout must not normalize line endings.
+*.json -text

@@ -121,29 +121,11 @@ The performance strategies the targets keep:
 | Bounded channel batches and retention | a publish carries at most 200 events or 1 MiB; replay holds at most 20000 frames or 32 MiB | declarations/25 (today's values in sfx-api.config.json) | publish-, subscribe-estate-live-observation |
 | The trace in bounded chunks | a run's trace is retained in chunks of at most 2000 events or 524288 bytes | run `f8a01553`: 4 chunks to cursor 43 (README.md, Verified) | append-api-run-trace, sfx-api-run-trace-encode |
 
-The objectives:
-
-| SLO | SLI | Target | Baseline | Status | Feature |
-| --- | --- | --- | --- | --- | --- |
-| `frontdoor-warm-latency` | server time of a request answered by a warm request kernel on sfx-api-test: time to first byte minus the TLS handshake, nearest-rank percentiles over 30 sequential requests | p50 at most 0.88 s and p95 at most 3.35 s | p50 0.88 s, p95 3.35 s, min 0.81 s, max 4.04 s (image `f32450fa`, kernel `39881693`, 2026-10-31) | proven; on image `5eb18bf` with the bundle, p50 0.46 s and p95 0.57 s ([2026-11-03](../docs/azure-test-2026-11-03.md)) | serve-http-request, serve-api-request, the two ingress providers, answer-host-declared-read |
-| `frontdoor-tail-explained` | warm requests over 1.05 s whose cause the delivery's evidence names | every one (proposed) | 5 of 30 took 1.2 to 4.0 s, cause open: the facade keeps no kernel evidence | not-built; none of 30 took longer than 1.05 s on image `5eb18bf` ([2026-11-03](../docs/azure-test-2026-11-03.md)) | host-facade |
-| `warm-definitions` | declaration reads made by a warm envelope | none | none, 0.3 to 20 ms (WSL) | probed, bound and unbound: 0 declaration reads, and 1 query, the session's generation read (SDA `29355da`, WSL; [request](../docs/request-sda-warm-envelope-round-trips.md)) | serve-api-request, answer-api-response, answer-host-declared-read |
-| `request-answer-bound` (SLA) | time from a request's receipt to its answer | within App Service's 230 s: by its kernel within 198 s, a 503 after 30 s without a free kernel, or a 502 when the delivery fails | the kernel's answer bound, 198000 ms (sfx-api.config.json); the wait was 2 s until 2026-11-03, when it refused the Explorer's concurrent reads | installed | host-facade, read-api-host-configuration |
-| `no-kernel-start-on-request` | kernel starts a request pays once the host listens | none | the first request after the `f32450fa` swap took 13.8 s, including the kernel's start; the `64f3a28` site's warm-up probe paid it | proven: image `5eb18bf` starts every kernel before it listens, and no request after the site started paid a kernel start ([2026-11-03](../docs/azure-test-2026-11-03.md)) | host-facade |
-| `abandoned-request-release` | time a kernel stays held after its client gives up | released when the client goes (proposed) | 30 abandoned requests queued the next request 68 s (WSL) | not-built | host-facade |
-| `session-setup` | the kernel's estate session setup per envelope | at most 0.34 s, until SDA's KV-001 | 0.25 to 0.34 s, the generation read included | probed | answer-host-declared-read |
-| `dispatched-request-latency` | server time on sfx-api-test of a request the frontdoor dispatches to a capability, per operation | set from its first baseline | none: frontdoor-warm-latency measured refusals only (404, and 401 without a credential), for which nothing is dispatched | not-built | read-run-state, read-run-output, read-run-graphs, read-api-session, revoke-api-session, read-api-estate-scopes |
-| `sign-in-refused-latency` | server time of a refused sign-in on sfx-api-test (`POST /sfx/v1/session`, empty identifier) | at most 0.47 s | 0.47 s and 0.46 s (2026-10-31) | proven; 0.19 s on image `5eb18bf` ([2026-11-03](../docs/azure-test-2026-11-03.md)) | serve-http-request |
-| `sign-in-latency` | server time on sfx-api-test of a sign-in sfx-identity-login-open answers | none set: the record has no measurement | none | not-built | open-api-session, sfx-identity-login-open |
-| `run-event-delivery` | time from an observation to its run stream frame | written as observed; a quiet stream writes a keep-alive every 15 s | events delivered as written over 2 s (stand-in) | probed | open-api-run-stream |
-| `session-recheck` | interval of an open stream's session recheck | every 5000 ms, shared by the streams of one session | 3 rechecks, not 6 (stand-in) | probed | check-api-session |
-| `channel-batch` | events and bytes per publish batch | at most 200 events and 1 MiB | declared | installed | publish-estate-live-observation |
-| `channel-retention` | frames the channel keeps for replay | at most 20000 frames and 32 MiB | declared | installed | subscribe-estate-live-observation |
-| `trace-chunk` | events and bytes per trace chunk | at most 2000 events and 524288 bytes | run `f8a01553` | proven | append-api-run-trace, sfx-api-run-trace-encode |
-| `run-events-bound` | events a run keeps, and one observation's bytes | at most 50000 events, and 1 MiB per observation | declared | installed | project-api-run-events |
-| `run-capacity` | runs executing at once, and runs waiting | 2 executing, 64 waiting (64 proposed) | 2 workers, each about 350 MB on the shared plan (README.md, Next 2) | installed (2), not-built (64) | admit-api-run-live, read-api-host-configuration |
-| `plan-memory` | memory of the App Service plan while the host runs | at most 64% (proposed) | 59% with one resident kernel, 64% while two containers overlapped in a swap | probed: before the `5eb18bf` swap the plan ran at 77 to 78%, peaked at 92% during it, and held 60% with its six kernels afterwards ([2026-11-03](../docs/azure-test-2026-11-03.md)) | host-facade |
-| `drawing-poll` | interval and size of a drawing-change read | every 2000 ms, at most 20 changes | declared | installed | read-estate-drawing-changes |
+The objectives, their targets, baselines and the scenarios that state them are in
+[docs/sla/slo-catalogue.json](../docs/sla/slo-catalogue.json), under the host's service level agreement
+([docs/sla/host-sla.md](../docs/sla/host-sla.md)). What the retained record supports for each is in
+[host-sla.md §3.3](../docs/sla/host-sla.md#33-what-the-record-shows-today). A scenario's `@status:proven` is not attainment:
+only qualified observations in [docs/sla/ledger/](../docs/sla/ledger/) are.
 
 Performance debt the record names, with no target yet (README.md, Next 5): the frontdoor's two SQL reads each open the
 vault and a connection; each kernel's second request refreshes once more than it needs to; the declared read cache is

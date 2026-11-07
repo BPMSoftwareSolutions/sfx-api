@@ -1,0 +1,33 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-03-frontdoor-warm-latency-ba0cdb4-2216",
+  "eventId": "baseline:2026-11-03-frontdoor-warm-latency-ba0cdb4-2216",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "ba0cdb4",
+    "imageDigest": "sha256:99a620e393af50de6318b56539f148caaa12bc82e77a9bd1b5f64a81e926dab4",
+    "bundlePin": null,
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "frontdoor-warm-latency",
+  "source": "retained-record",
+  "subject": "30 sequential requests on two request kernels while other clients were active",
+  "observedAt": "2026-11-03T22:16:00Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "quantiles": { "p50": 1.35, "p95": 3.63 },
+  "evidence": ["docs/azure-test-2026-11-03.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "Summary percentiles only, at minute precision; per-request times are not retained, and the record does not say whether the four 503 answers are inside the percentiles. Its section names no kernel digest or bundle pin. Both quantiles exceed their maxima (0.88 s and 3.35 s); features/README.md still marks this objective proven.",
+    "evidence": ["docs/azure-test-2026-11-03.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-11-03.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:a3458229fd6aa779fe71700b6f18ce76ecb96854cb3109a084ab35ee697204f7"
+  },
+  "detail": { "requests": 30, "max": 4.33, "refused": "4 answered 503", "conditions": "while other clients were active; the plan has one vCPU" }
+}

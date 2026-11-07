@@ -1,0 +1,33 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-03-sign-in-refused-latency-5eb18bf",
+  "eventId": "baseline:2026-11-03-sign-in-refused-latency-5eb18bf",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "5eb18bf",
+    "imageDigest": "sha256:540bf6a968e0da2016dc5143a99e4cd06123369e35b3c7afeb79aa6477e8aded",
+    "bundlePin": "1SOc/FEhT0S012t7URdaOIBCzkbTPdqi7q9S6igzV/8=",
+    "kernelDigest": "244e0129254e99752cf81d6df4026191d039dcaa8b8bcffcaff4baed9a74c1af",
+    "hostFilesDigest": null
+  },
+  "slo": "sign-in-refused-latency",
+  "source": "retained-record",
+  "subject": "One refused sign-in (POST /sfx/v1/session, empty identifier) on the first image served from the bundle",
+  "observedAt": "2026-11-03T22:10:08Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "value": 0.19,
+  "evidence": ["docs/azure-test-2026-11-03.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "One figure with its answer (400 LOGIN_INPUT_INVALID); the response bytes and request time are not retained. observedAt is an upper bound: image ba0cdb4 was set at 22:10:08Z.",
+    "evidence": ["docs/azure-test-2026-11-03.md"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-11-03.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:a3458229fd6aa779fe71700b6f18ce76ecb96854cb3109a084ab35ee697204f7"
+  },
+  "detail": { "unit": "s", "status": 400, "code": "LOGIN_INPUT_INVALID" }
+}

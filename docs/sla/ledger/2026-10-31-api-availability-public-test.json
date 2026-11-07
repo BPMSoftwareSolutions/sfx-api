@@ -1,0 +1,41 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-10-31-api-availability-public-test",
+  "eventId": "baseline:2026-10-31-api-availability-public-test",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "de4ac25",
+    "imageDigest": "sha256:dbe0814fb08fdfdca4ac3005cbbbfb1f95fde63c9331308ac993c1add5ba3c18",
+    "bundlePin": null,
+    "kernelDigest": "9f78e78d16b5da117162e35f9611386f560ddd2c6e12130ef2285d2564372b4b",
+    "hostFilesDigest": null
+  },
+  "slo": "api-availability",
+  "source": "retained-record",
+  "subject": "The first deployment's public test: the two anonymous route checks",
+  "observedAt": "2026-10-31T04:03:36.285Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 2,
+  "bad": 0,
+  "excluded": 0,
+  "evidence": ["docs/azure-test-2026-10-31/public-test.json", "docs/azure-test-2026-10-31.md"],
+  "qualification": {
+    "status": "eligible",
+    "reason": "Retained per-check JSON with origin, start time, status, error code and client time. Its first two checks are routes of api-availability's anonymous set and answered as expected. Its signed-in checks are outside that set and are not counted. bundlePin is null because this image predates the bundle; hostFilesDigest was not computed before prepare-hosted-image.ps1 existed.",
+    "evidence": ["docs/azure-test-2026-10-31/public-test.json"]
+  },
+  "baseline": {
+    "reference": "docs/azure-test-2026-10-31/public-test.json",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:f45ffd239f9da983953bff8c0170c7b435215d515830932f2a1f8f97fd8247c9"
+  },
+  "detail": {
+    "samples": [
+      { "request": "GET /sfx/v1/nope", "status": 404, "code": "OPERATION_NOT_DECLARED", "clientMilliseconds": 42674 },
+      { "request": "GET /sfx/v1/session, no caller", "status": 401, "code": "CALLER_REQUIRED", "clientMilliseconds": 4403 }
+    ],
+    "note": "Client time, not server time. The 42.7 s answer was within request-answer-bound; it counts for availability and says nothing about latency objectives."
+  }
+}

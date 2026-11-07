@@ -1,0 +1,44 @@
+{
+  "schema": "sfx-api.sli-observation.v1",
+  "observationId": "baseline:2026-11-05-release-integrity-ccb82ed",
+  "eventId": "release:sha256:417c9f0e8501c87f11e607c3e1848af247f29d6395a67c68a0ecfa6e19151a61",
+  "catalogueVersion": "1.0",
+  "catalogueDigest": "sha256:3b221693fdb82cfa4a40732b35eee94e51ee28125cc20cc0e83bdc159f91096b",
+  "environment": { "name": "staging", "apiOrigin": "https://sfx-api-test.azurewebsites.net" },
+  "hostBuild": {
+    "sourceCommit": "ccb82ed",
+    "imageDigest": "sha256:417c9f0e8501c87f11e607c3e1848af247f29d6395a67c68a0ecfa6e19151a61",
+    "bundlePin": "cYmRFVRLSrW+5H0igNDXEW9/IiS8GzM67WtrH+4d8Uw=",
+    "kernelDigest": null,
+    "hostFilesDigest": null
+  },
+  "slo": "release-integrity",
+  "source": "retained-record",
+  "subject": "Release of ccb82ed, restoring sign-in",
+  "observedAt": "2026-11-05T01:32:53Z",
+  "recordedAt": "2026-11-07T19:37:20Z",
+  "good": 1,
+  "bad": 0,
+  "excluded": 0,
+  "evidence": ["docs/signin-outage-2026-11-05.md"],
+  "qualification": {
+    "status": "unverified",
+    "reason": "The probes after the swap are a table in a narrative, not retained responses. The record keeps the host-files digest only truncated (sha256:b4ec8cea...) and names no kernel digest. Four of the five api-availability routes were probed; the empty-identifier refusal (400 LOGIN_INPUT_INVALID) is not recorded.",
+    "evidence": ["docs/signin-outage-2026-11-05.md"]
+  },
+  "baseline": {
+    "reference": "docs/signin-outage-2026-11-05.md",
+    "commit": "f97bd66d201fae591f7f83f34772f7658cb457ea",
+    "sha256": "sha256:ed75ffc9d18c90cbc858649cb86d2986456e7f9a746343ef87734265e318f87f"
+  },
+  "detail": {
+    "timeline": ["01:32:53 SFX_API_IMAGE_DIGEST set", "01:35:25 image set", "every probe answered 404 through both restarts; no outage"],
+    "releaseProbes": [
+      "POST /sfx/v1/session, identifier no principal has: 401 AUTHENTICATION_REJECTED",
+      "GET /sfx/v1/session, no caller: 401 CALLER_REQUIRED",
+      "POST /sfx/v1/hosted-execution/acceptance, no caller: 401 CALLER_REQUIRED",
+      "GET /sfx/v1/nope: 404"
+    ],
+    "rollback": "sha256:9b626f660c56a9089fc73f18ca6f270ca44213abc1e2fb2616e8980c7b23d6fa"
+  }
+}
