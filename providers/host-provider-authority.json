@@ -227,7 +227,7 @@
                       },
                       "sha256Base64": {
                         "op": "literal",
-                        "value": "nYIJvz49/f5Uw146HBLhPuEGpKM3CQyz4p/JyPs6E00="
+                        "value": "GM4LXkZSu7QqlnFO7nkiemPZbr2QqR1b6mfbnDuUn2k="
                       },
                       "carry": {
                         "op": "path",
@@ -422,7 +422,7 @@
                       },
                       "pin": {
                         "op": "literal",
-                        "value": "sha256-base64:nYIJvz49/f5Uw146HBLhPuEGpKM3CQyz4p/JyPs6E00="
+                        "value": "sha256-base64:GM4LXkZSu7QqlnFO7nkiemPZbr2QqR1b6mfbnDuUn2k="
                       }
                     },
                     "value": {
@@ -1408,6 +1408,20 @@
                   "op": "path",
                   "from": "scope",
                   "path": "digest"
+                }
+              ]
+            },
+            {
+              "invocation": "value.Add",
+              "arguments": [
+                {
+                  "op": "literal",
+                  "value": "nativeEvents"
+                },
+                {
+                  "op": "path",
+                  "from": "scope",
+                  "path": "events"
                 }
               ]
             }

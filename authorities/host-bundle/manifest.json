@@ -20,12 +20,6 @@
       "sha256Base64": "zMlaYX2C5/0l0DIdqD3GNmnHVoRWQC+E9fd6mhq4Lkw="
     },
     {
-      "capabilityId": "append-api-run-trace",
-      "namespaceId": "sidefx:capabilities",
-      "document": "capabilities/append-api-run-trace.json",
-      "sha256Base64": "K37jjMYqUCIJFg6NHy4a5vZgB89RooFx/AdIDE2Yb8I="
-    },
-    {
       "capabilityId": "capture-estate-live-observation-facts",
       "namespaceId": "sidefx:capabilities",
       "document": "capabilities/capture-estate-live-observation-facts.json",
